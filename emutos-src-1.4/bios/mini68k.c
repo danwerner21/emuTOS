@@ -24,6 +24,8 @@
 
 #include "emutos.h"
 #include "biosdefs.h"
+#include "asm.h"
+#include "delay.h"
 #include "mini68k.h"
 #include "ikbd.h"
 #include "serport.h"
@@ -170,6 +172,99 @@ void mini68k_init_system_timer(void)
     KDEBUG(("NS32202: H-counter started, count=%u for %lu Hz\n",
         ICU_TIMER_COUNT, CLOCKS_PER_SEC));
 
+}
+
+/******************************************************************************/
+/* Real-time clock (DS1302 on the MF/PIC)                                     */
+/******************************************************************************/
+
+/*
+ * The DS1302 is bit-banged through a latch at port 0x43, as in the BIOS
+ * (ds1302.s). The DS1302 shifts data LSB first; data out of the chip is
+ * valid after each falling clock edge.
+ */
+#define MINI68K_RTC_PORT    0x43
+#define RTC_LATCH   (*(volatile UBYTE *)MINI68K_ECB_IO(MINI68K_RTC_PORT))
+
+#define RTC_DATA    0x01    /* data in/out */
+#define RTC_WREN    0x02    /* drive the data line (write) */
+#define RTC_CLK     0x04    /* serial clock */
+#define RTC_NRST    0x08    /* 1 = chip enable inactive (idle) */
+
+#define RTC_CMD_WRITE   0x80
+#define RTC_CMD_READ    0x81
+
+/* The BIOS waits at least 9 us after each latch change */
+static void rtc_out(UBYTE value)
+{
+    RTC_LATCH = value;
+    delay_loop(loopcount_1_msec / 100);     /* 10 us */
+}
+
+static void rtc_start(void)
+{
+    rtc_out(RTC_NRST);
+    rtc_out(0);                 /* chip enable active */
+}
+
+static void rtc_stop(void)
+{
+    rtc_out(0);
+    rtc_out(RTC_NRST);          /* chip enable inactive */
+}
+
+static void rtc_write_byte(UBYTE value)
+{
+    int i;
+
+    for (i = 0; i < 8; i++, value >>= 1)
+    {
+        UBYTE bit = RTC_WREN | (value & RTC_DATA);
+
+        rtc_out(bit);
+        rtc_out(bit | RTC_CLK); /* the DS1302 samples on the rising edge */
+    }
+}
+
+static UBYTE rtc_read_byte(void)
+{
+    UBYTE value = 0;
+    int i;
+
+    for (i = 0; i < 8; i++)
+    {
+        rtc_out(0);             /* falling edge: the DS1302 outputs a bit */
+        value >>= 1;
+        if (RTC_LATCH & RTC_DATA)
+            value |= 0x80;
+        rtc_out(RTC_CLK);
+    }
+
+    return value;
+}
+
+/*
+ * Read or write a DS1302 location. Addresses are those of the BIOS:
+ * 0x00-0x08 for the clock registers, 0x20-0x3e for the battery-backed RAM.
+ */
+UBYTE mini68k_rtc_read(UBYTE address)
+{
+    UBYTE value;
+
+    rtc_start();
+    rtc_write_byte(RTC_CMD_READ | (address << 1));
+    value = rtc_read_byte();
+    rtc_stop();
+
+    return value;
+}
+
+void mini68k_rtc_write(UBYTE address, UBYTE value)
+{
+    rtc_start();
+    rtc_write_byte(RTC_CMD_WRITE | (address << 1));
+    rtc_write_byte(value);
+    rtc_stop();
 }
 
 /******************************************************************************/

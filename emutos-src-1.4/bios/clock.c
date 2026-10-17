@@ -33,10 +33,11 @@
 #include "../bdos/bdosstub.h"
 #include "amiga.h"
 #include "lisa.h"
+#include "mini68k.h"
 #include "disk.h"
 #include "acsi.h"
 
-#if (CONF_WITH_MONSTER || CONF_WITH_IKBD_CLOCK)
+#if (CONF_WITH_MONSTER || CONF_WITH_IKBD_CLOCK || defined(MACHINE_MINI68K))
 static UBYTE int2bcd(UWORD a)
 {
     return (a % 10) + ((a / 10) << 4);
@@ -48,7 +49,7 @@ static UWORD bcd2int(UBYTE a)
 }
 #endif
 
-#if (CONF_WITH_ICDRTC || CONF_WITH_MONSTER || CONF_WITH_MEGARTC || CONF_WITH_NVRAM || CONF_WITH_IKBD_CLOCK || CONF_WITH_ULTRASATAN_CLOCK)
+#if (CONF_WITH_ICDRTC || CONF_WITH_MONSTER || CONF_WITH_MEGARTC || CONF_WITH_NVRAM || CONF_WITH_IKBD_CLOCK || CONF_WITH_ULTRASATAN_CLOCK || defined(MACHINE_MINI68K))
 /*
  * structures used by extract_date(), extract_time()
  */
@@ -1133,6 +1134,134 @@ static ULONG ultrasatan_setdt(ULONG dt)
 
 #endif /* CONF_WITH_ULTRASATAN_CLOCK */
 
+#ifdef MACHINE_MINI68K
+
+/*==== Mini-M68k DS1302 RTC section =======================================*/
+
+/* DS1302 locations, as used by the Mini-M68k BIOS (rtc.h) */
+#define DS1302_SECONDS  0x00    /* bit 7: clock halt */
+#define DS1302_MINUTES  0x01
+#define DS1302_HOURS    0x02    /* bit 7: 12-hour mode, bit 5: PM */
+#define DS1302_DATE     0x03
+#define DS1302_MONTH    0x04
+#define DS1302_DAY      0x05    /* day of week, 1 = Sunday */
+#define DS1302_YEAR     0x06
+#define DS1302_CONTROL  0x07    /* bit 7: write protect */
+#define DS1302_CENTURY  0x22    /* BIOS NVRAM byte */
+#define DS1302_CHECKSUM 0x3e    /* BIOS NVRAM checksum over 0x20-0x3e */
+
+#define DS1302_CLOCK_HALT       0x80
+#define DS1302_12HOUR           0x80
+#define DS1302_PM               0x20
+#define DS1302_WRITE_PROTECT    0x80
+
+/* Day of week for a full year in 1980-2107: 1 = Sunday ... 7 = Saturday */
+static UBYTE ds1302_day_of_week(UWORD year, UWORD month, UWORD day)
+{
+    static const UWORD days_before_month[12] =
+        { 0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334 };
+    UWORD y = year - 1980;
+    ULONG days = y * 365UL + (y + 3) / 4;   /* leap days in 1980..year-1 */
+    BOOL leap = (year % 4 == 0) && (year != 2100);
+
+    if (year > 2100)
+        days--;                             /* 2100 is not a leap year */
+    days += days_before_month[month - 1] + day - 1;
+    if (leap && month > 2)
+        days++;
+
+    return (UBYTE)((days + 2) % 7 + 1);     /* 1980-01-01 was a Tuesday */
+}
+
+static ULONG mini68k_getdt(void)
+{
+    UBYTE sec, min, hour, day, month, year, century;
+    UWORD hours, fullyear;
+    ULONG dt;
+
+    /* read again if the clock ticked in the middle */
+    do {
+        sec = mini68k_rtc_read(DS1302_SECONDS);
+        min = mini68k_rtc_read(DS1302_MINUTES);
+        hour = mini68k_rtc_read(DS1302_HOURS);
+        day = mini68k_rtc_read(DS1302_DATE);
+        month = mini68k_rtc_read(DS1302_MONTH);
+        year = mini68k_rtc_read(DS1302_YEAR);
+    } while (mini68k_rtc_read(DS1302_SECONDS) != sec);
+    century = mini68k_rtc_read(DS1302_CENTURY);
+
+    KDEBUG(("DS1302: hour=%02x min=%02x sec=%02x date=%02x month=%02x century=%02x year=%02x\n",
+            hour, min, sec, day, month, century, year));
+
+    if (sec & DS1302_CLOCK_HALT)
+    {
+        KINFO(("DS1302: clock halted, using default date/time\n"));
+        return DEFAULT_DATETIME;    /* clock stopped: time is not valid */
+    }
+
+    if (hour & DS1302_12HOUR)
+        hours = (bcd2int(hour & 0x1f) % 12) + ((hour & DS1302_PM) ? 12 : 0);
+    else
+        hours = bcd2int(hour & 0x3f);
+
+    if (century < 0x19 || century > 0x21)
+        century = 0x20;             /* century byte not set by the BIOS */
+    fullyear = bcd2int(century) * 100 + bcd2int(year);
+    if (fullyear < 1980 || fullyear > 2107)
+    {
+        KINFO(("DS1302: year %u out of range, using default date/time\n", fullyear));
+        return DEFAULT_DATETIME;
+    }
+
+    dt = MAKE_ULONG(((fullyear - 1980) << 9) | (bcd2int(month) << 5) | bcd2int(day),
+                    (hours << 11) | (bcd2int(min) << 5) | (bcd2int(sec & 0x7f) >> 1));
+
+    KDEBUG(("mini68k_getdt() = 0x%08lx\n", dt));
+
+    return dt;
+}
+
+static void mini68k_setdt(ULONG dt)
+{
+    struct hms tm;
+    struct ymd date;
+    UWORD fullyear;
+    UBYTE century, old_century;
+
+    extract_time(&tm, LOWORD(dt));
+    extract_date(&date, HIWORD(dt));
+    fullyear = date.year + 1980;
+    century = int2bcd(fullyear / 100);
+
+    KDEBUG(("mini68k_setdt(0x%08lx)\n", dt));
+
+    mini68k_rtc_write(DS1302_CONTROL, 0);   /* write protect off */
+
+    /* Stop the clock while setting it, like the BIOS Setup does */
+    mini68k_rtc_write(DS1302_SECONDS, DS1302_CLOCK_HALT);
+    mini68k_rtc_write(DS1302_MINUTES, int2bcd(tm.minute));
+    mini68k_rtc_write(DS1302_HOURS, int2bcd(tm.hour));  /* 24-hour mode */
+    mini68k_rtc_write(DS1302_DATE, int2bcd(date.day));
+    mini68k_rtc_write(DS1302_MONTH, int2bcd(date.month));
+    mini68k_rtc_write(DS1302_DAY, ds1302_day_of_week(fullyear, date.month, date.day));
+    mini68k_rtc_write(DS1302_YEAR, int2bcd(fullyear % 100));
+    mini68k_rtc_write(DS1302_SECONDS, int2bcd(tm.second));  /* restart */
+
+    /* The century lives in the BIOS NVRAM: keep its checksum consistent */
+    old_century = mini68k_rtc_read(DS1302_CENTURY);
+    if (century != old_century)
+    {
+        UBYTE checksum = mini68k_rtc_read(DS1302_CHECKSUM);
+
+        mini68k_rtc_write(DS1302_CENTURY, century);
+        mini68k_rtc_write(DS1302_CHECKSUM, (UBYTE)(checksum - (century - old_century)));
+    }
+
+    mini68k_rtc_write(DS1302_CONTROL, DS1302_WRITE_PROTECT);
+}
+
+#endif /* MACHINE_MINI68K */
+
 /* internal init */
 
 void clock_init(void)
@@ -1225,6 +1354,12 @@ void settime(LONG time)
     {
         /* Dummy case for conditional compilation */
     }
+#ifdef MACHINE_MINI68K
+    else if (TRUE)
+    {
+        mini68k_setdt(time);
+    }
+#endif /* MACHINE_MINI68K */
 #if CONF_WITH_NVRAM
     else if (has_nvram)
     {
@@ -1281,6 +1416,12 @@ LONG gettime(void)
         return lisa_getdt();
     }
 #endif /* MACHINE_LISA */
+#ifdef MACHINE_MINI68K
+    else if (TRUE)
+    {
+        return mini68k_getdt();
+    }
+#endif /* MACHINE_MINI68K */
 #if CONF_WITH_NVRAM
     else if (has_nvram)
     {

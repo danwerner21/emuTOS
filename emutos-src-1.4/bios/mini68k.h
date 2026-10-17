@@ -66,6 +66,10 @@ void mini68k_init_system_timer(void);
 void mini68k_int_timer(void);   /* Raw ICU timer handler, defined in mini68k2.S */
 void mini68k_int_ignore(void);  /* Raw handler for unused ICU inputs, defined in mini68k2.S */
 
+/* Real-time clock (DS1302): BIOS addresses, 0x00-0x08 clock, 0x20-0x3e RAM */
+UBYTE mini68k_rtc_read(UBYTE address);
+void mini68k_rtc_write(UBYTE address, UBYTE value);
+
 /* Console UART */
 BOOL mini68k_uart_can_write(void);
 void mini68k_uart_write_byte(UBYTE b);

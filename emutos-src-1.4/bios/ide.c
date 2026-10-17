@@ -107,6 +107,40 @@ struct IDE
 #define IDE_READ_ALT_STATUS(i) \
     IDE_READ_REGISTER_PAIR(filler0e)
 
+#elif defined(MACHINE_MINI68K)
+
+#include "ppide.h"
+
+/* On the Mini-M68k, the IDE registers are not memory-mapped: they are
+ * reached through the PPIDE interface on the MF/PIC board (an 82C55).
+ * The interface 'i' is passed to these macros only for compatibility.
+ * FIXME: dispatch on 'i' when other disk boards are supported. */
+
+struct IDE
+{
+    UWORD data;     /* never accessed: ide_get_data()/ide_put_data() use ppide.c */
+};
+
+static struct IDE ppide_interface;
+#define ide_interface (&ppide_interface)
+
+#define IDE_WRITE_SECTOR_NUMBER_SECTOR_COUNT(i,a,b) \
+    { ppide_write_reg(PPIDE_REG_SECTOR_NUMBER,a); ppide_write_reg(PPIDE_REG_SECTOR_COUNT,b); }
+#define IDE_WRITE_CYLINDER_HIGH_CYLINDER_LOW(i,a) \
+    { ppide_write_reg(PPIDE_REG_CYLINDER_HIGH,HIBYTE(a)); ppide_write_reg(PPIDE_REG_CYLINDER_LOW,LOBYTE(a)); }
+#define IDE_WRITE_COMMAND_HEAD(i,a,b) \
+    { ppide_write_reg(PPIDE_REG_HEAD,b); ppide_write_reg(PPIDE_REG_COMMAND,a); }
+#define IDE_WRITE_CONTROL(i,a)    ppide_write_reg(PPIDE_REG_CONTROL,a)
+#define IDE_WRITE_HEAD(i,a)       ppide_write_reg(PPIDE_REG_HEAD,a)
+
+#define IDE_READ_STATUS(i)        ppide_read_reg(PPIDE_REG_STATUS)
+#define IDE_READ_ALT_STATUS(i)    ppide_read_reg(PPIDE_REG_ALT_STATUS)
+#define IDE_READ_ERROR(i)         ppide_read_reg(PPIDE_REG_ERROR)
+#define IDE_READ_SECTOR_NUMBER_SECTOR_COUNT(i) \
+    MAKE_UWORD(ppide_read_reg(PPIDE_REG_SECTOR_NUMBER), ppide_read_reg(PPIDE_REG_SECTOR_COUNT))
+#define IDE_READ_CYLINDER_HIGH_CYLINDER_LOW(i) \
+    MAKE_UWORD(ppide_read_reg(PPIDE_REG_CYLINDER_HIGH), ppide_read_reg(PPIDE_REG_CYLINDER_LOW))
+
 #else
 
 /* On standard hardware, the IDE registers can be accessed as single bytes. */
@@ -564,6 +598,8 @@ BOOL detect_ide(void)
     has_ide = has_gayle ? 0x01 : 0x00;
 #elif defined(MACHINE_M548X)
     has_ide = 0x01;
+#elif defined(MACHINE_MINI68K)
+    has_ide = 0x01;     /* PPIDE on the MF/PIC, which is always present */
 #elif defined(MACHINE_FIREBEE)
     has_ide = 0x03;
 #elif CONF_ATARI_HARDWARE
@@ -998,6 +1034,11 @@ static void ide_get_data(volatile struct IDE *interface,UBYTE *buffer,ULONG buff
 
     KDEBUG(("ide_get_data(%p, %p, %lu, %d)\n", interface, buffer, bufferlen, need_byteswap));
 
+#ifdef MACHINE_MINI68K
+    ppide_read_data(buffer, bufferlen, need_byteswap);
+    return;
+#endif
+
 #if CONF_WITH_APOLLO_68080
     if (is_apollo_68080)
     {
@@ -1179,6 +1220,11 @@ static void ide_put_data(volatile struct IDE *interface,UBYTE *buffer,ULONG buff
     XFERWIDTH *end;
     UWORD *p2;
     UWORD *end2 = (UWORD *)(buffer + bufferlen);
+
+#ifdef MACHINE_MINI68K
+    ppide_write_data(buffer, bufferlen, need_byteswap);
+    return;
+#endif
 
     if (need_byteswap) {
         end = (XFERWIDTH *)(buffer + (bufferlen & ~(16-1)));    /* mask must match unrolled loop */

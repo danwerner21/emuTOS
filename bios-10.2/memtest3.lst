@@ -1,0 +1,1013 @@
+68K GAS  memtest3.s 			page 1
+
+
+   1               	/*  memtest3.s   */
+   2               	/*
+   3               		Copyright (C) 2016 John R Coffman.
+   4               		Licensed for hobbyist use only.
+   5               	***********************************************************************
+   6               	
+   7               	    This program is free software: you can redistribute it and/or modify
+   8               	    it under the terms of the GNU General Public License as published by
+   9               	    the Free Software Foundation, either version 3 of the License, or
+  10               	    (at your option) any later version.
+  11               	
+  12               	    This program is distributed in the hope that it will be useful,
+  13               	    but WITHOUT ANY WARRANTY; without even the implied warranty of
+  14               	    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  15               	    GNU General Public License for more details.
+  16               	
+  17               	    You should have received a copy of the GNU General Public License
+  18               	    in the file COPYING in the distribution directory along with this
+  19               	    program.  If not, see <http://www.gnu.org/licenses/>.
+  20               	
+  21               	**********************************************************************/
+  22               		.text
+  23               	
+  24               		.globl	crlf, space
+  25               		.globl	woutD, lout, sio_put, put_string
+  26               	
+  27               	
+  28               	
+  29               	TEST_PATTERN0	=	0x12EDB748 /* X=1 */
+  30               	TEST_PATTERN1	=	0x63C1C783 /* X=1 */
+  31               	TEST_PATTERN2	=	0xB38F0F83 /* X=1 */
+  32               	TEST_PATTERN3	=	0x0635F570 /* X=1 */
+  33               	PATTERN_SRAM	=	0x81020410 /* X=0 */
+  34               	XOR_PATTERN	=	0x965AC279	/* used to randomize testing patterns */
+  35               	
+  36               	
+  37               	
+  38               	/*
+  39               	   memtest0:
+  40               	   	Initializes D3, D4, D6 and falls into memtest3:   
+  41               	   	
+  42               	   	
+  43               	   	
+  44               	   	
+  45               	   memtest3:
+  46               		
+  47               	   Enter with:
+  48               	   	D3.b  is the saved X flag; must be 0x00 or 0xFFFF
+  49               	   	D4 is the LONG pattern used for the test
+  50               	   	D6 is the cumulative failure count
+  51               	
+  52               		A0 is the highest address to test + 1
+  53               		A1 is the lowest address to test
+  54               		A6 is the return address
+  55               	
+  56               	   Returns:
+  57               		D6 is the cumulative failure count
+68K GAS  memtest3.s 			page 2
+
+
+  58               		    If counting from 0, then the caller must initialize D6
+  59               		D3.b is the saved X flag
+  60               		D4 is the UPDATED pattern
+  61               		
+  62               	   Uses:
+  63               	   	A2 is the working address register
+  64               	   	A3 to save D3
+  65               	   	A4 to save D4
+  66               		A6 used for the return address
+  67               	
+  68               	   Preserves:
+  69               	   	D0
+  70               	   	D5
+  71               		D7
+  72               		A0
+  73               		A1
+  74               		A5
+  75               		SP
+  76               	*/
+  77               	
+  78               		.globl	_memtest3
+  79               		.globl	_memtest0
+  80               	
+  81               	memtest0:
+  82 0000 2C5F      		move.l	(%sp)+,%a6	/* get the return address */
+  83               	_memtest0:	/* start the error count at 0 */
+  84 0002 4286      		clr.l	%d6		/* start a new count from zero */
+  85 0004 283C 63C1 		move.l	#TEST_PATTERN1,%d4
+  85      C783 
+  86 000a 76FF      		move.l	#-1,%d3		/* X-flag is set */
+  87 000c 6002      		jbra	_memtest3
+  88               		
+  89               	memtest3:
+  90 000e 2C5F      		move.l	(%sp)+,%a6	/* get the return address */
+  91               	_memtest3:			/* entry to use no stack  */
+  92 0010 2408      		move.l	%a0,%d2
+  93 0012 9489      		sub.l	%a1,%d2		/* D2 is byte count to test */
+  94               		
+  95 0014 2202      		move.l	%d2,%d1		/* D1 does the counting; D2 is saved */
+  96 0016 2449      		move.l	%a1,%a2		/* A2 is the start address */
+  97               		
+  98 0018 E489      		lsr.l	#2,%d1		/* D1 is the LONG count */
+  99 001a 2643      		move.l	%d3,%a3		/* save X flag */
+ 100 001c 2844      		move.l	%d4,%a4		/* save pattern */
+ 101               		
+ 102 001e D603      		add.b	%d3,%d3		/* restore the X flag */
+ 103 0020 6006      		br.s	mt_start3	/* start the counting */
+ 104               	mt_loop1:
+ 105 0022 4841      		swap	%d1
+ 106               	mt_loop2:
+ 107 0024 E394      		roxl.l	#1,%d4
+ 108 0026 24C4      		move.l	%d4,(%a2)+
+ 109               	mt_start3:
+ 110 0028 51C9 FFFA 		dbra	%d1,mt_loop2
+ 111 002c 4841      		swap	%d1
+ 112 002e 51C9 FFF2 		dbra	%d1,mt_loop1
+ 113               	
+68K GAS  memtest3.s 			page 3
+
+
+ 114               	/* now the compare loop */
+ 115 0032 280C      		move.l	%a4,%d4		/* original pattern */
+ 116 0034 260B      		move.l	%a3,%d3		/* original X flag */
+ 117               	
+ 118 0036 2449      		move.l	%a1,%a2		/* original start address */
+ 119 0038 2202      		move.l	%d2,%d1		/* original byte count */
+ 120               		
+ 121 003a E489      		lsr.l	#2,%d1		/* ulterior motives for doing this shift here */
+ 122 003c 6004      		br.s	mt_start4	/* start the count */
+ 123               		
+ 124               	/* handle counting errors here */
+ 125               	mt_error1:
+ 126 003e 9703      		subx.b	%d3,%d3		/* save the X-flag */
+ 127 0040 5286      		add.l	#1,%d6		/* count the error */
+ 128               	mt_start4:
+ 129 0042 D603      		add.b	%d3,%d3		/* restore the X-flag */
+ 130 0044 003C 0004 		or	#4,%ccr		/* set the Z flag */
+ 131 0048 6006      		br.s	mt_start5	/* re-enter the loop */
+ 132               		
+ 133               	mt_loop3:
+ 134 004a 4841      		swap	%d1
+ 135               	mt_loop4:
+ 136 004c E394      		roxl.l	#1,%d4
+ 137 004e B89A      		cmp.l	(%a2)+,%d4	/* compare memory to pattern */
+ 138               					/* compare does not touch the X-flag */
+ 139               	mt_start5:
+ 140 0050 56C9 FFFA 		dbne	%d1,mt_loop4	/* inner loop */
+ 141 0054 66E8      		jbne	mt_error1	/* jump on compare error */
+ 142               	/* no error occurred on the last iteration */
+ 143 0056 4841      		swap	%d1
+ 144 0058 51C9 FFF0 		dbra	%d1,mt_loop3	/* outer loop */
+ 145               	
+ 146 005c 9703      		subx.b	%d3,%d3		/* save the X-flag */
+ 147               	/* the error count is updated */
+ 148 005e 4ED6      		jmp	(%a6)		/* return to caller */
+ 149               		
+ 150               	
+ 151               	
+ 152               	
+ 153               	/************************************************************************/
+ 154               	/*   below this point we may use the SRAM stack		*/
+ 155               	/************************************************************************/
+ 156               	.if !RETAIL
+ 157               	DEBUG = 0
+ 158               	.else
+ 159               	DEBUG = 0
+ 160               	.endif
+ 161               	
+ 162               	/*
+ 163               	   DRAM_tests:
+ 164               	   	not called; this test is jumped to; it never terminates
+ 165               	   	until RESET is hit
+ 166               	   	
+ 167               	   	
+ 168               	   Enter with:
+ 169               	   	memmax	is set
+ 170               	   	h_m_a	is set
+68K GAS  memtest3.s 			page 4
+
+
+ 171               	   
+ 172               	   Register usage:
+ 173               	   	A5 is the test table pointer
+ 174               	   	D5 low half is pass counter (PASS)
+ 175               	   	   high half is error pass (EPASS)
+ 176               	   	D7 low half is passes without error counter
+ 177               	   	   high half is high word of HMA
+ 178               	   	
+ 179               	   	
+ 180               	   
+ 181               	*/
+ 182               		.globl	DRAM_tests
+ 183               	DRAM_tests:
+ 184               	.if DEBUG>1
+ 185               		lea	debug000,%a0
+ 186               		jbsr	put_string
+ 187               		move.w	debug,%d0
+ 188               		jbsr	wout
+ 189               		jbsr	space
+ 190               		jbsr	space
+ 191               		jbsr	space
+ 192               		move.l	%sp,%d0
+ 193               		jbsr	lout
+ 194               		jbsr	crlf
+ 195               		jbra	debug001
+ 196               	debug000:  .asciz	"\r\n\nDebug = "
+ 197               	debug001:
+ 198               	.endif
+ 199 0060 4287      		clr.l	%d7			/* test no memory */
+ 200 0062 7C03      		move.l	#3,%d6			/* test the banks of DRAM */
+ 201 0064 2439 0000 		move.l	memmax,%d2		/* max memory from the bus error test */
+ 201      0000 
+ 202 006a E48A      		lsr.l	#2,%d2		/* bank size is 1/4 memmax */
+ 203               	.if DEBUG
+ 204               		move.l	%d2,%d0		/* print out size of one memory bank */
+ 205               		jbsr	lout
+ 206               		jbsr	crlf
+ 207               		nop
+ 208               	.endif
+ 209               	ds0:
+ 210 006c 2202      		move.l	%d2,%d1
+ 211 006e 4841      		swap	%d1
+ 212 0070 C2C6      		mulu.w	%d6,%d1
+ 213 0072 4841      		swap	%d1
+ 214 0074 2241      		move.l	%d1,%a1
+ 215 0076 4291      		clr.l	(%a1)			/* set location to zero */
+ 216 0078 237C B38F 		move.l	#TEST_PATTERN2,4(%a1)
+ 216      0F83 0004 
+ 217 0080 4E71      		nop
+ 218               	.if DEBUG
+ 219               		move.l	(%a1),%d0
+ 220               		jbsr	lout
+ 221               		jbsr	crlf
+ 222               		nop
+ 223               	.endif
+ 224 0082 2011      		move.l	(%a1),%d0
+ 225 0084 6604      		jbne	ds9
+68K GAS  memtest3.s 			page 5
+
+
+ 226 0086 DE82      		add.l	%d2,%d7
+ 227 0088 0DC7      		bset	%d6,%d7
+ 228               	ds9:
+ 229 008a 51CE FFE0 		dbra	%d6,ds0			/* loop through 4 memory banks */
+ 230               	
+ 231               	#	or.b	#1,%d7			/* must have Bank 0 */
+ 232               	.if DEBUG
+ 233               		jbsr	crlf
+ 234               		move.l	%d7,%d0
+ 235               		jbsr	lout
+ 236               		jbsr	space
+ 237               		move.l	h_m_a,%d0
+ 238               		jbsr	lout
+ 239               		jbsr	crlf
+ 240               	.endif
+ 241               		
+ 242               		
+ 243 008e 4247      		clr.w	%d7		/* zap those low bits */
+ 244               	
+ 245               	.if DEBUG>2
+ 246               	/*debug*/ sub.l	#1,%d7 
+ 247               	.endif
+ 248               		
+ 249 0090 2239 0000 		move.l	h_m_a,%d1	/* compare HMA to D7 -- they should be equal */
+ 249      0000 
+ 250 0096 BE81      		cmp.l	%d1,%d7
+ 251 0098 673E      		jbeq	ds12
+ 252               	
+ 253 009a 4EB9 0000 		jbsr	crlf
+ 253      0000 
+ 254 00a0 2001      		move.l	%d1,%d0
+ 255 00a2 4EB9 0000 		jbsr	lout		/* HMA1 */
+ 255      0000 
+ 256 00a8 41FA 01BD 		lea	err_hma,%a0
+ 257 00ac 4EB9 0000 		jbsr	put_string
+ 257      0000 
+ 258 00b2 2007      		move.l	%d7,%d0
+ 259 00b4 4EB9 0000 		jbsr	lout
+ 259      0000 
+ 260               		
+ 261 00ba BE81      		cmp.l	%d1,%d7
+ 262 00bc 6C02      		jbge	ds11
+ 263 00be 2E01      		move.l	%d1,%d7
+ 264               	ds11:
+ 265 00c0 41FA 01C2 		lea	hma2,%a0
+ 266 00c4 4EB9 0000 		jbsr	put_string
+ 266      0000 
+ 267 00ca 2007      		move.l	%d7,%d0
+ 268 00cc 4EB9 0000 		jbsr	lout
+ 268      0000 
+ 269 00d2 4EB9 0000 		jbsr	crlf
+ 269      0000 
+ 270               	
+ 271               	ds12:
+ 272 00d8 41FA 01B9 		lea	heading,%a0
+ 273 00dc 4EB9 0000 		jbsr	put_string
+ 273      0000 
+68K GAS  memtest3.s 			page 6
+
+
+ 274               		
+ 275 00e2 4285      		clr.l	%d5		/* EPASS = 0, PASS = 0 */
+ 276 00e4 4247      		clr.w	%d7		/* passes without error = 0 */
+ 277               	
+ 278               	
+ 279 00e6 283C 0635 		move.l	#TEST_PATTERN3,%d4	/* pattern */
+ 279      F570 
+ 280 00ec 76FF      		move.l	#-1,%d3		/* X-flag */
+ 281 00ee 6040      		jbra	dt00
+ 282               	
+ 283               	/* start the major outer loop */
+ 284               	dt0:
+ 285 00f0 5247      		add.w	#1,%d7		/* count passes without error */
+ 286               		
+ 287 00f2 41FA 012C 		lea.l	(str2,%pc),%a0	/* "Pass #    " */
+ 288 00f6 4EB9 0000 		jbsr	put_string
+ 288      0000 
+ 289 00fc 3005      		move.w	%d5,%d0
+ 290 00fe 4EB9 0000 		jbsr	woutD		/* print the pass number */
+ 290      0000 
+ 291 0104 41FA 0124 		lea.l	(str3,%pc),%a0	/* "Passes without error:  #" */
+ 292 0108 4EB9 0000 		jbsr	put_string
+ 292      0000 
+ 293 010e 3007      		move.w	%d7,%d0
+ 294 0110 4EB9 0000 		jbsr	woutD
+ 294      0000 
+ 295 0116 41FA 012F 		lea.l	(str4,%pc),%a0	/* "Last error at pass:  #" */
+ 296 011a 4EB9 0000 		jbsr	put_string
+ 296      0000 
+ 297 0120 2005      		move.l	%d5,%d0
+ 298 0122 4840      		swap	%d0		/* D0.w is last error location */
+ 299 0124 4EB9 0000 		jbsr	woutD
+ 299      0000 
+ 300 012a 4EB9 0000 		jbsr	crlf
+ 300      0000 
+ 301               	dt00:
+ 302 0130 4EB9 0000 		jbsr	crlf
+ 302      0000 
+ 303 0136 4BFA 02E4 		lea	(dram,%pc),%a5			/* get table address */
+ 304 013a 5245      		add.w	#1,%d5			/* increment the pass counter */
+ 305               	# 	move.b	#0x12,(lites).w
+ 306               	
+ 307               	/* start a new test from the table entry */
+ 308               	dt1:
+ 309 013c 0C95 FFFF 		cmp.l	#-1,(%a5)
+ 309      FFFF 
+ 310 0142 67AC      		jbeq	dt0			/* done if we hit 0xFFFFFFFF */
+ 311               			
+ 312 0144 225D      		move.l	(%a5)+,%a1		/* get start address */
+ 313               	.if CPU<68020
+ 314 0146 3009      		move.w	%a1,%d0
+ 315 0148 0200 0001 		and.b	#1,%d0			/* check 68000 word alignment */
+ 316 014c 6600 0096 		jbne	dt6			/* test must be word aligned */
+ 317               	.endif	
+ 318 0150 2007      		move.l	%d7,%d0
+ 319 0152 4240      		clr.w	%d0			/* D0 is HMA (low bits zeroed) */
+ 320 0154 B3C0      		cmp.l	%d0,%a1			/* A1::hma */
+68K GAS  memtest3.s 			page 7
+
+
+ 321 0156 6C00 008C 		jbge	dt6			/* A1 < hma */
+ 322 015a 2055      		move.l	(%a5),%a0		/* end address + 1 to A0 */
+ 323 015c B1C0      		cmp.l	%d0,%a0			/* end+1::hma */
+ 324 015e 6E00 0084 		jbgt	dt6	
+ 325               		
+ 326               	dt2:
+ 327               	.if 1 /* !RETAIL */
+ 328 0162 2004      		move.l	%d4,%d0			/* show the pattern */
+ 329 0164 4EB9 0000 		jbsr	lout
+ 329      0000 
+ 330 016a 4EB9 0000 		jbsr	space
+ 330      0000 
+ 331 0170 7001      		move.l	#1,%d0
+ 332 0172 C003      		and.b	%d3,%d0
+ 333 0174 4EB9 0000 		jbsr	woutD
+ 333      0000 
+ 334 017a 4EB9 0000 		jbsr	space
+ 334      0000 
+ 335 0180 4EB9 0000 		jbsr	space
+ 335      0000 
+ 336               	.endif
+ 337 0186 2009      		move.l	%a1,%d0
+ 338 0188 4EB9 0000 		jbsr	lout			/* put out Address */
+ 338      0000 
+ 339 018e 4EB9 0000 		jbsr	space
+ 339      0000 
+ 340 0194 2008      		move.l	%a0,%d0
+ 341 0196 4EB9 0000 		jbsr	lout
+ 341      0000 
+ 342 019c 4EB9 0000 		jbsr	space
+ 342      0000 
+ 343               	/* put out A or U depending on D1 */
+ 344 01a2 3208      		move.w	%a0,%d1			/* do the test in D1 */
+ 345 01a4 103C 0041 		move.b	#0x41,%d0		/* "A" */
+ 346 01a8 0201 0003 		and.b	#3,%d1
+ 347 01ac 6704      		jbeq	dt20
+ 348 01ae 103C 0055 		move.b	#0x55,%d0		/* "U" */
+ 349 01b2 4EB9 0000 	dt20:	jbsr	sio_put
+ 349      0000 
+ 350               	
+ 351               	
+ 352               	dt3:
+ 353 01b8 4286      		clr.l	%d6
+ 354 01ba 6100 FE52 		jbsr	memtest3
+ 355               	# 	move.b	#0x17,(lites).w
+ 356               	
+ 357 01be 0A84 965A 		eor.l	#XOR_PATTERN,%d4	/* avoid the power of 2 problem */	
+ 357      C279 
+ 358 01c4 6126      		jbsr	passfail
+ 359               	
+ 360 01c6 2C06      		move.l	%d6,%d6			/* test error count */
+ 361 01c8 6614      		jbne	dt5
+ 362               	# error count was zero, so do the byte test
+ 363 01ca 41FA 0096 		lea.l	(strB,%pc),%a0
+ 364 01ce 4EB9 0000 		jbsr	put_string
+ 364      0000 
+ 365               		
+68K GAS  memtest3.s 			page 8
+
+
+ 366 01d4 226D FFFC 		move.l	-4(%a5),%a1		/* get address to test */
+ 367 01d8 6100 02BE 		jbsr	bytetest
+ 368               	
+ 369 01dc 610E      		jbsr	passfail
+ 370               	# 	move.b	#0x18,(lites).w
+ 371               	
+ 372               	dt5:
+ 373 01de 4EB9 0000 		jbsr	crlf
+ 373      0000 
+ 374               	dt6:
+ 375 01e4 4BED 0008 		lea	8(%a5),%a5	
+ 376 01e8 6000 FF52 		jbra	dt1
+ 377               	
+ 378               	
+ 379               	.if 0
+ 380               	drok5:
+ 381               		and.b	#0x0F,%d7
+ 382               		jbne	dt1			/* skip test if error above */
+ 383               		move	%a4,%a1
+ 384               	
+ 385               		jbsr	bytetest
+ 386               	
+ 387               		move.l	%d6,%d6
+ 388               		jbeq	drok9
+ 389               	
+ 390               	#      	move.b	%d6,(lites).w
+ 391               	
+ 392               		move.b	(switches).w,%d0
+ 393               		btst	#7,%d0			/* test HOE setting */
+ 394               		jbne	stop0
+ 395               	
+ 396               	drok9:
+ 397               		move.l	#3,%d0
+ 398               		jbsr	Blink
+ 399               		jbra	dt1
+ 400               	.endif
+ 401               	
+ 402               	
+ 403               	/* say pass or fail based on D6 */
+ 404               	passfail:
+ 405 01ec 48E7 00C0 		movm.l	%a0/%a1,-(%sp)
+ 406 01f0 41FA 0022 		lea	(str5pass,%pc),%a0
+ 407 01f4 2C06      		move.l	%d6,%d6
+ 408 01f6 6710      		jbeq	pf2
+ 409 01f8 3E3C FFFF 		move.w	#-1,%d7			/* reset pass counter */
+ 410               	###	move.l	(PASS).l,(EPASS).l	/* mark the error pass */
+ 411 01fc 3005      		move.w	%d5,%d0
+ 412 01fe 4845      		swap	%d5
+ 413 0200 3A00      		move.w	%d0,%d5
+ 414 0202 4845      		swap	%d5
+ 415               	
+ 416 0204 41FA 0014 		lea	(str5fail,%pc),%a0
+ 417 0208 4EB9 0000 	pf2:	jbsr	put_string
+ 417      0000 
+ 418 020e 4CDF 0300 		movm.l	(%sp)+,%a0/%a1
+ 419 0212 4E75      		rts
+ 420               	
+68K GAS  memtest3.s 			page 9
+
+
+ 421               	
+ 422               	/*  message strings:		*/
+ 423               	.if 0
+ 424               	str0:	.ascii	"\r\nSRAM present\r\n\0"
+ 425               	str1:	.ascii	"SRAM Btest\0"
+ 426               	.endif
+ 427 0214 2070 6173 	str5pass:  .asciz  " pass"
+ 427      7300 
+ 428 021a 2066 6169 	str5fail:  .asciz  " fail"
+ 428      6C00 
+ 429 0220 0D0A 5061 	str2:	.asciz	"\r\nPass:  "
+ 429      7373 3A20 
+ 429      2000 
+ 430 022a 2020 2020 	str3:	.asciz	"     Passes without error:  "
+ 430      2050 6173 
+ 430      7365 7320 
+ 430      7769 7468 
+ 430      6F75 7420 
+ 431 0247 2020 2020 	str4:	.asciz	"     Last error at pass:  "
+ 431      204C 6173 
+ 431      7420 6572 
+ 431      726F 7220 
+ 431      6174 2070 
+ 432 0262 2020 2042 	strB:	.asciz	"   B"
+ 432      00
+ 433 0267 203C 2D2D 	err_hma: .asciz	" <--HMA1 unequal to HMA2--> "
+ 433      484D 4131 
+ 433      2075 6E65 
+ 433      7175 616C 
+ 433      2074 6F20 
+ 434 0284 0D0A 5573 	hma2:	.asciz	"\r\nUsing HMA = "
+ 434      696E 6720 
+ 434      484D 4120 
+ 434      3D20 00
+ 435               	
+ 436               	heading:
+ 437 0293 0D0A 0A   		.ascii	"\r\n\n"
+ 438 0296 5468 6520 		.ascii	"The memory tests use a 33-bit rotating bit pattern; i.e., each successive\r\n"
+ 438      6D65 6D6F 
+ 438      7279 2074 
+ 438      6573 7473 
+ 438      2075 7365 
+ 439 02e1 6D65 6D6F 		.ascii	"memory word32 is written with a pattern rotated left one bit from the previous.\r\n"
+ 439      7279 2077 
+ 439      6F72 6433 
+ 439      3220 6973 
+ 439      2077 7269 
+ 440 0332 5468 6520 		.ascii	"The 33-bit length is used to pick up shorted or open address traces.  The seed\r\n"
+ 440      3333 2D62 
+ 440      6974 206C 
+ 440      656E 6774 
+ 440      6820 6973 
+ 441 0382 7661 6C75 		.ascii	"value for each of the test lines is shown on the left, long+Xbit.\r\n"
+ 441      6520 666F 
+ 441      7220 6561 
+ 441      6368 206F 
+ 441      6620 7468 
+68K GAS  memtest3.s 			page 10
+
+
+ 442 03c5 0D0A 0A   		.ascii	"\r\n\n"
+ 443 03c8 2033 332D 		.ascii	" 33-Bit         Address       Aligned or\r\n"
+ 443      4269 7420 
+ 443      2020 2020 
+ 443      2020 2020 
+ 443      4164 6472 
+ 444 03f2 5061 7474 		.asciz	"Pattern+X    Start    End+1   Unaligned\r\n"
+ 444      6572 6E2B 
+ 444      5820 2020 
+ 444      2053 7461 
+ 444      7274 2020 
+ 445               	
+ 446               	.if 0
+ 447               	str5:	.ascii	"\r\nMF/PIC UART is\0"
+ 448               		.align	4
+ 449               	strU:
+ 450               		.ascii	" ???   \0"	/* 0 */
+ 451               		.ascii	" 8250  \0"	/* 1 */
+ 452               		.ascii	" 16450 \0"	/* 2 */
+ 453               		.ascii	" 16550 \0"
+ 454               		.ascii	" 16550A\0"	/* 4 */
+ 455               		.ascii	" 16550C\0"
+ 456               		.ascii	" 16750 \0"	/* 6 */
+ 457               	.endif
+ 458               	
+ 459               		.bss
+ 460               	#	.comm	PASS,4,4
+ 461               	#	.comm	EPASS,4,4
+ 462               	.if !RETAIL
+ 463               		.comm	debug,2,2
+ 464               	.endif	
+ 465               		
+ 466               		
+ 467               		.text
+ 468               		.align 4
+ 469               	dram:
+ 470               	.if CPU<68020
+ 471 041c 0000 0000 		.long	0x00000000
+ 472 0420 0000 8000 		.long	0x00008000	/* lowest 32K */
+ 473 0424 0000 0001 		.long	1
+ 474               	
+ 475 0428 0000 8000 		.long	0x00008000
+ 476 042c 0008 0000 		.long	0x00080000	/* to 512k */
+ 477 0430 0000 0002 		.long	2
+ 478               		
+ 479 0434 0000 0002 		.long	0x00000002	/* unaligned */
+ 480 0438 0007 FFFE 		.long	0x0007fffe
+ 481 043c 0000 0003 		.long	3
+ 482               		
+ 483 0440 0008 0000 		.long	0x00080000	/* second 512K */
+ 484 0444 0010 0000 		.long	0x00100000
+ 485 0448 0000 0004 		.long	4
+ 486               		
+ 487 044c 0007 0002 		.long	0x00070002
+ 488 0450 000B FFFE 		.long	0x000BFFFE
+ 489 0454 0000 0005 		.long	5
+ 490               		
+68K GAS  memtest3.s 			page 11
+
+
+ 491 0458 0010 0000 		.long	0x00100000	/* third 512K */
+ 492 045c 0018 0000 		.long	0x00180000
+ 493 0460 0000 0006 		.long	6
+ 494               		
+ 495 0464 0018 0000 		.long	0x00180000
+ 496 0468 0020 0000 		.long	0x00200000
+ 497 046c 0000 0007 		.long	7
+ 498               		
+ 499 0470 0017 002E 		.long	0x0017002E
+ 500 0474 001C 1002 		.long	0x001C1002
+ 501 0478 0000 0008 		.long	8
+ 502               		
+ 503 047c 0000 0002 		.long	2
+ 504 0480 001F FFFE 		.long	0x001ffffe
+ 505 0484 0000 0009 		.long	9
+ 506               	.else		
+ 507               		
+ 508               	
+ 509               	dram16:
+ 510               		.long	0x00000000		/* lowest 64K */
+ 511               		.long	0x00010000
+ 512               		.long	00
+ 513               		
+ 514               		.long	0x00010000
+ 515               		.long	0x01000000		/* 16 meg */
+ 516               		.long	10			/* display */
+ 517               	
+ 518               		.long	0x00000000+2
+ 519               		.long	0x01000000-2		/* 16 meg */
+ 520               		.long	10			/* display */
+ 521               	
+ 522               		.long	0x00000000+1
+ 523               		.long	0x01000000-3		/* 16 meg */
+ 524               		.long	10			/* display */
+ 525               	
+ 526               		.long	0x00000000+3
+ 527               		.long	0x01000000-1		/* 16 meg */
+ 528               		.long	10			/* display */
+ 529               	
+ 530               		.long	0x01000000
+ 531               		.long	0x02000000
+ 532               		.long	11
+ 533               		
+ 534               		.long	0x01000000-254
+ 535               		.long	0x02000000-254
+ 536               		.long	11
+ 537               		
+ 538               		.long	0x01000000-255
+ 539               		.long	0x02000000-255
+ 540               		.long	11
+ 541               		
+ 542               		.long	0x01000000-253
+ 543               		.long	0x02000000-253
+ 544               		.long	11
+ 545               		
+ 546               		.long	0x02000000
+ 547               		.long	0x03000000
+68K GAS  memtest3.s 			page 12
+
+
+ 548               		.long	12
+ 549               		
+ 550               		.long	0x02000000-254
+ 551               		.long	0x03000000-254
+ 552               		.long	12
+ 553               		
+ 554               		.long	0x02000000-255
+ 555               		.long	0x03000000-255
+ 556               		.long	12
+ 557               		
+ 558               		.long	0x02000000-253
+ 559               		.long	0x03000000-253
+ 560               		.long	12
+ 561               		
+ 562               		.long	0x03000000
+ 563               		.long	0x04000000		/* now at 64Mb */
+ 564               		.long	13
+ 565               		
+ 566               		.long	0x03000000-254
+ 567               		.long	0x04000000-254		/* now at 64Mb */
+ 568               		.long	13
+ 569               		
+ 570               		.long	0x03000000-255
+ 571               		.long	0x04000000-255		/* now at 64Mb */
+ 572               		.long	13
+ 573               		
+ 574               		.long	0x03000000-253
+ 575               		.long	0x04000000-253		/* now at 64Mb */
+ 576               		.long	13
+ 577               		
+ 578               		.long	0x04000000
+ 579               		.long	0x08000000
+ 580               		.long	14
+ 581               		
+ 582               		.long	0x04000000-253
+ 583               		.long	0x08000000-253
+ 584               		.long	14
+ 585               		
+ 586               		.long	0x04000000-254
+ 587               		.long	0x08000000-254
+ 588               		.long	14
+ 589               		
+ 590               		.long	0x04000000-255
+ 591               		.long	0x08000000-255
+ 592               		.long	14
+ 593               		
+ 594               		.long	0x08000000
+ 595               		.long	0x0C000000
+ 596               		.long	15
+ 597               		
+ 598               		.long	0x08000000-253
+ 599               		.long	0x0C000000-253
+ 600               		.long	15
+ 601               		
+ 602               		.long	0x08000000-254
+ 603               		.long	0x0C000000-254
+ 604               		.long	15
+68K GAS  memtest3.s 			page 13
+
+
+ 605               		
+ 606               		.long	0x08000000-255
+ 607               		.long	0x0C000000-255
+ 608               		.long	15
+ 609               		
+ 610               		.long	0x0C000000
+ 611               		.long	0x10000000		/* full 256Mb */
+ 612               		.long	16
+ 613               	
+ 614               		.long	0x0C000000-253
+ 615               		.long	0x10000000-253		/* full 256Mb */
+ 616               		.long	16
+ 617               	
+ 618               		.long	0x0C000000-254
+ 619               		.long	0x10000000-254		/* full 256Mb */
+ 620               		.long	16
+ 621               	
+ 622               		.long	0x0C000000-255
+ 623               		.long	0x10000000-255		/* full 256Mb */
+ 624               		.long	16
+ 625               	
+ 626               	
+ 627               	.endif	/* if 0 */
+ 628               	
+ 629 0488 FFFF FFFF 		.long	-1			/* end marker */
+ 630 048c FFFF FFFF 		.long	-1			/* end marker */
+ 631 0490 FFFF FFFF 		.long	-1			/* end marker */
+ 632 0494 FFFF FFFF 		.long	-1			/* end marker */
+ 633               	
+ 634               	
+ 635               	
+ 636               	#################################################
+ 637               	#################################################
+ 638               	#################################################
+ 639               	
+ 640               	/*
+ 641               	   Enter with:
+ 642               		A1 is the address to test
+ 643               		A6 is the return address
+ 644               	
+ 645               	   Returns:
+ 646               		D6 is the compare failure count
+ 647               	
+ 648               	*/
+ 649               		.text
+ 650               		.align 4
+ 651               	
+ 652               	bytetest:
+ 653 0498 4286      		clr.l	%d6
+ 654               	
+ 655 049a 22BC 0102 		move.l	#0x01020408,(%a1)
+ 655      0408 
+ 656 04a0 4E71      		nop
+ 657               	
+ 658 04a2 0C11 0001 		cmp.b	#0x01,0(%a1)
+ 659 04a6 6702      		jbeq	bt1
+ 660 04a8 5246      		add	#1,%d6
+68K GAS  memtest3.s 			page 14
+
+
+ 661               	bt1:
+ 662 04aa 0C29 0002 		cmp.b	#0x02,1(%a1)
+ 662      0001 
+ 663 04b0 6702      		jbeq	bt2
+ 664 04b2 5446      		add	#2,%d6
+ 665               	bt2:
+ 666 04b4 0C29 0004 		cmp.b	#0x04,2(%a1)
+ 666      0002 
+ 667 04ba 6702      		jbeq	bt4
+ 668 04bc 5846      		add	#4,%d6
+ 669               	bt4:
+ 670 04be 0C29 0008 		cmp.b	#0x08,3(%a1)
+ 670      0003 
+ 671 04c4 6702      		jbeq	bt8
+ 672 04c6 5046      		add	#8,%d6
+ 673               	bt8:
+ 674 04c8 0C69 0408 		cmp.w	#0x0408,2(%a1)
+ 674      0002 
+ 675 04ce 6704      		jbeq	bw2
+ 676 04d0 0646 0020 		add	#32,%d6
+ 677               	bw2:
+ 678 04d4 0C51 0102 		cmp.w	#0x0102,(%a1)
+ 679 04d8 6704      		jbeq	bw1
+ 680 04da 0646 0010 		add	#16,%d6
+ 681               	bw1:
+ 682               	.if CPU>68010
+ 683               		cmp.w	#0x0204,1(%a1)		/* unaligned word access on 68000 */
+ 684               	.else
+ 685 04de 1029 0001 		move.b	1(%a1),%d0
+ 686 04e2 E148      		lsl.w	#8,%d0
+ 687 04e4 1029 0002 		move.b	2(%a1),%d0
+ 688 04e8 0C40 0204 		cmp.w	#0x0204,%d0
+ 689               	.endif
+ 690 04ec 6704      		jbeq	bw3
+ 691 04ee 0646 0040 		add	#64,%d6
+ 692               	bw3:
+ 693               	#	move.b	#0x10,(%a1)		/* usual */
+ 694 04f2 12BC 0010 		move.b	#0x10,0(%a1)		/* does this hiccup on the 68008? */
+ 695 04f6 0C91 1002 		cmp.l	#0x10020408,(%a1)
+ 695      0408 
+ 696 04fc 6702      		jbeq	bb1
+ 697 04fe 5246      		add	#1,%d6
+ 698               	bb1:
+ 699 0500 137C 0020 		move.b	#0x20,1(%a1)
+ 699      0001 
+ 700 0506 0C91 1020 		cmp.l	#0x10200408,(%a1)
+ 700      0408 
+ 701 050c 6702      		jbeq	bb2
+ 702 050e 5446      		add	#2,%d6
+ 703               	bb2:
+ 704 0510 137C 0030 		move.b	#0x30,2(%a1)
+ 704      0002 
+ 705 0516 0C91 1020 		cmp.l	#0x10203008,(%a1)
+ 705      3008 
+ 706 051c 6702      		jbeq	bb3
+ 707 051e 5846      		add	#4,%d6
+ 708               	bb3:
+68K GAS  memtest3.s 			page 15
+
+
+ 709 0520 137C 0080 		move.b	#0x80,3(%a1)
+ 709      0003 
+ 710 0526 0C91 1020 		cmp.l	#0x10203080,(%a1)
+ 710      3080 
+ 711 052c 6702      		jbeq	bb4
+ 712 052e 5046      		add	#8,%d6
+ 713               	bb4:
+ 714               	.if CPU>68010
+ 715               		move.w	#0x0204,1(%a1)		/* unaligned word access on 68000 */
+ 716               	.else
+ 717 0530 137C 0002 		move.b	#0x02,1(%a1)
+ 717      0001 
+ 718 0536 137C 0004 		move.b	#0x04,2(%a1)
+ 718      0002 
+ 719               	.endif
+ 720 053c 0C91 1002 		cmp.l	#0x10020480,(%a1)
+ 720      0480 
+ 721 0542 6704      		jbeq	bb5
+ 722 0544 0646 0040 		add	#64,%d6
+ 723               	bb5:
+ 724 0548 32BC 1122 		move.w	#0x1122,0(%a1)
+ 725 054c 0C91 1122 		cmp.l	#0x11220480,(%a1)
+ 725      0480 
+ 726 0552 6704      		jbeq	bb6
+ 727 0554 0646 0010 		add	#16,%d6
+ 728               	bb6:
+ 729 0558 337C 3344 		move.w	#0x3344,2(%a1)
+ 729      0002 
+ 730 055e 0C91 1122 		cmp.l	#0x11223344,(%a1)
+ 730      3344 
+ 731 0564 6704      		jbeq	bb7
+ 732 0566 0646 0020 		add	#32,%d6
+ 733               	bb7:
+ 734               	
+ 735               	
+ 736               	/* the sulfuric acid test */
+ 737 056a 48E7 FFFE 		movm.l	%d0-%d7/%a0-%a6,-(%sp)
+ 738               	
+ 739 056e 48E9 7FFF 		movm.l	%d0-%d7/%a0-%a6,2(%a1)	/* pound into memory */
+ 739      0002 
+ 740               	
+ 741 0574 4CE9 7FFF 		movm.l	2(%a1),%d0-%d7/%a0-%a6	/* retrieve from mem. */
+ 741      0002 
+ 742               	
+ 743 057a B097      		cmp.l	(%sp),%d0
+ 744 057c 6652      		jbne	err6
+ 745 057e B2AF 0004 		cmp.l	4(%sp),%d1
+ 746 0582 664C      		jbne	err6
+ 747 0584 B4AF 0008 		cmp.l	8(%sp),%d2
+ 748 0588 6646      		jbne	err6
+ 749 058a B6AF 000C 		cmp.l	12(%sp),%d3
+ 750 058e 6640      		jbne	err6
+ 751 0590 B8AF 0010 		cmp.l	16(%sp),%d4
+ 752 0594 663A      		jbne	err6
+ 753 0596 BAAF 0014 		cmp.l	20(%sp),%d5
+ 754 059a 6634      		jbne	err6
+ 755 059c BCAF 0018 		cmp.l	24(%sp),%d6
+68K GAS  memtest3.s 			page 16
+
+
+ 756 05a0 662E      		jbne	err6
+ 757 05a2 BEAF 001C 		cmp.l	28(%sp),%d7
+ 758 05a6 6628      		jbne	err6
+ 759 05a8 B1EF 0020 		cmp.l	32(%sp),%a0
+ 760 05ac 6622      		jbne	err6
+ 761               	
+ 762 05ae 41EF 0024 		lea	36(%sp),%a0
+ 763 05b2 B3D8      		cmp.l	(%a0)+,%a1
+ 764 05b4 661A      		jbne	err6
+ 765 05b6 B5D8      		cmp.l	(%a0)+,%a2
+ 766 05b8 6616      		jbne	err6
+ 767 05ba B7D8      		cmp.l	(%a0)+,%a3
+ 768 05bc 6612      		jbne	err6
+ 769 05be B9D8      		cmp.l	(%a0)+,%a4
+ 770 05c0 660E      		jbne	err6
+ 771 05c2 BBD8      		cmp.l	(%a0)+,%a5
+ 772 05c4 660A      		jbne	err6
+ 773 05c6 BDD8      		cmp.l	(%a0)+,%a6
+ 774 05c8 6606      		jbne	err6
+ 775               	
+ 776 05ca 4CDF 7FFF 		movm.l	(%sp)+,%d0-%d7/%a0-%a6	/* restore */
+ 777 05ce 6008      		jbra	noerr7	
+ 778               	err6:
+ 779 05d0 4CDF 7FFF 		movm.l	(%sp)+,%d0-%d7/%a0-%a6	/* restore */
+ 780 05d4 0606 0080 		add.b	#128,%d6		/* set error code */
+ 781               	noerr7:
+ 782 05d8 4E75      		rts
+ 783               		
+ 784               		
+ 785               	#################################################
+68K GAS  memtest3.s 			page 17
+
+
+DEFINED SYMBOLS
+                            *ABS*:000109a0 CPU
+                            *ABS*:00000001 RETAIL
+          memtest3.s:29     *ABS*:12edb748 TEST_PATTERN0
+          memtest3.s:30     *ABS*:63c1c783 TEST_PATTERN1
+          memtest3.s:31     *ABS*:b38f0f83 TEST_PATTERN2
+          memtest3.s:32     *ABS*:0635f570 TEST_PATTERN3
+          memtest3.s:33     *ABS*:81020410 PATTERN_SRAM
+          memtest3.s:34     *ABS*:965ac279 XOR_PATTERN
+          memtest3.s:91     .text:00000010 _memtest3
+          memtest3.s:83     .text:00000002 _memtest0
+          memtest3.s:81     .text:00000000 memtest0
+          memtest3.s:89     .text:0000000e memtest3
+          memtest3.s:109    .text:00000028 mt_start3
+          memtest3.s:104    .text:00000022 mt_loop1
+          memtest3.s:106    .text:00000024 mt_loop2
+          memtest3.s:128    .text:00000042 mt_start4
+          memtest3.s:125    .text:0000003e mt_error1
+          memtest3.s:139    .text:00000050 mt_start5
+          memtest3.s:133    .text:0000004a mt_loop3
+          memtest3.s:135    .text:0000004c mt_loop4
+          memtest3.s:159    *ABS*:00000000 DEBUG
+          memtest3.s:183    .text:00000060 DRAM_tests
+          memtest3.s:209    .text:0000006c ds0
+          memtest3.s:228    .text:0000008a ds9
+          memtest3.s:271    .text:000000d8 ds12
+          memtest3.s:433    .text:00000267 err_hma
+          memtest3.s:264    .text:000000c0 ds11
+          memtest3.s:434    .text:00000284 hma2
+          memtest3.s:436    .text:00000293 heading
+          memtest3.s:301    .text:00000130 dt00
+          memtest3.s:284    .text:000000f0 dt0
+          memtest3.s:429    .text:00000220 str2
+          memtest3.s:430    .text:0000022a str3
+          memtest3.s:431    .text:00000247 str4
+          memtest3.s:469    .text:0000041c dram
+          memtest3.s:308    .text:0000013c dt1
+          memtest3.s:374    .text:000001e4 dt6
+          memtest3.s:326    .text:00000162 dt2
+          memtest3.s:349    .text:000001b2 dt20
+          memtest3.s:352    .text:000001b8 dt3
+          memtest3.s:404    .text:000001ec passfail
+          memtest3.s:372    .text:000001de dt5
+          memtest3.s:432    .text:00000262 strB
+          memtest3.s:652    .text:00000498 bytetest
+          memtest3.s:427    .text:00000214 str5pass
+          memtest3.s:417    .text:00000208 pf2
+          memtest3.s:428    .text:0000021a str5fail
+          memtest3.s:661    .text:000004aa bt1
+          memtest3.s:665    .text:000004b4 bt2
+          memtest3.s:669    .text:000004be bt4
+          memtest3.s:673    .text:000004c8 bt8
+          memtest3.s:677    .text:000004d4 bw2
+          memtest3.s:681    .text:000004de bw1
+          memtest3.s:692    .text:000004f2 bw3
+          memtest3.s:698    .text:00000500 bb1
+          memtest3.s:703    .text:00000510 bb2
+68K GAS  memtest3.s 			page 18
+
+
+          memtest3.s:708    .text:00000520 bb3
+          memtest3.s:713    .text:00000530 bb4
+          memtest3.s:723    .text:00000548 bb5
+          memtest3.s:728    .text:00000558 bb6
+          memtest3.s:733    .text:0000056a bb7
+          memtest3.s:778    .text:000005d0 err6
+          memtest3.s:781    .text:000005d8 noerr7
+
+UNDEFINED SYMBOLS
+crlf
+space
+woutD
+lout
+sio_put
+put_string
+memmax
+h_m_a

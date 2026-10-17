@@ -33,6 +33,7 @@
 #include "ikbd.h"
 #include "midi.h"
 #include "amiga.h"
+#include "mini68k.h"
 
 #define DISPLAY_INSTRUCTION_AT_PC   0   /* set to 1 for extra info from dopanic() */
 #define DISPLAY_STACK               0   /* set to 1 for extra info from dopanic() */
@@ -153,6 +154,17 @@ static void kprintf_outc_coldfire_rs232(int c)
 }
 #endif
 
+#if MINI68K_DEBUG_PRINT
+static void kprintf_outc_mini68k(int c)
+{
+    /* Raw terminals usually require CRLF */
+    if (c == '\n')
+        mini68k_uart_write_byte('\r');
+
+    mini68k_uart_write_byte((UBYTE)c);
+}
+#endif
+
 static int vkprintf(const char *fmt, va_list ap)
 {
 #if CONSOLE_DEBUG_PRINT
@@ -202,6 +214,23 @@ static int vkprintf(const char *fmt, va_list ap)
 
 #if COLDFIRE_DEBUG_PRINT
     return doprintf(kprintf_outc_coldfire_rs232, fmt, ap);
+#endif
+
+#if MINI68K_DEBUG_PRINT
+    {
+        /* The UART is set up by the board BIOS, so it is always usable.
+         * But the ECB I/O space is only decoded in supervisor mode. */
+        int rc;
+        char *stacksave = NULL;
+
+        if (boot_status&DOS_AVAILABLE)  /* if Super() is available, */
+            if (!Super(1L))             /* check for user state.    */
+                stacksave = (char *)Super(0L);  /* if so, switch to super   */
+        rc = doprintf(kprintf_outc_mini68k, fmt, ap);
+        if (stacksave)                  /* if we switched, */
+            SuperToUser(stacksave);     /* switch back.    */
+        return rc;
+    }
 #endif
 
 #if MIDI_DEBUG_PRINT

@@ -1,0 +1,64 @@
+68K GAS  bioscall.s 			page 1
+
+
+   1               	#  bioscall.s
+   2               	/*
+   3               		Copyright (C) 2011 John R. Coffman.
+   4               		Licensed for hobbyist use on the N8VEM baby M68k CPU board.
+   5               	***********************************************************************
+   6               	
+   7               	    This program is free software: you can redistribute it and/or modify
+   8               	    it under the terms of the GNU General Public License as published by
+   9               	    the Free Software Foundation, either version 3 of the License, or
+  10               	    (at your option) any later version.
+  11               	
+  12               	    This program is distributed in the hope that it will be useful,
+  13               	    but WITHOUT ANY WARRANTY; without even the implied warranty of
+  14               	    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  15               	    GNU General Public License for more details.
+  16               	
+  17               	    You should have received a copy of the GNU General Public License
+  18               	    in the file COPYING in the distribution directory along with this
+  19               	    program.  If not, see <http://www.gnu.org/licenses/>.
+  20               	
+  21               	**********************************************************************/
+  22               	/*  C-callable:
+  23               	
+  24               	      int bios_call ( struct REGS *in, struct REGS *out );
+  25               	*/
+  26               		.globl	bios_call
+  27               	bios_call:
+  28 0000 4E56 0000 		link	%a6,#0
+  29 0004 48E7 3F3C 		movm.l	%d2-%d7/%a2-%a5,-(%sp)
+  30               	
+  31 0008 206E 0008 		move.l	8(%a6),%a0
+  32 000c 4CD0 3FFF 		movm.l	(%a0),%d0-%d7/%a0-%a5
+  33 0010 4E48      		trap	#8
+  34               	.if CPU<68010
+  35 0012 40E7      		move.w	%sr,-(%sp)
+  36 0014 4217      		clr.b	(%sp)
+  37               	.else
+  38               		move.w	%ccr,-(%sp)
+  39               	.endif
+  40 0016 4267      		clr.w	-(%sp)
+  41 0018 2F0D      		move.l	%a5,-(%sp)
+  42 001a 2A6E 000C 		move.l	12(%a6),%a5
+  43 001e 48D5 1FFF 		movm.l	%d0-%d7/%a0-%a4,(%a5)
+  44 0022 2B5F 0034 		move.l	(%sp)+,52(%a5)
+  45 0026 2B5F 0038 		move.l	(%sp)+,56(%a5)
+  46               	
+  47 002a 4CEE 3CFC 		movm.l	-40(%a6),%d2-%d7/%a2-%a5
+  47      FFD8 
+  48 0030 4E5E      		unlk	%a6
+  49 0032 4E75      		rts
+  50               	
+  51               		.end
+68K GAS  bioscall.s 			page 2
+
+
+DEFINED SYMBOLS
+                            *ABS*:000109a0 CPU
+                            *ABS*:00000001 RETAIL
+          bioscall.s:27     .text:00000000 bios_call
+
+NO UNDEFINED SYMBOLS

@@ -624,6 +624,56 @@
 #endif
 
 /*
+ * Defaults for the RetroBrew Mini-M68k machine
+ * (MC68008 CPU board + MF/PIC board on the ECB bus).
+ *
+ * EmuTOS is loaded by the board BIOS from a FAT volume into RAM at
+ * MINI68K_LOAD_ADDRESS, and runs from there as if it were a ROM.
+ * The RAM below MINI68K_LOAD_ADDRESS is used as ST-RAM.
+ */
+#ifdef MACHINE_MINI68K
+# ifndef MINI68K_LOAD_ADDRESS
+#  define MINI68K_LOAD_ADDRESS 0x180000
+# endif
+# ifndef MINI68K_RAM_TOP
+#  define MINI68K_RAM_TOP 0x200000  /* 2 MB SRAM fitted */
+# endif
+# ifndef CONF_ATARI_HARDWARE
+#  define CONF_ATARI_HARDWARE 0
+# endif
+# ifndef CONF_STRAM_SIZE
+#  define CONF_STRAM_SIZE MINI68K_LOAD_ADDRESS
+# endif
+# ifndef CONF_WITH_ADVANCED_CPU
+#  define CONF_WITH_ADVANCED_CPU 0
+# endif
+# ifndef CONF_WITH_APOLLO_68080
+#  define CONF_WITH_APOLLO_68080 0
+# endif
+# ifndef CONF_WITH_CACHE_CONTROL
+#  define CONF_WITH_CACHE_CONTROL 0
+# endif
+  /* The board's RESET line also resets the ECB cards; we initialise
+   * the MF/PIC devices ourselves instead. */
+# ifndef CONF_WITH_RESET
+#  define CONF_WITH_RESET 0
+# endif
+# ifndef CONF_SERIAL_CONSOLE
+#  define CONF_SERIAL_CONSOLE 1
+# endif
+  /* Debug output goes directly to the MF/PIC 16550, not via the MFP */
+# ifndef RS232_DEBUG_PRINT
+#  define RS232_DEBUG_PRINT 0
+# endif
+# ifndef MINI68K_DEBUG_PRINT
+#  define MINI68K_DEBUG_PRINT 1
+# endif
+# ifndef ALWAYS_SHOW_INITINFO
+#  define ALWAYS_SHOW_INITINFO 1
+# endif
+#endif
+
+/*
  * Defaults for the M548x machine
  */
 #ifdef MACHINE_M548X
@@ -1973,6 +2023,14 @@
 #endif
 
 /*
+ * Set MINI68K_DEBUG_PRINT to 1 to redirect debug prints to the Mini-M68k
+ * MF/PIC 16550 UART (polled, usable from the very first instruction)
+ */
+#ifndef MINI68K_DEBUG_PRINT
+# define MINI68K_DEBUG_PRINT 0
+#endif
+
+/*
  * Set MIDI_DEBUG_PRINT to 1 to redirect debug prints to MIDI out.  This
  * is useful for an emulator without any native debug print capabilities,
  * or for real hardware. This overrides previous debug print settings.
@@ -1999,7 +2057,7 @@
 
 
 /* Determine if kprintf() is available */
-#if CONF_WITH_UAE || DETECT_NATIVE_FEATURES || STONX_NATIVE_PRINT || CONSOLE_DEBUG_PRINT || RS232_DEBUG_PRINT || SCC_DEBUG_PRINT || COLDFIRE_DEBUG_PRINT || MIDI_DEBUG_PRINT || CARTRIDGE_DEBUG_PRINT
+#if CONF_WITH_UAE || DETECT_NATIVE_FEATURES || STONX_NATIVE_PRINT || CONSOLE_DEBUG_PRINT || RS232_DEBUG_PRINT || SCC_DEBUG_PRINT || COLDFIRE_DEBUG_PRINT || MINI68K_DEBUG_PRINT || MIDI_DEBUG_PRINT || CARTRIDGE_DEBUG_PRINT
 #  define HAS_KPRINTF 1
 # else
 #  define HAS_KPRINTF 0
@@ -2201,8 +2259,14 @@
 # endif
 #endif
 
-#if (CONSOLE_DEBUG_PRINT + RS232_DEBUG_PRINT + SCC_DEBUG_PRINT + COLDFIRE_DEBUG_PRINT + MIDI_DEBUG_PRINT + CARTRIDGE_DEBUG_PRINT) > 1
-# error Only one of CONSOLE_DEBUG_PRINT, RS232_DEBUG_PRINT, SCC_DEBUG_PRINT, COLDFIRE_DEBUG_PRINT, MIDI_DEBUG_PRINT or CARTRIDGE_DEBUG_PRINT must be set to 1.
+#ifndef MACHINE_MINI68K
+# if MINI68K_DEBUG_PRINT
+#  error MINI68K_DEBUG_PRINT requires MACHINE_MINI68K.
+# endif
+#endif
+
+#if (CONSOLE_DEBUG_PRINT + RS232_DEBUG_PRINT + SCC_DEBUG_PRINT + COLDFIRE_DEBUG_PRINT + MINI68K_DEBUG_PRINT + MIDI_DEBUG_PRINT + CARTRIDGE_DEBUG_PRINT) > 1
+# error Only one of CONSOLE_DEBUG_PRINT, RS232_DEBUG_PRINT, SCC_DEBUG_PRINT, COLDFIRE_DEBUG_PRINT, MINI68K_DEBUG_PRINT, MIDI_DEBUG_PRINT or CARTRIDGE_DEBUG_PRINT must be set to 1.
 #endif
 
 

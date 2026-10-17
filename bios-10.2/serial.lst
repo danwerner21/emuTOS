@@ -1,0 +1,552 @@
+68K GAS  serial.s 			page 1
+
+
+   1               	/*  serial.s  */
+   2               	/*
+   3               		Copyright (C) 2011 John R. Coffman.
+   4               		Licensed for hobbyist use on the N8VEM baby M68k CPU board.
+   5               	***********************************************************************
+   6               	
+   7               	    This program is free software: you can redistribute it and/or modify
+   8               	    it under the terms of the GNU General Public License as published by
+   9               	    the Free Software Foundation, either version 3 of the License, or
+  10               	    (at your option) any later version.
+  11               	
+  12               	    This program is distributed in the hope that it will be useful,
+  13               	    but WITHOUT ANY WARRANTY; without even the implied warranty of
+  14               	    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  15               	    GNU General Public License for more details.
+  16               	
+  17               	    You should have received a copy of the GNU General Public License
+  18               	    in the file COPYING in the distribution directory along with this
+  19               	    program.  If not, see <http://www.gnu.org/licenses/>.
+  20               	
+  21               	**********************************************************************/
+  22               	.include  "siodef.s"
+   1               	#  siodef.s
+   2               	/*
+   3               		Copyright (C) 2011 John R. Coffman.
+   4               		Licensed for hobbyist use on the N8VEM baby M68k CPU board.
+   5               	***********************************************************************
+   6               	
+   7               	    This program is free software: you can redistribute it and/or modify
+   8               	    it under the terms of the GNU General Public License as published by
+   9               	    the Free Software Foundation, either version 3 of the License, or
+  10               	    (at your option) any later version.
+  11               	
+  12               	    This program is distributed in the hope that it will be useful,
+  13               	    but WITHOUT ANY WARRANTY; without even the implied warranty of
+  14               	    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  15               	    GNU General Public License for more details.
+  16               	
+  17               	    You should have received a copy of the GNU General Public License
+  18               	    in the file COPYING in the distribution directory along with this
+  19               	    program.  If not, see <http://www.gnu.org/licenses/>.
+  20               	
+  21               	**********************************************************************/
+  22               	#
+  23               	.ifndef	_siodef_s
+  24               	_siodef_s	=	1
+  25               	.include  "mfpic.s"
+   1               	#  mfpic.s
+   2               	/*
+   3               		Copyright (C) 2011 John R. Coffman.
+   4               		Licensed for hobbyist use on the N8VEM baby M68k CPU board.
+   5               	***********************************************************************
+   6               	
+   7               	    This program is free software: you can redistribute it and/or modify
+   8               	    it under the terms of the GNU General Public License as published by
+   9               	    the Free Software Foundation, either version 3 of the License, or
+  10               	    (at your option) any later version.
+68K GAS  serial.s 			page 2
+
+
+  11               	
+  12               	    This program is distributed in the hope that it will be useful,
+  13               	    but WITHOUT ANY WARRANTY; without even the implied warranty of
+  14               	    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  15               	    GNU General Public License for more details.
+  16               	
+  17               	    You should have received a copy of the GNU General Public License
+  18               	    in the file COPYING in the distribution directory along with this
+  19               	    program.  If not, see <http://www.gnu.org/licenses/>.
+  20               	
+  21               	**********************************************************************/
+  22               	.ifndef _mfpic_s
+  23               	_mfpic_s 	=	1
+  24               	
+  25               	# Z80 port address of MF/PIC board (required)
+  26               	mf_pic		=	0x40
+  27               	
+  28               	# Mini-M68k I/O address base
+  29               	BOARD_BASE_IO	=	0xFFFF8000
+  30               	
+  31               	# board base address:
+  32               	mfpic_base      =       BOARD_BASE_IO + mf_pic
+  33               	
+  34               	mf_sio          =       mfpic_base + 8
+  35               	mf_ppi          =       mfpic_base + 4
+  36               	mf_rtc          =       mfpic_base + 3
+  37               	mf_cfg          =       mfpic_base + 2
+  38               	mf_202          =       mfpic_base + 0
+  39               	
+  40               	
+  41               	.endif
+  42               	
+  43               	
+  26               	############################################################
+  27               	
+  28               	
+  29               	/* Define the 8250, 16450, 16550, 16C550, 16C750 registers  */
+  30               	
+  31               	sio_thr         = 0+mf_sio	/* transmitter holding register  */
+  32               	sio_rbr		= 0+mf_sio	/* receiver buffer register  */
+  33               	sio_ier		= 1+mf_sio	/* interrupt enable register  */
+  34               	sio_iir		= 2+mf_sio	/* interrupt ident register (r/only)  */
+  35               	sio_lcr		= 3+mf_sio	/* line control register  */
+  36               	sio_mcr		= 4+mf_sio	/* modem control register  */
+  37               	sio_lsr		= 5+mf_sio	/* line status register  */
+  38               	sio_msr		= 6+mf_sio	/* modem status register  */
+  39               	sio_scr		= 7+mf_sio	/* scratch register  */
+  40               	
+  41               	sio_dll		=	sio_rbr	/* divisor latch lsbyte  */
+  42               	sio_dlm		=	sio_ier	/* divisor latch msbyte  */
+  43               	
+  44               	/*  define the ier (interrupt enable bits)  */
+  45               	
+  46               	sio_ier_erbfi	=	0x01	/* enable received data available interrupt  */
+  47               	sio_ier_ethei	=	0x02	/* enable transm holding reg empty interrupt  */
+  48               	sio_ier_elsi	=	0x04	/* enable receiver line status interrupt  */
+  49               	sio_ier_edssi	=	0x08	/* enable modem (data set) status interrupt  */
+68K GAS  serial.s 			page 3
+
+
+  50               	
+  51               	
+  52               	/*  define the iir (interrupt ident) bit settings  */
+  53               	
+  54               	sio_iir_none	=	0x01	/* no interrupt is pending  */
+  55               	sio_iir_rls 	=	0x06	/* receiver line status int. (highest priority)  */
+  56               	sio_iir_rda    	=	0x04	/* received data available  */
+  57               	sio_iir_thre	=	0x02	/* transmitter holding register empty  */
+  58               	sio_iir_dss	=	0x00	/* modem (data set) status  */
+  59               	
+  60               	sio_iir_none_bn	=	0x00	/* bit zero is no-int-pending bit  */
+  61               	
+  62               	
+  63               	/*  define the lcr (line control register) bit settings  */
+  64               	
+  65               	sio_lcr_5bits	=	0x00	/* select 5 data bits  */
+  66               	sio_lcr_6bits	=	0x01	/* select 6 data bits  */
+  67               	sio_lcr_7bits	=	0x02	/* select 7 data bits  */
+  68               	sio_lcr_8bits	=	0x03	/* select 8 data bits  */
+  69               	sio_lcr_bit_msk	=	0x03	/* mask for data word length select  */
+  70               	sio_lcr_stb2	=	0x04	/* select 2 stop bits  */
+  71               	sio_lcr_pen	=	0x08	/* parity enable  */
+  72               	sio_lcr_eps	=	0x10	/* even parity select  */
+  73               	sio_lcr_stick	=	0x20	/* stick parity  */
+  74               	sio_lcr_break	=	0x40	/* set break condition on line  */
+  75               	sio_lcr_dlab	=	0x80	/* divisor latch access bit  */
+  76               	
+  77               	
+  78               	/*  define the mcr (modem control register) bits  */
+  79               	
+  80               	sio_mcr_dtr	=	0x01	/* data terminal ready  */
+  81               	sio_mcr_rts	=	0x02	/* request to send  */
+  82               	sio_mcr_out1	=	0x04	/* user defined output 1  */
+  83               	sio_mcr_out2	=	0x08	/* user defined output 2  */
+  84               	sio_mcr_loop	=	0x10	/* diagnostic loopback mode  */
+  85               	
+  86               	
+  87               	/*  define the lsr (line status register) bit settings  */
+  88               	
+  89               	sio_lsr_dr	=	0x01	/* data ready  */
+  90               	sio_lsr_dr_bit	=	0
+  91               	sio_lsr_oe	=	0x02	/* overrun error  */
+  92               	sio_lsr_oe_bit	=	1
+  93               	sio_lsr_pe	=	0x04	/* parity error  */
+  94               	sio_lsr_pe_bit	=	2
+  95               	sio_lsr_fe	=	0x08	/* framing error  */
+  96               	sio_lsr_fe_bit	=	3
+  97               	sio_lsr_bi	=	0x10	/* break interrupt  */
+  98               	sio_lsr_bi_bit	=	4
+  99               	sio_lsr_thre	=	0x20	/* transmitter holding register empty  */
+ 100               	sio_lsr_thre_bit	=	5
+ 101               	sio_lsr_temt	=	0x40	/* transmitter empty  */
+ 102               	sio_lsr_temt_bit	=	6
+ 103               	
+ 104               	
+ 105               	/*  define the msr (modem status register) bit settings  */
+ 106               	
+68K GAS  serial.s 			page 4
+
+
+ 107               	sio_msr_dcts	=	0x01	/* delta clear to send  */
+ 108               	sio_msr_ddsr	=	0x02	/* delta data set ready  */
+ 109               	sio_msr_teri	=	0x04	/* trailing edge ring indicator  */
+ 110               	sio_msr_ddcd	=	0x08	/* delta data carrier detect  */
+ 111               	sio_msr_cts	=	0x10	/* clear to send  */
+ 112               	sio_msr_dsr	=	0x20	/* data set ready  */
+ 113               	sio_msr_ri	=	0x40	/* ring indicator  */
+ 114               	sio_msr_dcd	=	0x80	/* data carrier detect  */
+ 115               	
+ 116               	
+ 117               	.endif
+ 118               	
+ 119               	
+  23               	############################################################
+  24               	.include  "biostrap.s"
+   1               	#  biostrap.s
+   2               	/*
+   3               		Copyright (C) 2011,2015 John R. Coffman.
+   4               		Licensed for hobbyist use only.
+   5               	***********************************************************************
+   6               	
+   7               	    This program is free software: you can redistribute it and/or modify
+   8               	    it under the terms of the GNU General Public License as published by
+   9               	    the Free Software Foundation, either version 3 of the License, or
+  10               	    (at your option) any later version.
+  11               	
+  12               	    This program is distributed in the hope that it will be useful,
+  13               	    but WITHOUT ANY WARRANTY; without even the implied warranty of
+  14               	    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  15               	    GNU General Public License for more details.
+  16               	
+  17               	    You should have received a copy of the GNU General Public License
+  18               	    in the file COPYING in the distribution directory along with this
+  19               	    program.  If not, see <http://www.gnu.org/licenses/>.
+  20               	
+  21               	**********************************************************************/
+  22               	#
+  23               	#	Definitions of the  Baby M68000 CPU  BIOS trap calls
+  24               	#
+  25               	#
+  26               	bios		=	8		/* trap #8 used for all BIOS calls */
+  27               	BIOS		=	8		/* make case insensitive */
+  28               	
+  29               	
+  30               	#  General usage:
+  31               	#
+  32               	#	move.l	param1,%d1
+  33               	#	move.l	param2,%d2
+  34               	#	move	address,%a0
+  35               	#
+  36               	#	move.b	#<bioscall>,%d0		/* BIOS call number in low byte of D0 */
+  37               	#	trap	#BIOS
+  38               	#
+  39               	#	Carry Clear means no error		<some calls only>
+  40               	#	Carry Set means an error occurred	<some calls only>
+  41               	#	Error code usually returned in D0
+  42               	#	Returned values in D1,D2,... A0,...	<see call description>
+68K GAS  serial.s 			page 5
+
+
+  43               	#
+  44               	#
+  45               	#
+  46               	#
+  47               	#
+  48               	#		   D0 function
+  49               	#		      code
+  50               	#
+  51               	sioput		=	2	/* D1 = character to put out */
+  52               	siostr		=	3	/* A0 = string ptr, D1 = termination char */
+  53               					/* returns D0 = number of chars put out */
+  54               	sioget		=	4	/* D1 = returned character (waits) */
+  55               	siotst		=	5	/* D0 = 0, no character available  */
+  56               					/* D0 = 1..n, number of characters waiting */
+  57               	
+  58               	cpuhma		=	6	/* OBSOLETE!!! USE fn 8, D1=0; 
+  59               					   old:  return HMA in D0 -- 0x00200000 on max. system */
+  60               	cpustop		=	7	/* stop execution */
+  61               	hma_alloc	=	8	/* allocate D1 bytes of highest memory; return HMA (new) in D0 */
+  62               	
+  63               	/* IDE disk drivers */		/* D1 = disk # for all of the following:   */
+  64               	disk_reset	=	10	/* D1 = disk # -- may reset entire controller */
+  65               	disk_info	=	11	/* D1;  A0 = 512 byte buffer for disk ID */
+  66               	disk_read	=	12	/* D1;  A0 = buffer; D2 = LBA sector; D3 = sector count */
+  67               	disk_write	=	13	/* ditto */
+  68               	disk_verify	=	14	/* D1; D2 = LBA sector; D3 = sector count */
+  69               	/* Floppies only:   */
+  70               	disk_format	=	15	/* D1; A0 = interleave info/track */
+  71               	/*
+  72               	   Disk numbers are 0,1 for floppies; 2..7 for IDE disks
+  73               	 */
+  74               	
+  75               	day_time	=	20	/* D1 = return option */
+  76               	
+  77               	
+  78               	# biostrap.s -- end of file
+  79               	
+  80               	
+  25               	############################################################
+  26               	
+  27               		.globl	bios_good_return
+  28               		.comm	nvram,32
+  29               	
+  30               		.text
+  31               	
+  32               		.even
+  33               	
+  34               		.globl	sio_init
+  35               	sio_init:
+  36               	sio_divisor	=	1843200/16 / 9600
+  37 0000 4238 8049 		clr.b	sio_ier			/* disable interrupts */
+  38 0004 11FC 0080 		move.b	#sio_lcr_dlab,sio_lcr	/* set divisor latch bit */
+  38      804B 
+  39 000a 1039 0000 		move.b	nvram+1,%d0		/* MSbyte of divisor */
+  39      0000 
+  40               	
+  41 0010 11F9 0000 		move.b	nvram,sio_dll		/* LSbyte divisor, 9600 bps */
+68K GAS  serial.s 			page 6
+
+
+  41      0000 8048 
+  42 0018 11F9 0000 		move.b	nvram+1,sio_dlm		/* MSbyte divisor */
+  42      0000 8049 
+  43               	sio_continue:
+  44 0020 11FC 0003 		move.b	#sio_lcr_8bits,sio_lcr			/* 8n1 */
+  44      804B 
+  45               	/***	move.b	#sio_lcr_8bits+sio_lcr_stb2,sio_lcr	/* 8n2 */
+  46               	
+  47               	/* set TERMINAL (MODEM) signals depending on MF/PIC jumpers
+  48               			DTR (DSR), RTS (CTS), out1 (CD)	*/
+  49 0026 11FC 0007 		move.b	#sio_mcr_dtr+sio_mcr_rts+sio_mcr_out1,sio_mcr
+  49      804C 
+  50               	
+  51               	/*	move.b	#sio_ier_erbfi,sio_ier		/* enable RBF interrupt */
+  52               	
+  53 002c 4E75      		rts
+  54               	
+  55               		.globl	_con_out
+  56               	/*  C-callable entry */
+  57               	_con_out:
+  58 002e 102F 0007 		move.b	4+3(%sp),%d0
+  59 0032 6008      		br.s	sio_put
+  60               		
+  61               	/* bios call entry point */
+  62               		.globl	bios_sioput
+  63               	bios_sioput:
+  64 0034 1001      		move.b	%d1,%d0
+  65 0036 4879 0000 		pea	bios_good_return
+  65      0000 
+  66               	#	br.s	sio_put
+  67               	/* character put routine */
+  68               		.globl	sio_put
+  69               	sio_put:
+  70 003c 0838 0005 		btst	#sio_lsr_thre_bit,sio_lsr  	/* test THRE */
+  70      804D 
+  71 0042 6608      		bne.s	sio_putit
+  72               	
+  73 0044 2F00      		move.l	%d0,-(%sp)
+  74 0046 C1C0      		muls	%d0,%d0
+  75 0048 201F      		move.l	(%sp)+,%d0
+  76 004a 60F0      		br.s	sio_put
+  77               	
+  78               	sio_putit:
+  79 004c 11C0 8048 		move.b	%d0,sio_thr		/* send data byte in D0 */
+  80 0050 4E75      		rts
+  81               	
+  82               			
+  83               		.globl	sio_get
+  84               	/* get a byte from the serial input, else return -1 */
+  85               	sio_get:
+  86 0052 70FF      		move.l	#-1,%d0
+  87 0054 0838 0000 		btst	#sio_lsr_dr_bit,sio_lsr	  /* test Data Ready */
+  87      804D 
+  88 005a 6706      		beq.s	sio_gotit		/* return if nothing there */
+  89               	
+  90 005c 4280      		clr.l	%d0			/* D0 = 0 */
+  91 005e 1038 8048 		move.b	sio_rbr,%d0
+68K GAS  serial.s 			page 7
+
+
+  92               	sio_gotit:
+  93 0062 4E75      		rts
+  94               	
+  95               	
+  96               	
+  97               	
+  98               	/* BIOS_sioget -- get a character input when available */
+  99               		.globl	bios_sioget
+ 100               	bios_sioget:
+ 101 0064 61EC      		bsr.s	sio_get		/* get a character or -1 */
+ 102 0066 0C80 FFFF 		cmp.l	#-1,%d0		/* check for -1 */
+ 102      FFFF 
+ 103 006c 67F6      		beq.s	bios_sioget	/* re-try if -1 */
+ 104 006e 2200      		move.l	%d0,%d1		/* character returned in D1 */
+ 105 0070 4280      		clr.l	%d0		/* good return code */
+ 106 0072 4EF9 0000 		jmp	bios_good_return	/* exit from BIOS call */
+ 106      0000 
+ 107               	
+ 108               	
+ 109               	
+ 110               	/* bios_siotst -- return number of charcters waiting */
+ 111               		.globl	bios_siotst
+ 112               	bios_siotst:
+ 113 0078 4280      		clr.l	%d0			  /* say none in buffer */
+ 114 007a 0838 0000 		btst	#sio_lsr_dr_bit,sio_lsr	  /* test Data Ready */
+ 114      804D 
+ 115 0080 6702      		beq.s	siotst_return
+ 116 0082 5280      		add.l	#1,%d0			/* 1 character is waiting */
+ 117               	siotst_return:
+ 118 0084 4EF9 0000 		jmp	bios_good_return	/* exit from BIOS call */
+ 118      0000 
+ 119               		
+ 120               	
+ 121               	/*  put_string
+ 122               		A0 = address of NULL terminated string to put out
+ 123               	*/
+ 124               		.globl	put_string
+ 125               	put_string:
+ 126 008a 4A10      		tst.b	(%a0)
+ 127 008c 670A      		jbeq	put_string_done
+ 128 008e 2F00      		move.l	%d0,-(%sp)
+ 129 0090 1018      		move.b	(%a0)+,%d0
+ 130 0092 61A8      		jbsr	sio_put
+ 131 0094 201F      		move.l	(%sp)+,%d0
+ 132 0096 60F2      		jbra	put_string
+ 133               	put_string_done:
+ 134 0098 4E75      		rts
+ 135               	
+ 136               	/* BIOS call to put out a D1.b terminated string. */
+ 137               		.globl	bios_siostr
+ 138               	bios_siostr:
+ 139 009a 2C48      		move.l	%a0,%a6
+ 140               	siostr_loop:
+ 141 009c 101E      		move.b	(%a6)+,%d0
+ 142 009e B200      		cmp.b	%d0,%d1
+ 143 00a0 6704      		beq.s	siostr_done
+ 144 00a2 6198      		bsr.s	sio_put
+68K GAS  serial.s 			page 8
+
+
+ 145 00a4 60F6      		br.s	siostr_loop
+ 146               	siostr_done:
+ 147 00a6 9DC8      		sub.l	%a0,%a6
+ 148 00a8 200E      		move.l	%a6,%d0
+ 149 00aa 5380      		sub.l	#1,%d0
+ 150 00ac 4EF9 0000 		jmp	bios_good_return
+ 150      0000 
+ 151               	
+ 152               	
+ 153               	
+ 154               	
+ 155               	
+ 156               	
+ 157               		.end
+68K GAS  serial.s 			page 9
+
+
+DEFINED SYMBOLS
+                            *ABS*:000109a0 CPU
+                            *ABS*:00000001 RETAIL
+            siodef.s:24     *ABS*:00000001 _siodef_s
+             mfpic.s:23     *ABS*:00000001 _mfpic_s
+             mfpic.s:26     *ABS*:00000040 mf_pic
+             mfpic.s:29     *ABS*:ffff8000 BOARD_BASE_IO
+             mfpic.s:32     *ABS*:ffff8040 mfpic_base
+             mfpic.s:34     *ABS*:ffff8048 mf_sio
+             mfpic.s:35     *ABS*:ffff8044 mf_ppi
+             mfpic.s:36     *ABS*:ffff8043 mf_rtc
+             mfpic.s:37     *ABS*:ffff8042 mf_cfg
+             mfpic.s:38     *ABS*:ffff8040 mf_202
+            siodef.s:31     *ABS*:ffff8048 sio_thr
+            siodef.s:32     *ABS*:ffff8048 sio_rbr
+            siodef.s:33     *ABS*:ffff8049 sio_ier
+            siodef.s:34     *ABS*:ffff804a sio_iir
+            siodef.s:35     *ABS*:ffff804b sio_lcr
+            siodef.s:36     *ABS*:ffff804c sio_mcr
+            siodef.s:37     *ABS*:ffff804d sio_lsr
+            siodef.s:38     *ABS*:ffff804e sio_msr
+            siodef.s:39     *ABS*:ffff804f sio_scr
+            siodef.s:41     *ABS*:ffff8048 sio_dll
+            siodef.s:42     *ABS*:ffff8049 sio_dlm
+            siodef.s:46     *ABS*:00000001 sio_ier_erbfi
+            siodef.s:47     *ABS*:00000002 sio_ier_ethei
+            siodef.s:48     *ABS*:00000004 sio_ier_elsi
+            siodef.s:49     *ABS*:00000008 sio_ier_edssi
+            siodef.s:54     *ABS*:00000001 sio_iir_none
+            siodef.s:55     *ABS*:00000006 sio_iir_rls
+            siodef.s:56     *ABS*:00000004 sio_iir_rda
+            siodef.s:57     *ABS*:00000002 sio_iir_thre
+            siodef.s:58     *ABS*:00000000 sio_iir_dss
+            siodef.s:60     *ABS*:00000000 sio_iir_none_bn
+            siodef.s:65     *ABS*:00000000 sio_lcr_5bits
+            siodef.s:66     *ABS*:00000001 sio_lcr_6bits
+            siodef.s:67     *ABS*:00000002 sio_lcr_7bits
+            siodef.s:68     *ABS*:00000003 sio_lcr_8bits
+            siodef.s:69     *ABS*:00000003 sio_lcr_bit_msk
+            siodef.s:70     *ABS*:00000004 sio_lcr_stb2
+            siodef.s:71     *ABS*:00000008 sio_lcr_pen
+            siodef.s:72     *ABS*:00000010 sio_lcr_eps
+            siodef.s:73     *ABS*:00000020 sio_lcr_stick
+            siodef.s:74     *ABS*:00000040 sio_lcr_break
+            siodef.s:75     *ABS*:00000080 sio_lcr_dlab
+            siodef.s:80     *ABS*:00000001 sio_mcr_dtr
+            siodef.s:81     *ABS*:00000002 sio_mcr_rts
+            siodef.s:82     *ABS*:00000004 sio_mcr_out1
+            siodef.s:83     *ABS*:00000008 sio_mcr_out2
+            siodef.s:84     *ABS*:00000010 sio_mcr_loop
+            siodef.s:89     *ABS*:00000001 sio_lsr_dr
+            siodef.s:90     *ABS*:00000000 sio_lsr_dr_bit
+            siodef.s:91     *ABS*:00000002 sio_lsr_oe
+            siodef.s:92     *ABS*:00000001 sio_lsr_oe_bit
+            siodef.s:93     *ABS*:00000004 sio_lsr_pe
+            siodef.s:94     *ABS*:00000002 sio_lsr_pe_bit
+            siodef.s:95     *ABS*:00000008 sio_lsr_fe
+68K GAS  serial.s 			page 10
+
+
+            siodef.s:96     *ABS*:00000003 sio_lsr_fe_bit
+            siodef.s:97     *ABS*:00000010 sio_lsr_bi
+            siodef.s:98     *ABS*:00000004 sio_lsr_bi_bit
+            siodef.s:99     *ABS*:00000020 sio_lsr_thre
+            siodef.s:100    *ABS*:00000005 sio_lsr_thre_bit
+            siodef.s:101    *ABS*:00000040 sio_lsr_temt
+            siodef.s:102    *ABS*:00000006 sio_lsr_temt_bit
+            siodef.s:107    *ABS*:00000001 sio_msr_dcts
+            siodef.s:108    *ABS*:00000002 sio_msr_ddsr
+            siodef.s:109    *ABS*:00000004 sio_msr_teri
+            siodef.s:110    *ABS*:00000008 sio_msr_ddcd
+            siodef.s:111    *ABS*:00000010 sio_msr_cts
+            siodef.s:112    *ABS*:00000020 sio_msr_dsr
+            siodef.s:113    *ABS*:00000040 sio_msr_ri
+            siodef.s:114    *ABS*:00000080 sio_msr_dcd
+          biostrap.s:26     *ABS*:00000008 bios
+          biostrap.s:27     *ABS*:00000008 BIOS
+          biostrap.s:51     *ABS*:00000002 sioput
+          biostrap.s:52     *ABS*:00000003 siostr
+          biostrap.s:54     *ABS*:00000004 sioget
+          biostrap.s:55     *ABS*:00000005 siotst
+          biostrap.s:58     *ABS*:00000006 cpuhma
+          biostrap.s:60     *ABS*:00000007 cpustop
+          biostrap.s:61     *ABS*:00000008 hma_alloc
+          biostrap.s:64     *ABS*:0000000a disk_reset
+          biostrap.s:65     *ABS*:0000000b disk_info
+          biostrap.s:66     *ABS*:0000000c disk_read
+          biostrap.s:67     *ABS*:0000000d disk_write
+          biostrap.s:68     *ABS*:0000000e disk_verify
+          biostrap.s:70     *ABS*:0000000f disk_format
+          biostrap.s:75     *ABS*:00000014 day_time
+                            *COM*:00000020 nvram
+            serial.s:35     .text:00000000 sio_init
+            serial.s:36     *ABS*:0000000c sio_divisor
+            serial.s:43     .text:00000020 sio_continue
+            serial.s:57     .text:0000002e _con_out
+            serial.s:69     .text:0000003c sio_put
+            serial.s:63     .text:00000034 bios_sioput
+            serial.s:78     .text:0000004c sio_putit
+            serial.s:85     .text:00000052 sio_get
+            serial.s:92     .text:00000062 sio_gotit
+            serial.s:100    .text:00000064 bios_sioget
+            serial.s:112    .text:00000078 bios_siotst
+            serial.s:117    .text:00000084 siotst_return
+            serial.s:125    .text:0000008a put_string
+            serial.s:133    .text:00000098 put_string_done
+            serial.s:138    .text:0000009a bios_siostr
+            serial.s:140    .text:0000009c siostr_loop
+            serial.s:146    .text:000000a6 siostr_done
+
+UNDEFINED SYMBOLS
+bios_good_return

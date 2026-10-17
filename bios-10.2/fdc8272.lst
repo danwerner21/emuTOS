@@ -1,0 +1,1131 @@
+68K GAS  fdc8272.s 			page 1
+
+
+   1               	#NO_APP
+   2               		.file	"fdc8272.c"
+   3               		.text
+   4               		.align	2
+   5               		.globl	initialize_drivers
+   6               		.type	initialize_drivers, @function
+   7               	initialize_drivers:
+   8 0000 4E56 0000 		link.w %fp,#0
+   9 0004 7000      		moveq #0,%d0
+  10               	.L2:
+  11 0006 41F9 0000 		lea drive_ready,%a0
+  11      0000 
+  12 000c 4230 0800 		clr.b (%a0,%d0.l)
+  13 0010 41F9 0000 		lea drive_status_change,%a0
+  13      0000 
+  14 0016 4230 0800 		clr.b (%a0,%d0.l)
+  15 001a 41F9 0000 		lea operation_in_progress,%a0
+  15      0000 
+  16 0020 4230 0800 		clr.b (%a0,%d0.l)
+  17 0024 41F9 0000 		lea operation_complete,%a0
+  17      0000 
+  18 002a 4230 0800 		clr.b (%a0,%d0.l)
+  19 002e 5280      		addq.l #1,%d0
+  20 0030 7204      		moveq #4,%d1
+  21 0032 B280      		cmp.l %d0,%d1
+  22 0034 66D0      		jbne .L2
+  23 0036 4239 0000 		clr.b operation_in_progress+4
+  23      0000 
+  24 003c 4239 0000 		clr.b operation_complete+4
+  24      0000 
+  25 0042 4239 0000 		clr.b global_drive_no
+  25      0000 
+  26 0048 4E5E      		unlk %fp
+  27 004a 4E75      		rts
+  28               		.size	initialize_drivers, .-initialize_drivers
+  29               		.align	2
+  30               		.globl	output_controls_to_dma
+  31               		.type	output_controls_to_dma, @function
+  32               	output_controls_to_dma:
+  33 004c 4E56 0000 		link.w %fp,#0
+  34 0050 206E 0008 		move.l 8(%fp),%a0
+  35 0054 1028 000F 		move.b 15(%a0),%d0
+  36 0058 0C00 0002 		cmp.b #2,%d0
+  37 005c 6214      		jbhi .L10
+  38 005e 13C0 0000 		move.b %d0,dma_mode.1171
+  38      0000 
+  39 0064 23D0 0000 		move.l (%a0),dma_addr.1172
+  39      0000 
+  40 006a 33E8 0004 		move.w 4(%a0),dma_count.1173
+  40      0000 0000 
+  41               	.L10:
+  42 0072 4E5E      		unlk %fp
+  43 0074 4E75      		rts
+  44               		.size	output_controls_to_dma, .-output_controls_to_dma
+  45               		.align	2
+  46               		.globl	copy_int_result
+  47               		.type	copy_int_result, @function
+68K GAS  fdc8272.s 			page 2
+
+
+  48               	copy_int_result:
+  49 0076 4E56 0000 		link.w %fp,#0
+  50 007a 2F0A      		move.l %a2,-(%sp)
+  51 007c 7200      		moveq #0,%d1
+  52 007e 122E 000B 		move.b 11(%fp),%d1
+  53 0082 41F9 0000 		lea operation_in_progress,%a0
+  53      0000 
+  54 0088 4A30 1800 		tst.b (%a0,%d1.l)
+  55 008c 6740      		jbeq .L16
+  56 008e 2001      		move.l %d1,%d0
+  57 0090 D081      		add.l %d1,%d0
+  58 0092 D080      		add.l %d0,%d0
+  59 0094 41F9 0000 		lea operation_docb_ptr,%a0
+  59      0000 
+  60 009a 2470 0800 		move.l (%a0,%d0.l),%a2
+  61 009e 43EA 0010 		lea (16,%a2),%a1
+  62 00a2 41F9 0000 		lea interrupt_docb+16,%a0
+  62      0000 
+  63               	.L14:
+  64 00a8 12D8      		move.b (%a0)+,(%a1)+
+  65 00aa B1FC 0000 		cmp.l #interrupt_docb+23,%a0
+  65      0000 
+  66 00b0 66F6      		jbne .L14
+  67 00b2 157C 0001 		move.b #1,23(%a2)
+  67      0017 
+  68 00b8 41F9 0000 		lea operation_in_progress,%a0
+  68      0000 
+  69 00be 4230 1800 		clr.b (%a0,%d1.l)
+  70 00c2 41F9 0000 		lea operation_complete,%a0
+  70      0000 
+  71 00c8 11BC 0001 		move.b #1,(%a0,%d1.l)
+  71      1800 
+  72               	.L16:
+  73 00ce 245F      		move.l (%sp)+,%a2
+  74 00d0 4E5E      		unlk %fp
+  75 00d2 4E75      		rts
+  76               		.size	copy_int_result, .-copy_int_result
+  77               		.align	2
+  78               		.globl	fdc_info
+  79               		.type	fdc_info, @function
+  80               	fdc_info:
+  81 00d4 4E56 0000 		link.w %fp,#0
+  82 00d8 102E 0013 		move.b 19(%fp),%d0
+  83 00dc E588      		lsl.l #2,%d0
+  84 00de 0280 0000 		and.l #1020,%d0
+  84      03FC 
+  85 00e4 41F9 0000 		lea disk_table,%a0
+  85      0000 
+  86 00ea 4AB0 0800 		tst.l (%a0,%d0.l)
+  87 00ee 57C0      		seq %d0
+  88 00f0 4880      		ext.w %d0
+  89 00f2 48C0      		ext.l %d0
+  90 00f4 4E5E      		unlk %fp
+  91 00f6 4E75      		rts
+  92               		.size	fdc_info, .-fdc_info
+  93               		.align	2
+  94               		.globl	operation_clean_up
+68K GAS  fdc8272.s 			page 3
+
+
+  95               		.type	operation_clean_up, @function
+  96               	operation_clean_up:
+  97 00f8 4E56 0000 		link.w %fp,#0
+  98 00fc 2F03      		move.l %d3,-(%sp)
+  99 00fe 2F02      		move.l %d2,-(%sp)
+ 100 0100 7400      		moveq #0,%d2
+ 101 0102 142E 000B 		move.b 11(%fp),%d2
+ 102 0106 7600      		moveq #0,%d3
+ 103 0108 162E 000F 		move.b 15(%fp),%d3
+ 104 010c 4EB9 0000 		jbsr disable
+ 104      0000 
+ 105 0112 41F9 0000 		lea operation_in_progress,%a0
+ 105      0000 
+ 106 0118 4230 2800 		clr.b (%a0,%d2.l)
+ 107 011c 41F9 0000 		lea overlap_operation,%a0
+ 107      0000 
+ 108 0122 4A30 3800 		tst.b (%a0,%d3.l)
+ 109 0126 6606      		jbne .L25
+ 110 0128 4239 0000 		clr.b global_drive_no
+ 110      0000 
+ 111               	.L25:
+ 112 012e 4EB9 0000 		jbsr enable
+ 112      0000 
+ 113 0134 242E FFF8 		move.l -8(%fp),%d2
+ 114 0138 262E FFFC 		move.l -4(%fp),%d3
+ 115 013c 4E5E      		unlk %fp
+ 116 013e 4E75      		rts
+ 117               		.size	operation_clean_up, .-operation_clean_up
+ 118               		.align	2
+ 119               		.globl	fdc_ready_for_result
+ 120               		.type	fdc_ready_for_result, @function
+ 121               	fdc_ready_for_result:
+ 122 0140 4E56 0000 		link.w %fp,#0
+ 123 0144 4EB9 0000 		jbsr usec12
+ 123      0000 
+ 124 014a 7000      		moveq #0,%d0
+ 125 014c 3039 0000 		move.w fdc_base_port,%d0
+ 125      0000 
+ 126 0152 2040      		move.l %d0,%a0
+ 127 0154 1228 8000 		move.b -32768(%a0),%d1
+ 128 0158 7000      		moveq #0,%d0
+ 129 015a 1001      		move.b %d1,%d0
+ 130 015c 0800 0004 		btst #4,%d0
+ 131 0160 6604      		jbne .L34
+ 132 0162 7003      		moveq #3,%d0
+ 133 0164 600A      		jbra .L31
+ 134               	.L34:
+ 135 0166 4A01      		tst.b %d1
+ 136 0168 6CFC      		jbge .L34
+ 137 016a EC88      		lsr.l #6,%d0
+ 138 016c 7201      		moveq #1,%d1
+ 139 016e C081      		and.l %d1,%d0
+ 140               	.L31:
+ 141 0170 4E5E      		unlk %fp
+ 142 0172 4E75      		rts
+ 143               		.size	fdc_ready_for_result, .-fdc_ready_for_result
+ 144               		.align	2
+68K GAS  fdc8272.s 			page 4
+
+
+ 145               		.globl	input_byte_from_fdc
+ 146               		.type	input_byte_from_fdc, @function
+ 147               	input_byte_from_fdc:
+ 148 0174 4E56 0000 		link.w %fp,#0
+ 149 0178 61C6      		jbsr fdc_ready_for_result
+ 150 017a 4A00      		tst.b %d0
+ 151 017c 6604      		jbne .L38
+ 152 017e 7000      		moveq #0,%d0
+ 153 0180 601E      		jbra .L40
+ 154               	.L38:
+ 155 0182 0C00 0003 		cmp.b #3,%d0
+ 156 0186 6604      		jbne .L41
+ 157 0188 7003      		moveq #3,%d0
+ 158 018a 6014      		jbra .L40
+ 159               	.L41:
+ 160 018c 7000      		moveq #0,%d0
+ 161 018e 3039 0000 		move.w fdc_base_port,%d0
+ 161      0000 
+ 162 0194 206E 0008 		move.l 8(%fp),%a0
+ 163 0198 2240      		move.l %d0,%a1
+ 164 019a 10A9 8001 		move.b -32767(%a1),(%a0)
+ 165 019e 7001      		moveq #1,%d0
+ 166               	.L40:
+ 167 01a0 4E5E      		unlk %fp
+ 168 01a2 4E75      		rts
+ 169               		.size	input_byte_from_fdc, .-input_byte_from_fdc
+ 170               		.align	2
+ 171               		.globl	input_result_from_fdc
+ 172               		.type	input_result_from_fdc, @function
+ 173               	input_result_from_fdc:
+ 174 01a4 4E56 FFFC 		link.w %fp,#-4
+ 175 01a8 2F0A      		move.l %a2,-(%sp)
+ 176 01aa 2F02      		move.l %d2,-(%sp)
+ 177 01ac 4EB9 0000 		jbsr disable
+ 177      0000 
+ 178 01b2 347C 0010 		move.w #16,%a2
+ 179 01b6 D5EE 0008 		add.l 8(%fp),%a2
+ 180 01ba 4202      		clr.b %d2
+ 181               	.L45:
+ 182 01bc 486E FFFF 		pea -1(%fp)
+ 183 01c0 61B2      		jbsr input_byte_from_fdc
+ 184 01c2 588F      		addq.l #4,%sp
+ 185 01c4 4A00      		tst.b %d0
+ 186 01c6 660A      		jbne .L46
+ 187 01c8 4EB9 0000 		jbsr enable
+ 187      0000 
+ 188 01ce 7000      		moveq #0,%d0
+ 189 01d0 6038      		jbra .L48
+ 190               	.L46:
+ 191 01d2 0C00 0003 		cmp.b #3,%d0
+ 192 01d6 660A      		jbne .L49
+ 193 01d8 4EB9 0000 		jbsr enable
+ 193      0000 
+ 194 01de 7001      		moveq #1,%d0
+ 195 01e0 6028      		jbra .L48
+ 196               	.L49:
+ 197 01e2 14EE FFFF 		move.b -1(%fp),(%a2)+
+68K GAS  fdc8272.s 			page 5
+
+
+ 198 01e6 5202      		addq.b #1,%d2
+ 199 01e8 0C02 0008 		cmp.b #8,%d2
+ 200 01ec 66CE      		jbne .L45
+ 201 01ee 4EB9 0000 		jbsr enable
+ 201      0000 
+ 202 01f4 7000      		moveq #0,%d0
+ 203 01f6 3039 0000 		move.w fdc_base_port,%d0
+ 203      0000 
+ 204 01fc 2040      		move.l %d0,%a0
+ 205 01fe 1028 8000 		move.b -32768(%a0),%d0
+ 206 0202 E888      		lsr.l #4,%d0
+ 207 0204 4680      		not.l %d0
+ 208 0206 7201      		moveq #1,%d1
+ 209 0208 C081      		and.l %d1,%d0
+ 210               	.L48:
+ 211 020a 242E FFF4 		move.l -12(%fp),%d2
+ 212 020e 246E FFF8 		move.l -8(%fp),%a2
+ 213 0212 4E5E      		unlk %fp
+ 214 0214 4E75      		rts
+ 215               		.size	input_result_from_fdc, .-input_result_from_fdc
+ 216               		.align	2
+ 217               		.globl	fdc_ready_for_command
+ 218               		.type	fdc_ready_for_command, @function
+ 219               	fdc_ready_for_command:
+ 220 0216 4E56 0000 		link.w %fp,#0
+ 221 021a 4EB9 0000 		jbsr usec12
+ 221      0000 
+ 222 0220 7000      		moveq #0,%d0
+ 223 0222 3039 0000 		move.w fdc_base_port,%d0
+ 223      0000 
+ 224 0228 2040      		move.l %d0,%a0
+ 225 022a 1028 8000 		move.b -32768(%a0),%d0
+ 226               	.L56:
+ 227 022e 4A00      		tst.b %d0
+ 228 0230 6CFC      		jbge .L56
+ 229 0232 0280 0000 		and.l #255,%d0
+ 229      00FF 
+ 230 0238 EC88      		lsr.l #6,%d0
+ 231 023a 0A40 0001 		eor.w #1,%d0
+ 232 023e 7201      		moveq #1,%d1
+ 233 0240 C081      		and.l %d1,%d0
+ 234 0242 4E5E      		unlk %fp
+ 235 0244 4E75      		rts
+ 236               		.size	fdc_ready_for_command, .-fdc_ready_for_command
+ 237               		.align	2
+ 238               		.globl	output_byte_to_fdc
+ 239               		.type	output_byte_to_fdc, @function
+ 240               	output_byte_to_fdc:
+ 241 0246 4E56 0000 		link.w %fp,#0
+ 242 024a 2F02      		move.l %d2,-(%sp)
+ 243 024c 242E 0008 		move.l 8(%fp),%d2
+ 244 0250 61C4      		jbsr fdc_ready_for_command
+ 245 0252 4A00      		tst.b %d0
+ 246 0254 6604      		jbne .L62
+ 247 0256 7000      		moveq #0,%d0
+ 248 0258 6010      		jbra .L64
+ 249               	.L62:
+68K GAS  fdc8272.s 			page 6
+
+
+ 250 025a 7000      		moveq #0,%d0
+ 251 025c 3039 0000 		move.w fdc_base_port,%d0
+ 251      0000 
+ 252 0262 2040      		move.l %d0,%a0
+ 253 0264 1142 8001 		move.b %d2,-32767(%a0)
+ 254 0268 7001      		moveq #1,%d0
+ 255               	.L64:
+ 256 026a 242E FFFC 		move.l -4(%fp),%d2
+ 257 026e 4E5E      		unlk %fp
+ 258 0270 4E75      		rts
+ 259               		.size	output_byte_to_fdc, .-output_byte_to_fdc
+ 260               		.align	2
+ 261               		.globl	fdcint
+ 262               		.type	fdcint, @function
+ 263               	fdcint:
+ 264 0272 4E56 0000 		link.w %fp,#0
+ 265 0276 2F0A      		move.l %a2,-(%sp)
+ 266 0278 2F02      		move.l %d2,-(%sp)
+ 267 027a 7000      		moveq #0,%d0
+ 268 027c 3039 0000 		move.w fdc_base_port,%d0
+ 268      0000 
+ 269 0282 2040      		move.l %d0,%a0
+ 270 0284 0828 0004 		btst #4,-32768(%a0)
+ 270      8000 
+ 271 028a 6758      		jbeq .L89
+ 272 028c 1039 0000 		move.b global_drive_no,%d0
+ 272      0000 
+ 273 0292 6700 00CC 		jbeq .L81
+ 274 0296 0280 0000 		and.l #255,%d0
+ 274      00FF 
+ 275 029c D080      		add.l %d0,%d0
+ 276 029e 2040      		move.l %d0,%a0
+ 277 02a0 D1C0      		add.l %d0,%a0
+ 278 02a2 D1FC 0000 		add.l #operation_docb_ptr-4,%a0
+ 278      0000 
+ 279 02a8 2450      		move.l (%a0),%a2
+ 280 02aa 2F0A      		move.l %a2,-(%sp)
+ 281 02ac 6100 FEF6 		jbsr input_result_from_fdc
+ 282 02b0 588F      		addq.l #4,%sp
+ 283 02b2 4A00      		tst.b %d0
+ 284 02b4 56C0      		sne %d0
+ 285 02b6 4400      		neg.b %d0
+ 286 02b8 1540 0017 		move.b %d0,23(%a2)
+ 287 02bc 7000      		moveq #0,%d0
+ 288 02be 1039 0000 		move.b global_drive_no,%d0
+ 288      0000 
+ 289 02c4 5380      		subq.l #1,%d0
+ 290 02c6 41F9 0000 		lea operation_in_progress,%a0
+ 290      0000 
+ 291 02cc 4230 0800 		clr.b (%a0,%d0.l)
+ 292 02d0 41F9 0000 		lea operation_complete,%a0
+ 292      0000 
+ 293 02d6 11BC 0001 		move.b #1,(%a0,%d0.l)
+ 293      0800 
+ 294 02dc 4239 0000 		clr.b global_drive_no
+ 294      0000 
+ 295 02e2 607C      		jbra .L81
+68K GAS  fdc8272.s 			page 7
+
+
+ 296               	.L89:
+ 297 02e4 4878 0008 		pea 8.w
+ 298 02e8 6100 FF5C 		jbsr output_byte_to_fdc
+ 299 02ec 588F      		addq.l #4,%sp
+ 300 02ee 4A00      		tst.b %d0
+ 301 02f0 676E      		jbeq .L81
+ 302 02f2 4879 0000 		pea interrupt_docb
+ 302      0000 
+ 303 02f8 6100 FEAA 		jbsr input_result_from_fdc
+ 304 02fc 588F      		addq.l #4,%sp
+ 305 02fe 4A00      		tst.b %d0
+ 306 0300 675E      		jbeq .L81
+ 307 0302 1439 0000 		move.b interrupt_docb+16,%d2
+ 307      0000 
+ 308 0308 703F      		moveq #63,%d0
+ 309 030a 4600      		not.b %d0
+ 310 030c C082      		and.l %d2,%d0
+ 311 030e EC80      		asr.l #6,%d0
+ 312 0310 7202      		moveq #2,%d1
+ 313 0312 B280      		cmp.l %d0,%d1
+ 314 0314 674A      		jbeq .L81
+ 315 0316 6C0A      		jbge .L87
+ 316 0318 123C 0003 		move.b #3,%d1
+ 317 031c B280      		cmp.l %d0,%d1
+ 318 031e 66C4      		jbne .L89
+ 319 0320 600E      		jbra .L77
+ 320               	.L87:
+ 321 0322 7003      		moveq #3,%d0
+ 322 0324 C082      		and.l %d2,%d0
+ 323 0326 2F00      		move.l %d0,-(%sp)
+ 324 0328 6100 FD4C 		jbsr copy_int_result
+ 325 032c 588F      		addq.l #4,%sp
+ 326 032e 60B4      		jbra .L89
+ 327               	.L77:
+ 328 0330 7203      		moveq #3,%d1
+ 329 0332 C481      		and.l %d1,%d2
+ 330 0334 2F02      		move.l %d2,-(%sp)
+ 331 0336 6100 FD3E 		jbsr copy_int_result
+ 332 033a 41F9 0000 		lea drive_status_change,%a0
+ 332      0000 
+ 333 0340 11BC 0001 		move.b #1,(%a0,%d2.l)
+ 333      2800 
+ 334 0346 588F      		addq.l #4,%sp
+ 335 0348 0839 0003 		btst #3,interrupt_docb+16
+ 335      0000 0000 
+ 336 0350 56C0      		sne %d0
+ 337 0352 41F9 0000 		lea drive_ready,%a0
+ 337      0000 
+ 338 0358 5200      		addq.b #1,%d0
+ 339 035a 1180 2800 		move.b %d0,(%a0,%d2.l)
+ 340 035e 6084      		jbra .L89
+ 341               	.L69:
+ 342               	.L81:
+ 343 0360 242E FFF8 		move.l -8(%fp),%d2
+ 344 0364 246E FFFC 		move.l -4(%fp),%a2
+ 345 0368 4E5E      		unlk %fp
+ 346 036a 4E75      		rts
+68K GAS  fdc8272.s 			page 8
+
+
+ 347               		.size	fdcint, .-fdcint
+ 348               		.align	2
+ 349               		.globl	output_command_to_fdc
+ 350               		.type	output_command_to_fdc, @function
+ 351               	output_command_to_fdc:
+ 352 036c 4E56 0000 		link.w %fp,#0
+ 353 0370 48E7 3020 		movm.l #0x3020,-(%sp)
+ 354 0374 246E 0008 		move.l 8(%fp),%a2
+ 355 0378 4EB9 0000 		jbsr disable
+ 355      0000 
+ 356 037e 7400      		moveq #0,%d2
+ 357 0380 6026      		jbra .L91
+ 358               	.L92:
+ 359 0382 7000      		moveq #0,%d0
+ 360 0384 1001      		move.b %d1,%d0
+ 361 0386 1032 0806 		move.b 6(%a2,%d0.l),%d0
+ 362 038a 0280 0000 		and.l #255,%d0
+ 362      00FF 
+ 363 0390 2F00      		move.l %d0,-(%sp)
+ 364 0392 6100 FEB2 		jbsr output_byte_to_fdc
+ 365 0396 5282      		addq.l #1,%d2
+ 366 0398 588F      		addq.l #4,%sp
+ 367 039a 4A00      		tst.b %d0
+ 368 039c 660A      		jbne .L91
+ 369 039e 4EB9 0000 		jbsr enable
+ 369      0000 
+ 370 03a4 7000      		moveq #0,%d0
+ 371 03a6 601E      		jbra .L94
+ 372               	.L91:
+ 373 03a8 1202      		move.b %d2,%d1
+ 374 03aa 102A 0006 		move.b 6(%a2),%d0
+ 375 03ae 760F      		moveq #15,%d3
+ 376 03b0 C083      		and.l %d3,%d0
+ 377 03b2 41F9 0000 		lea command_length,%a0
+ 377      0000 
+ 378 03b8 B430 0800 		cmp.b (%a0,%d0.l),%d2
+ 379 03bc 65C4      		jbcs .L92
+ 380 03be 4EB9 0000 		jbsr enable
+ 380      0000 
+ 381 03c4 7001      		moveq #1,%d0
+ 382               	.L94:
+ 383 03c6 4CEE 040C 		movm.l -12(%fp),#0x40c
+ 383      FFF4 
+ 384 03cc 4E5E      		unlk %fp
+ 385 03ce 4E75      		rts
+ 386               		.size	output_command_to_fdc, .-output_command_to_fdc
+ 387               		.align	2
+ 388               		.globl	execute_docb
+ 389               		.type	execute_docb, @function
+ 390               	execute_docb:
+ 391 03d0 4E56 0000 		link.w %fp,#0
+ 392 03d4 48E7 3038 		movm.l #0x3038,-(%sp)
+ 393 03d8 246E 0008 		move.l 8(%fp),%a2
+ 394 03dc 266E 000C 		move.l 12(%fp),%a3
+ 395 03e0 102A 0006 		move.b 6(%a2),%d0
+ 396 03e4 720F      		moveq #15,%d1
+ 397 03e6 C081      		and.l %d1,%d0
+68K GAS  fdc8272.s 			page 9
+
+
+ 398 03e8 41F9 0000 		lea command_length,%a0
+ 398      0000 
+ 399 03ee 4A30 0800 		tst.b (%a0,%d0.l)
+ 400 03f2 660A      		jbne .L100
+ 401 03f4 16BC 0005 		move.b #5,(%a3)
+ 402 03f8 7005      		moveq #5,%d0
+ 403 03fa 6000 0168 		jbra .L102
+ 404               	.L100:
+ 405 03fe 41F9 0000 		lea drive_no_present,%a0
+ 405      0000 
+ 406 0404 4A30 0800 		tst.b (%a0,%d0.l)
+ 407 0408 6604      		jbne .L103
+ 408 040a 7604      		moveq #4,%d3
+ 409 040c 6008      		jbra .L105
+ 410               	.L103:
+ 411 040e 162A 0007 		move.b 7(%a2),%d3
+ 412 0412 0203 0003 		and.b #3,%d3
+ 413               	.L105:
+ 414 0416 7200      		moveq #0,%d1
+ 415 0418 3239 0000 		move.w fdc_base_port,%d1
+ 415      0000 
+ 416 041e 2241      		move.l %d1,%a1
+ 417 0420 41F9 0000 		lea overlap_operation,%a0
+ 417      0000 
+ 418 0426 4A30 0800 		tst.b (%a0,%d0.l)
+ 419 042a 670A      		jbeq .L106
+ 420 042c 0829 0004 		btst #4,-32768(%a1)
+ 420      8000 
+ 421 0432 670C      		jbeq .L108
+ 422 0434 6026      		jbra .L133
+ 423               	.L106:
+ 424 0436 1029 8000 		move.b -32768(%a1),%d0
+ 425 043a 721F      		moveq #31,%d1
+ 426 043c C081      		and.l %d1,%d0
+ 427 043e 661C      		jbne .L133
+ 428               	.L108:
+ 429 0440 4EB9 0000 		jbsr disable
+ 429      0000 
+ 430 0446 7400      		moveq #0,%d2
+ 431 0448 1403      		move.b %d3,%d2
+ 432 044a 41F9 0000 		lea operation_in_progress,%a0
+ 432      0000 
+ 433 0450 4A30 2800 		tst.b (%a0,%d2.l)
+ 434 0454 6710      		jbeq .L111
+ 435 0456 4EB9 0000 		jbsr enable
+ 435      0000 
+ 436               	.L133:
+ 437 045c 16BC 0001 		move.b #1,(%a3)
+ 438 0460 7001      		moveq #1,%d0
+ 439 0462 6000 0100 		jbra .L102
+ 440               	.L111:
+ 441 0466 11BC 0001 		move.b #1,(%a0,%d2.l)
+ 441      2800 
+ 442 046c 49F9 0000 		lea operation_complete,%a4
+ 442      0000 
+ 443 0472 4234 2800 		clr.b (%a4,%d2.l)
+ 444 0476 2002      		move.l %d2,%d0
+68K GAS  fdc8272.s 			page 10
+
+
+ 445 0478 D082      		add.l %d2,%d0
+ 446 047a D080      		add.l %d0,%d0
+ 447 047c 41F9 0000 		lea operation_docb_ptr,%a0
+ 447      0000 
+ 448 0482 218A 0800 		move.l %a2,(%a0,%d0.l)
+ 449 0486 102A 0006 		move.b 6(%a2),%d0
+ 450 048a 720F      		moveq #15,%d1
+ 451 048c C081      		and.l %d1,%d0
+ 452 048e 41F9 0000 		lea overlap_operation,%a0
+ 452      0000 
+ 453 0494 4A30 0800 		tst.b (%a0,%d0.l)
+ 454 0498 6608      		jbne .L113
+ 455 049a 5203      		addq.b #1,%d3
+ 456 049c 13C3 0000 		move.b %d3,global_drive_no
+ 456      0000 
+ 457               	.L113:
+ 458 04a2 4EB9 0000 		jbsr enable
+ 458      0000 
+ 459 04a8 2F0A      		move.l %a2,-(%sp)
+ 460 04aa 6100 FBA0 		jbsr output_controls_to_dma
+ 461 04ae 2F0A      		move.l %a2,-(%sp)
+ 462 04b0 6100 FEBA 		jbsr output_command_to_fdc
+ 463 04b4 508F      		addq.l #8,%sp
+ 464 04b6 7200      		moveq #0,%d1
+ 465 04b8 122A 0006 		move.b 6(%a2),%d1
+ 466 04bc 4A00      		tst.b %d0
+ 467 04be 6614      		jbne .L115
+ 468 04c0 700F      		moveq #15,%d0
+ 469 04c2 C081      		and.l %d1,%d0
+ 470 04c4 2F00      		move.l %d0,-(%sp)
+ 471 04c6 2F02      		move.l %d2,-(%sp)
+ 472 04c8 6100 FC2E 		jbsr operation_clean_up
+ 473 04cc 16BC 0003 		move.b #3,(%a3)
+ 474 04d0 7003      		moveq #3,%d0
+ 475 04d2 601C      		jbra .L134
+ 476               	.L115:
+ 477 04d4 700F      		moveq #15,%d0
+ 478 04d6 C081      		and.l %d1,%d0
+ 479 04d8 41F9 0000 		lea no_result,%a0
+ 479      0000 
+ 480 04de 4A30 0800 		tst.b (%a0,%d0.l)
+ 481 04e2 6710      		jbeq .L117
+ 482 04e4 2F00      		move.l %d0,-(%sp)
+ 483 04e6 2F02      		move.l %d2,-(%sp)
+ 484 04e8 6100 FC0E 		jbsr operation_clean_up
+ 485 04ec 4213      		clr.b (%a3)
+ 486 04ee 7000      		moveq #0,%d0
+ 487               	.L134:
+ 488 04f0 508F      		addq.l #8,%sp
+ 489 04f2 6070      		jbra .L102
+ 490               	.L117:
+ 491 04f4 41F9 0000 		lea immed_result,%a0
+ 491      0000 
+ 492 04fa 4A30 0800 		tst.b (%a0,%d0.l)
+ 493 04fe 6724      		jbeq .L119
+ 494 0500 2F0A      		move.l %a2,-(%sp)
+ 495 0502 6100 FCA0 		jbsr input_result_from_fdc
+68K GAS  fdc8272.s 			page 11
+
+
+ 496 0506 588F      		addq.l #4,%sp
+ 497 0508 4A00      		tst.b %d0
+ 498 050a 662E      		jbne .L121
+ 499 050c 122A 0006 		move.b 6(%a2),%d1
+ 500 0510 700F      		moveq #15,%d0
+ 501 0512 C280      		and.l %d0,%d1
+ 502 0514 2F01      		move.l %d1,-(%sp)
+ 503 0516 2F02      		move.l %d2,-(%sp)
+ 504 0518 6100 FBDE 		jbsr operation_clean_up
+ 505 051c 16BC 0004 		move.b #4,(%a3)
+ 506 0520 7004      		moveq #4,%d0
+ 507 0522 60CC      		jbra .L134
+ 508               	.L119:
+ 509 0524 1034 2800 		move.b (%a4,%d2.l),%d0
+ 510               	.L123:
+ 511 0528 4A00      		tst.b %d0
+ 512 052a 67FC      		jbeq .L123
+ 513 052c 4A2A 0017 		tst.b 23(%a2)
+ 514 0530 6608      		jbne .L121
+ 515 0532 16BC 0004 		move.b #4,(%a3)
+ 516 0536 7004      		moveq #4,%d0
+ 517 0538 602A      		jbra .L102
+ 518               	.L121:
+ 519 053a 102A 0006 		move.b 6(%a2),%d0
+ 520 053e 720F      		moveq #15,%d1
+ 521 0540 C081      		and.l %d1,%d0
+ 522 0542 41F9 0000 		lea possible_error,%a0
+ 522      0000 
+ 523 0548 4A30 0800 		tst.b (%a0,%d0.l)
+ 524 054c 6710      		jbeq .L126
+ 525 054e 102A 0010 		move.b 16(%a2),%d0
+ 526 0552 0200 FFC0 		and.b #-64,%d0
+ 527 0556 6606      		jbne .L126
+ 528 0558 4213      		clr.b (%a3)
+ 529 055a 7000      		moveq #0,%d0
+ 530 055c 6006      		jbra .L102
+ 531               	.L126:
+ 532 055e 16BC 0002 		move.b #2,(%a3)
+ 533 0562 7002      		moveq #2,%d0
+ 534               	.L102:
+ 535 0564 4CEE 1C0C 		movm.l -20(%fp),#0x1c0c
+ 535      FFEC 
+ 536 056a 4E5E      		unlk %fp
+ 537 056c 4E75      		rts
+ 538               		.size	execute_docb, .-execute_docb
+ 539               		.align	2
+ 540               		.globl	fdc_specify
+ 541               		.type	fdc_specify, @function
+ 542               	fdc_specify:
+ 543 056e 4E56 FFFC 		link.w %fp,#-4
+ 544 0572 48E7 2030 		movm.l #0x2030,-(%sp)
+ 545 0576 206E 0008 		move.l 8(%fp),%a0
+ 546 057a 2428 0014 		move.l 20(%a0),%d2
+ 547 057e 2668 0010 		move.l 16(%a0),%a3
+ 548 0582 4240      		clr.w %d0
+ 549 0584 1028 0009 		move.b 9(%a0),%d0
+ 550 0588 33C0 0000 		move.w %d0,fdc_base_port
+68K GAS  fdc8272.s 			page 12
+
+
+ 550      0000 
+ 551 058e B7F9 0000 		cmp.l cache_param.l,%a3
+ 551      0000 
+ 552 0594 6604      		jbne .L136
+ 553 0596 7000      		moveq #0,%d0
+ 554 0598 6036      		jbra .L138
+ 555               	.L136:
+ 556 059a 2442      		move.l %d2,%a2
+ 557 059c 5C8A      		addq.l #6,%a2
+ 558 059e 7000      		moveq #0,%d0
+ 559 05a0 102B 000D 		move.b 13(%a3),%d0
+ 560 05a4 2F00      		move.l %d0,-(%sp)
+ 561 05a6 4EB9 0000 		jbsr wd_set_ldcr
+ 561      0000 
+ 562 05ac 14BC 0003 		move.b #3,(%a2)
+ 563 05b0 2042      		move.l %d2,%a0
+ 564 05b2 5E88      		addq.l #7,%a0
+ 565 05b4 1093      		move.b (%a3),(%a0)
+ 566 05b6 116B 0001 		move.b 1(%a3),1(%a0)
+ 566      0001 
+ 567 05bc 486E FFFF 		pea -1(%fp)
+ 568 05c0 2F02      		move.l %d2,-(%sp)
+ 569 05c2 6100 FE0C 		jbsr execute_docb
+ 570 05c6 7000      		moveq #0,%d0
+ 571 05c8 102E FFFF 		move.b -1(%fp),%d0
+ 572 05cc 4FEF 000C 		lea (12,%sp),%sp
+ 573               	.L138:
+ 574 05d0 4CEE 0C04 		movm.l -16(%fp),#0xc04
+ 574      FFF0 
+ 575 05d6 4E5E      		unlk %fp
+ 576 05d8 4E75      		rts
+ 577               		.size	fdc_specify, .-fdc_specify
+ 578               		.align	2
+ 579               		.globl	fdc_recalibrate
+ 580               		.type	fdc_recalibrate, @function
+ 581               	fdc_recalibrate:
+ 582 05da 4E56 FFFC 		link.w %fp,#-4
+ 583 05de 48E7 2030 		movm.l #0x2030,-(%sp)
+ 584 05e2 266E 0008 		move.l 8(%fp),%a3
+ 585 05e6 7402      		moveq #2,%d2
+ 586               	.L141:
+ 587 05e8 177C FFFA 		move.b #-6,24(%a3)
+ 587      0018 
+ 588 05ee 2F0B      		move.l %a3,-(%sp)
+ 589 05f0 6100 FF7C 		jbsr fdc_specify
+ 590 05f4 2F0B      		move.l %a3,-(%sp)
+ 591 05f6 4EB9 0000 		jbsr wd_select
+ 591      0000 
+ 592 05fc 206B 0014 		move.l 20(%a3),%a0
+ 593 0600 117C 0007 		move.b #7,6(%a0)
+ 593      0006 
+ 594 0606 206B 0014 		move.l 20(%a3),%a0
+ 595 060a 102B 000A 		move.b 10(%a3),%d0
+ 596 060e 0200 0001 		and.b #1,%d0
+ 597 0612 1140 0007 		move.b %d0,7(%a0)
+ 598 0616 486E FFFF 		pea -1(%fp)
+ 599 061a 2F2B 0014 		move.l 20(%a3),-(%sp)
+68K GAS  fdc8272.s 			page 13
+
+
+ 600 061e 45FA FDB0 		lea execute_docb,%a2
+ 601 0622 4E92      		jbsr (%a2)
+ 602 0624 206B 0014 		move.l 20(%a3),%a0
+ 603 0628 117C 0004 		move.b #4,6(%a0)
+ 603      0006 
+ 604 062e 206B 0014 		move.l 20(%a3),%a0
+ 605 0632 102B 000A 		move.b 10(%a3),%d0
+ 606 0636 0200 0001 		and.b #1,%d0
+ 607 063a 1140 0007 		move.b %d0,7(%a0)
+ 608 063e 486E FFFE 		pea -2(%fp)
+ 609 0642 2F2B 0014 		move.l 20(%a3),-(%sp)
+ 610 0646 4E92      		jbsr (%a2)
+ 611 0648 206B 0014 		move.l 20(%a3),%a0
+ 612 064c 1028 0010 		move.b 16(%a0),%d0
+ 613 0650 0200 0030 		and.b #48,%d0
+ 614 0654 122E FFFF 		move.b -1(%fp),%d1
+ 615 0658 822E FFFE 		or.b -2(%fp),%d1
+ 616 065c 0A00 0030 		eor.b #48,%d0
+ 617 0660 8200      		or.b %d0,%d1
+ 618 0662 4FEF 0018 		lea (24,%sp),%sp
+ 619 0666 6608      		jbne .L142
+ 620 0668 422B 0018 		clr.b 24(%a3)
+ 621 066c 7000      		moveq #0,%d0
+ 622 066e 6008      		jbra .L144
+ 623               	.L142:
+ 624 0670 5302      		subq.b #1,%d2
+ 625 0672 6600 FF74 		jbne .L141
+ 626 0676 7002      		moveq #2,%d0
+ 627               	.L144:
+ 628 0678 4CEE 0C04 		movm.l -16(%fp),#0xc04
+ 628      FFF0 
+ 629 067e 4E5E      		unlk %fp
+ 630 0680 4E75      		rts
+ 631               		.size	fdc_recalibrate, .-fdc_recalibrate
+ 632               		.align	2
+ 633               		.globl	fdc_seek
+ 634               		.type	fdc_seek, @function
+ 635               	fdc_seek:
+ 636 0682 4E56 FFFC 		link.w %fp,#-4
+ 637 0686 48E7 3C38 		movm.l #0x3c38,-(%sp)
+ 638 068a 246E 0008 		move.l 8(%fp),%a2
+ 639 068e 142E 000F 		move.b 15(%fp),%d2
+ 640 0692 1A2E 0013 		move.b 19(%fp),%d5
+ 641 0696 2F0A      		move.l %a2,-(%sp)
+ 642 0698 6100 FED4 		jbsr fdc_specify
+ 643 069c 2F0A      		move.l %a2,-(%sp)
+ 644 069e 4EB9 0000 		jbsr wd_select
+ 644      0000 
+ 645 06a4 4204      		clr.b %d4
+ 646 06a6 508F      		addq.l #8,%sp
+ 647 06a8 6000 0082 		jbra .L150
+ 648               	.L151:
+ 649 06ac 206A 0014 		move.l 20(%a2),%a0
+ 650 06b0 5C88      		addq.l #6,%a0
+ 651 06b2 10FC 000F 		move.b #15,(%a0)+
+ 652 06b6 7001      		moveq #1,%d0
+ 653 06b8 C085      		and.l %d5,%d0
+68K GAS  fdc8272.s 			page 14
+
+
+ 654 06ba D080      		add.l %d0,%d0
+ 655 06bc D080      		add.l %d0,%d0
+ 656 06be 122A 000A 		move.b 10(%a2),%d1
+ 657 06c2 0201 0001 		and.b #1,%d1
+ 658 06c6 8200      		or.b %d0,%d1
+ 659 06c8 10C1      		move.b %d1,(%a0)+
+ 660 06ca 2648      		move.l %a0,%a3
+ 661 06cc 1082      		move.b %d2,(%a0)
+ 662 06ce 260E      		move.l %fp,%d3
+ 663 06d0 5383      		subq.l #1,%d3
+ 664 06d2 2F03      		move.l %d3,-(%sp)
+ 665 06d4 2F2A 0014 		move.l 20(%a2),-(%sp)
+ 666 06d8 49FA FCF6 		lea execute_docb,%a4
+ 667 06dc 4E94      		jbsr (%a4)
+ 668 06de 508F      		addq.l #8,%sp
+ 669 06e0 4A2E FFFF 		tst.b -1(%fp)
+ 670 06e4 670C      		jbeq .L152
+ 671 06e6 2F0A      		move.l %a2,-(%sp)
+ 672 06e8 6100 FEF0 		jbsr fdc_recalibrate
+ 673 06ec 7000      		moveq #0,%d0
+ 674 06ee 588F      		addq.l #4,%sp
+ 675 06f0 6044      		jbra .L154
+ 676               	.L152:
+ 677 06f2 177C 004A 		move.b #74,-2(%a3)
+ 677      FFFE 
+ 678 06f8 2F03      		move.l %d3,-(%sp)
+ 679 06fa 2F2A 0014 		move.l 20(%a2),-(%sp)
+ 680 06fe 4E94      		jbsr (%a4)
+ 681 0700 508F      		addq.l #8,%sp
+ 682 0702 4A2E FFFF 		tst.b -1(%fp)
+ 683 0706 6610      		jbne .L155
+ 684 0708 206A 0014 		move.l 20(%a2),%a0
+ 685 070c 1028 0013 		move.b 19(%a0),%d0
+ 686 0710 1540 0018 		move.b %d0,24(%a2)
+ 687 0714 B400      		cmp.b %d0,%d2
+ 688 0716 6708      		jbeq .L158
+ 689               	.L155:
+ 690 0718 2F0A      		move.l %a2,-(%sp)
+ 691 071a 6100 FEBE 		jbsr fdc_recalibrate
+ 692 071e 588F      		addq.l #4,%sp
+ 693               	.L158:
+ 694 0720 5204      		addq.b #1,%d4
+ 695 0722 0C04 0005 		cmp.b #5,%d4
+ 696 0726 6604      		jbne .L150
+ 697 0728 7002      		moveq #2,%d0
+ 698 072a 600A      		jbra .L154
+ 699               	.L150:
+ 700 072c B42A 0018 		cmp.b 24(%a2),%d2
+ 701 0730 6600 FF7A 		jbne .L151
+ 702 0734 7000      		moveq #0,%d0
+ 703               	.L154:
+ 704 0736 4CEE 1C3C 		movm.l -32(%fp),#0x1c3c
+ 704      FFE0 
+ 705 073c 4E5E      		unlk %fp
+ 706 073e 4E75      		rts
+ 707               		.size	fdc_seek, .-fdc_seek
+ 708               		.globl	DD360
+68K GAS  fdc8272.s 			page 15
+
+
+ 709               		.section	.rodata
+ 710               		.type	DD360, @object
+ 711               		.size	DD360, 14
+ 712               	DD360:
+ 713 0000 DF        		.byte	-33
+ 714 0001 02        		.byte	2
+ 715 0002 25        		.byte	37
+ 716 0003 02        		.byte	2
+ 717 0004 09        		.byte	9
+ 718 0005 2A        		.byte	42
+ 719 0006 FF        		.byte	-1
+ 720 0007 50        		.byte	80
+ 721 0008 F6        		.byte	-10
+ 722 0009 0F        		.byte	15
+ 723 000a 08        		.byte	8
+ 724 000b 27        		.byte	39
+ 725 000c 50        		.byte	80
+ 726 000d 02        		.byte	2
+ 727               		.globl	HD1200
+ 728               		.type	HD1200, @object
+ 729               		.size	HD1200, 14
+ 730               	HD1200:
+ 731 000e DF        		.byte	-33
+ 732 000f 02        		.byte	2
+ 733 0010 25        		.byte	37
+ 734 0011 02        		.byte	2
+ 735 0012 0F        		.byte	15
+ 736 0013 1B        		.byte	27
+ 737 0014 FF        		.byte	-1
+ 738 0015 54        		.byte	84
+ 739 0016 F6        		.byte	-10
+ 740 0017 0F        		.byte	15
+ 741 0018 08        		.byte	8
+ 742 0019 4F        		.byte	79
+ 743 001a 00        		.byte	0
+ 744 001b 00        		.byte	0
+ 745               		.globl	DD720
+ 746               		.type	DD720, @object
+ 747               		.size	DD720, 14
+ 748               	DD720:
+ 749 001c DF        		.byte	-33
+ 750 001d 02        		.byte	2
+ 751 001e 25        		.byte	37
+ 752 001f 02        		.byte	2
+ 753 0020 09        		.byte	9
+ 754 0021 2A        		.byte	42
+ 755 0022 FF        		.byte	-1
+ 756 0023 50        		.byte	80
+ 757 0024 F6        		.byte	-10
+ 758 0025 0F        		.byte	15
+ 759 0026 08        		.byte	8
+ 760 0027 4F        		.byte	79
+ 761 0028 50        		.byte	80
+ 762 0029 02        		.byte	2
+ 763               		.globl	HD144
+ 764               		.type	HD144, @object
+ 765               		.size	HD144, 14
+68K GAS  fdc8272.s 			page 16
+
+
+ 766               	HD144:
+ 767 002a AF        		.byte	-81
+ 768 002b 02        		.byte	2
+ 769 002c 25        		.byte	37
+ 770 002d 02        		.byte	2
+ 771 002e 12        		.byte	18
+ 772 002f 1B        		.byte	27
+ 773 0030 FF        		.byte	-1
+ 774 0031 6C        		.byte	108
+ 775 0032 F6        		.byte	-10
+ 776 0033 0F        		.byte	15
+ 777 0034 08        		.byte	8
+ 778 0035 4F        		.byte	79
+ 779 0036 00        		.byte	0
+ 780 0037 00        		.byte	0
+ 781               		.globl	HD128
+ 782               		.type	HD128, @object
+ 783               		.size	HD128, 14
+ 784               	HD128:
+ 785 0038 AF        		.byte	-81
+ 786 0039 02        		.byte	2
+ 787 003a 25        		.byte	37
+ 788 003b 03        		.byte	3
+ 789 003c 08        		.byte	8
+ 790 003d 35        		.byte	53
+ 791 003e FF        		.byte	-1
+ 792 003f 74        		.byte	116
+ 793 0040 F6        		.byte	-10
+ 794 0041 0F        		.byte	15
+ 795 0042 08        		.byte	8
+ 796 0043 4F        		.byte	79
+ 797 0044 00        		.byte	0
+ 798 0045 00        		.byte	0
+ 799               		.type	command_length, @object
+ 800               		.size	command_length, 16
+ 801               	command_length:
+ 802 0046 00        		.byte	0
+ 803 0047 00        		.byte	0
+ 804 0048 09        		.byte	9
+ 805 0049 03        		.byte	3
+ 806 004a 02        		.byte	2
+ 807 004b 09        		.byte	9
+ 808 004c 09        		.byte	9
+ 809 004d 02        		.byte	2
+ 810 004e 01        		.byte	1
+ 811 004f 09        		.byte	9
+ 812 0050 02        		.byte	2
+ 813 0051 00        		.byte	0
+ 814 0052 09        		.byte	9
+ 815 0053 06        		.byte	6
+ 816 0054 00        		.byte	0
+ 817 0055 03        		.byte	3
+ 818               		.type	drive_no_present, @object
+ 819               		.size	drive_no_present, 16
+ 820               	drive_no_present:
+ 821 0056 00        		.byte	0
+ 822 0057 00        		.byte	0
+68K GAS  fdc8272.s 			page 17
+
+
+ 823 0058 01        		.byte	1
+ 824 0059 00        		.byte	0
+ 825 005a 01        		.byte	1
+ 826 005b 01        		.byte	1
+ 827 005c 01        		.byte	1
+ 828 005d 01        		.byte	1
+ 829 005e 00        		.byte	0
+ 830 005f 01        		.byte	1
+ 831 0060 01        		.byte	1
+ 832 0061 00        		.byte	0
+ 833 0062 01        		.byte	1
+ 834 0063 01        		.byte	1
+ 835 0064 00        		.byte	0
+ 836 0065 01        		.byte	1
+ 837               		.type	overlap_operation, @object
+ 838               		.size	overlap_operation, 16
+ 839               	overlap_operation:
+ 840 0066 00        		.byte	0
+ 841 0067 00        		.byte	0
+ 842 0068 00        		.byte	0
+ 843 0069 00        		.byte	0
+ 844 006a 00        		.byte	0
+ 845 006b 00        		.byte	0
+ 846 006c 00        		.byte	0
+ 847 006d 01        		.byte	1
+ 848 006e 00        		.byte	0
+ 849 006f 00        		.byte	0
+ 850 0070 00        		.byte	0
+ 851 0071 00        		.byte	0
+ 852 0072 00        		.byte	0
+ 853 0073 00        		.byte	0
+ 854 0074 00        		.byte	0
+ 855 0075 01        		.byte	1
+ 856               		.type	no_result, @object
+ 857               		.size	no_result, 16
+ 858               	no_result:
+ 859 0076 00        		.byte	0
+ 860 0077 00        		.byte	0
+ 861 0078 00        		.byte	0
+ 862 0079 01        		.byte	1
+ 863 007a 00        		.byte	0
+ 864 007b 00        		.byte	0
+ 865 007c 00        		.byte	0
+ 866 007d 00        		.byte	0
+ 867 007e 00        		.byte	0
+ 868 007f 00        		.byte	0
+ 869 0080 00        		.byte	0
+ 870 0081 00        		.byte	0
+ 871 0082 00        		.byte	0
+ 872 0083 00        		.byte	0
+ 873 0084 00        		.byte	0
+ 874 0085 00        		.byte	0
+ 875               		.type	immed_result, @object
+ 876               		.size	immed_result, 16
+ 877               	immed_result:
+ 878 0086 00        		.byte	0
+ 879 0087 00        		.byte	0
+68K GAS  fdc8272.s 			page 18
+
+
+ 880 0088 00        		.byte	0
+ 881 0089 00        		.byte	0
+ 882 008a 01        		.byte	1
+ 883 008b 00        		.byte	0
+ 884 008c 00        		.byte	0
+ 885 008d 00        		.byte	0
+ 886 008e 01        		.byte	1
+ 887 008f 00        		.byte	0
+ 888 0090 00        		.byte	0
+ 889 0091 00        		.byte	0
+ 890 0092 00        		.byte	0
+ 891 0093 00        		.byte	0
+ 892 0094 00        		.byte	0
+ 893 0095 00        		.byte	0
+ 894               		.type	possible_error, @object
+ 895               		.size	possible_error, 16
+ 896               	possible_error:
+ 897 0096 00        		.byte	0
+ 898 0097 00        		.byte	0
+ 899 0098 01        		.byte	1
+ 900 0099 00        		.byte	0
+ 901 009a 00        		.byte	0
+ 902 009b 01        		.byte	1
+ 903 009c 01        		.byte	1
+ 904 009d 01        		.byte	1
+ 905 009e 01        		.byte	1
+ 906 009f 01        		.byte	1
+ 907 00a0 01        		.byte	1
+ 908 00a1 00        		.byte	0
+ 909 00a2 01        		.byte	1
+ 910 00a3 01        		.byte	1
+ 911 00a4 00        		.byte	0
+ 912 00a5 01        		.byte	1
+ 913               		.local	dma_count.1173
+ 914               		.comm	dma_count.1173,2,2
+ 915               		.local	dma_addr.1172
+ 916               		.comm	dma_addr.1172,4,4
+ 917               		.local	dma_mode.1171
+ 918               		.comm	dma_mode.1171,1,1
+ 919               		.local	operation_in_progress
+ 920               		.comm	operation_in_progress,5,1
+ 921               		.local	operation_complete
+ 922               		.comm	operation_complete,5,1
+ 923               		.local	interrupt_docb
+ 924               		.comm	interrupt_docb,24,4
+ 925               		.local	global_drive_no
+ 926               		.comm	global_drive_no,1,1
+ 927               		.comm	fdc_base_port,2,2
+ 928               		.comm	drive_status_change,4,1
+ 929               		.comm	drive_ready,4,1
+ 930               		.comm	operation_docb_ptr,20,4
+ 931               		.comm	disk_table,32,4
+ 932               		.comm	cache_param,4,4
+ 933               		.ident	"GCC: (GNU) 4.1.1"
+68K GAS  fdc8272.s 			page 19
+
+
+DEFINED SYMBOLS
+                            *ABS*:00000000 fdc8272.c
+                            *ABS*:000109a0 CPU
+                            *ABS*:00000001 RETAIL
+           fdc8272.s:7      .text:00000000 initialize_drivers
+                            *COM*:00000004 drive_ready
+                            *COM*:00000004 drive_status_change
+           fdc8272.s:918    .bss:00000009 operation_in_progress
+           fdc8272.s:920    .bss:0000000e operation_complete
+           fdc8272.s:924    .bss:0000002c global_drive_no
+           fdc8272.s:32     .text:0000004c output_controls_to_dma
+           fdc8272.s:916    .bss:00000008 dma_mode.1171
+           fdc8272.s:916    .bss:00000004 dma_addr.1172
+           fdc8272.s:914    .bss:00000000 dma_count.1173
+           fdc8272.s:48     .text:00000076 copy_int_result
+                            *COM*:00000014 operation_docb_ptr
+           fdc8272.s:924    .bss:00000014 interrupt_docb
+           fdc8272.s:80     .text:000000d4 fdc_info
+                            *COM*:00000020 disk_table
+           fdc8272.s:96     .text:000000f8 operation_clean_up
+           fdc8272.s:839    .rodata:00000066 overlap_operation
+           fdc8272.s:121    .text:00000140 fdc_ready_for_result
+                            *COM*:00000002 fdc_base_port
+           fdc8272.s:147    .text:00000174 input_byte_from_fdc
+           fdc8272.s:173    .text:000001a4 input_result_from_fdc
+           fdc8272.s:219    .text:00000216 fdc_ready_for_command
+           fdc8272.s:240    .text:00000246 output_byte_to_fdc
+           fdc8272.s:263    .text:00000272 fdcint
+           fdc8272.s:351    .text:0000036c output_command_to_fdc
+           fdc8272.s:801    .rodata:00000046 command_length
+           fdc8272.s:390    .text:000003d0 execute_docb
+           fdc8272.s:820    .rodata:00000056 drive_no_present
+           fdc8272.s:858    .rodata:00000076 no_result
+           fdc8272.s:877    .rodata:00000086 immed_result
+           fdc8272.s:896    .rodata:00000096 possible_error
+           fdc8272.s:542    .text:0000056e fdc_specify
+                            *COM*:00000004 cache_param
+           fdc8272.s:581    .text:000005da fdc_recalibrate
+           fdc8272.s:635    .text:00000682 fdc_seek
+           fdc8272.s:712    .rodata:00000000 DD360
+           fdc8272.s:730    .rodata:0000000e HD1200
+           fdc8272.s:748    .rodata:0000001c DD720
+           fdc8272.s:766    .rodata:0000002a HD144
+           fdc8272.s:784    .rodata:00000038 HD128
+
+UNDEFINED SYMBOLS
+disable
+enable
+usec12
+wd_set_ldcr
+wd_select

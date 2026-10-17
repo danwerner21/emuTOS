@@ -1,0 +1,221 @@
+68K GAS  wd37c65.s 			page 1
+
+
+   1               	#NO_APP
+   2               		.file	"wd37c65.c"
+   3               		.text
+   4               		.align	2
+   5               		.globl	wd_set_ldor
+   6               		.type	wd_set_ldor, @function
+   7               	wd_set_ldor:
+   8 0000 4E56 0000 		link.w %fp,#0
+   9 0004 2F02      		move.l %d2,-(%sp)
+  10 0006 41F9 0000 		lea wd_reg,%a0
+  10      0000 
+  11 000c 1010      		move.b (%a0),%d0
+  12 000e 1400      		move.b %d0,%d2
+  13 0010 842E 000B 		or.b 11(%fp),%d2
+  14 0014 1082      		move.b %d2,(%a0)
+  15 0016 7200      		moveq #0,%d1
+  16 0018 3239 0000 		move.w fdc_base_port,%d1
+  16      0000 
+  17 001e 2041      		move.l %d1,%a0
+  18 0020 1142 8002 		move.b %d2,-32766(%a0)
+  19 0024 0280 0000 		and.l #255,%d0
+  19      00FF 
+  20 002a 241F      		move.l (%sp)+,%d2
+  21 002c 4E5E      		unlk %fp
+  22 002e 4E75      		rts
+  23               		.size	wd_set_ldor, .-wd_set_ldor
+  24               		.align	2
+  25               		.globl	wd_clear_ldor
+  26               		.type	wd_clear_ldor, @function
+  27               	wd_clear_ldor:
+  28 0030 4E56 0000 		link.w %fp,#0
+  29 0034 2F02      		move.l %d2,-(%sp)
+  30 0036 41F9 0000 		lea wd_reg,%a0
+  30      0000 
+  31 003c 1010      		move.b (%a0),%d0
+  32 003e 122E 000B 		move.b 11(%fp),%d1
+  33 0042 4601      		not.b %d1
+  34 0044 1400      		move.b %d0,%d2
+  35 0046 C401      		and.b %d1,%d2
+  36 0048 1082      		move.b %d2,(%a0)
+  37 004a 7200      		moveq #0,%d1
+  38 004c 3239 0000 		move.w fdc_base_port,%d1
+  38      0000 
+  39 0052 2041      		move.l %d1,%a0
+  40 0054 1142 8002 		move.b %d2,-32766(%a0)
+  41 0058 0280 0000 		and.l #255,%d0
+  41      00FF 
+  42 005e 241F      		move.l (%sp)+,%d2
+  43 0060 4E5E      		unlk %fp
+  44 0062 4E75      		rts
+  45               		.size	wd_clear_ldor, .-wd_clear_ldor
+  46               		.align	2
+  47               		.globl	wd_set_ldcr
+  48               		.type	wd_set_ldcr, @function
+  49               	wd_set_ldcr:
+  50 0064 4E56 0000 		link.w %fp,#0
+  51 0068 2F02      		move.l %d2,-(%sp)
+68K GAS  wd37c65.s 			page 2
+
+
+  52 006a 242E 0008 		move.l 8(%fp),%d2
+  53 006e 41F9 0000 		lea wd_reg+1,%a0
+  53      0000 
+  54 0074 1010      		move.b (%a0),%d0
+  55 0076 7200      		moveq #0,%d1
+  56 0078 3239 0000 		move.w fdc_base_port,%d1
+  56      0000 
+  57 007e 1082      		move.b %d2,(%a0)
+  58 0080 2041      		move.l %d1,%a0
+  59 0082 1142 8003 		move.b %d2,-32765(%a0)
+  60 0086 0280 0000 		and.l #255,%d0
+  60      00FF 
+  61 008c 241F      		move.l (%sp)+,%d2
+  62 008e 4E5E      		unlk %fp
+  63 0090 4E75      		rts
+  64               		.size	wd_set_ldcr, .-wd_set_ldcr
+  65               		.align	2
+  66               		.globl	set_PCAT_mode
+  67               		.type	set_PCAT_mode, @function
+  68               	set_PCAT_mode:
+  69 0092 4E56 0000 		link.w %fp,#0
+  70 0096 4878 00FF 		pea 255.w
+  71 009a 6194      		jbsr wd_clear_ldor
+  72 009c 7000      		moveq #0,%d0
+  73 009e 3039 0000 		move.w fdc_base_port,%d0
+  73      0000 
+  74 00a4 2040      		move.l %d0,%a0
+  75 00a6 13E8 8003 		move.b -32765(%a0),wd_reg+1
+  75      0000 0000 
+  76 00ae 4878 000C 		pea 12.w
+  77 00b2 6100 FF4C 		jbsr wd_set_ldor
+  78 00b6 508F      		addq.l #8,%sp
+  79 00b8 4E5E      		unlk %fp
+  80 00ba 4E75      		rts
+  81               		.size	set_PCAT_mode, .-set_PCAT_mode
+  82               		.align	2
+  83               		.globl	floppy_timeout
+  84               		.type	floppy_timeout, @function
+  85               	floppy_timeout:
+  86 00bc 4E56 0000 		link.w %fp,#0
+  87 00c0 4878 0033 		pea 51.w
+  88 00c4 6100 FF6A 		jbsr wd_clear_ldor
+  89 00c8 588F      		addq.l #4,%sp
+  90 00ca 4E5E      		unlk %fp
+  91 00cc 4E75      		rts
+  92               		.size	floppy_timeout, .-floppy_timeout
+  93               		.align	2
+  94               		.globl	wait_for
+  95               		.type	wait_for, @function
+  96               	wait_for:
+  97 00ce 4E56 0000 		link.w %fp,#0
+  98 00d2 48E7 3800 		movm.l #0x3800,-(%sp)
+  99 00d6 142E 000B 		move.b 11(%fp),%d2
+ 100 00da 1639 0000 		move.b timeout,%d3
+ 100      0000 
+ 101 00e0 B403      		cmp.b %d3,%d2
+ 102 00e2 6306      		jbls .L12
+68K GAS  wd37c65.s 			page 3
+
+
+ 103 00e4 50F9 0000 		st timeout
+ 103      0000 
+ 104               	.L12:
+ 105 00ea 1839 0000 		move.b timeout,%d4
+ 105      0000 
+ 106 00f0 9802      		sub.b %d2,%d4
+ 107               	.L14:
+ 108 00f2 4EB9 0000 		jbsr usec16
+ 108      0000 
+ 109 00f8 1039 0000 		move.b timeout,%d0
+ 109      0000 
+ 110 00fe 6704      		jbeq .L15
+ 111 0100 B800      		cmp.b %d0,%d4
+ 112 0102 65EE      		jbcs .L14
+ 113               	.L15:
+ 114 0104 B403      		cmp.b %d3,%d2
+ 115 0106 6306      		jbls .L19
+ 116 0108 13C3 0000 		move.b %d3,timeout
+ 116      0000 
+ 117               	.L19:
+ 118 010e 4CEE 001C 		movm.l -12(%fp),#0x1c
+ 118      FFF4 
+ 119 0114 4E5E      		unlk %fp
+ 120 0116 4E75      		rts
+ 121               		.size	wait_for, .-wait_for
+ 122               		.align	2
+ 123               		.globl	wd_select
+ 124               		.type	wd_select, @function
+ 125               	wd_select:
+ 126 0118 4E56 0000 		link.w %fp,#0
+ 127 011c 2F0A      		move.l %a2,-(%sp)
+ 128 011e 2F02      		move.l %d2,-(%sp)
+ 129 0120 246E 0008 		move.l 8(%fp),%a2
+ 130 0124 4A2A 000A 		tst.b 10(%a2)
+ 131 0128 6604      		jbne .L22
+ 132 012a 7410      		moveq #16,%d2
+ 133 012c 6002      		jbra .L24
+ 134               	.L22:
+ 135 012e 7421      		moveq #33,%d2
+ 136               	.L24:
+ 137 0130 7031      		moveq #49,%d0
+ 138 0132 C082      		and.l %d2,%d0
+ 139 0134 2F00      		move.l %d0,-(%sp)
+ 140 0136 6100 FEC8 		jbsr wd_set_ldor
+ 141 013a 206A 0010 		move.l 16(%a2),%a0
+ 142 013e 13E8 0002 		move.b 2(%a0),timeout
+ 142      0000 0000 
+ 143 0146 C400      		and.b %d0,%d2
+ 144 0148 588F      		addq.l #4,%sp
+ 145 014a 661E      		jbne .L27
+ 146 014c 206A 0010 		move.l 16(%a2),%a0
+ 147 0150 7000      		moveq #0,%d0
+ 148 0152 1028 0009 		move.b 9(%a0),%d0
+ 149 0156 2F00      		move.l %d0,-(%sp)
+ 150 0158 6100 FF74 		jbsr wait_for
+ 151 015c 206A 0010 		move.l 16(%a2),%a0
+ 152 0160 13E8 0002 		move.b 2(%a0),timeout
+68K GAS  wd37c65.s 			page 4
+
+
+ 152      0000 0000 
+ 153 0168 588F      		addq.l #4,%sp
+ 154               	.L27:
+ 155 016a 242E FFF8 		move.l -8(%fp),%d2
+ 156 016e 246E FFFC 		move.l -4(%fp),%a2
+ 157 0172 4E5E      		unlk %fp
+ 158 0174 4E75      		rts
+ 159               		.size	wd_select, .-wd_select
+ 160               		.comm	fdc_base_port,2,2
+ 161               		.comm	drive_status_change,4,1
+ 162               		.comm	drive_ready,4,1
+ 163               		.comm	disk_table,32,4
+ 164               		.comm	timeout,1,1
+ 165               		.comm	wd_reg,2,1
+ 166               		.ident	"GCC: (GNU) 4.1.1"
+68K GAS  wd37c65.s 			page 5
+
+
+DEFINED SYMBOLS
+                            *ABS*:00000000 wd37c65.c
+                            *ABS*:000109a0 CPU
+                            *ABS*:00000001 RETAIL
+           wd37c65.s:7      .text:00000000 wd_set_ldor
+                            *COM*:00000002 wd_reg
+                            *COM*:00000002 fdc_base_port
+           wd37c65.s:27     .text:00000030 wd_clear_ldor
+           wd37c65.s:49     .text:00000064 wd_set_ldcr
+           wd37c65.s:68     .text:00000092 set_PCAT_mode
+           wd37c65.s:85     .text:000000bc floppy_timeout
+           wd37c65.s:96     .text:000000ce wait_for
+                            *COM*:00000001 timeout
+           wd37c65.s:125    .text:00000118 wd_select
+                            *COM*:00000004 drive_status_change
+                            *COM*:00000004 drive_ready
+                            *COM*:00000020 disk_table
+
+UNDEFINED SYMBOLS
+usec16

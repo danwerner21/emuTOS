@@ -1,0 +1,167 @@
+68K GAS  prettydump.s 			page 1
+
+
+   1               	#NO_APP
+   2               		.file	"prettydump.c"
+   3               		.section	.rodata.str1.1,"aMS",@progbits,1
+   4               	.LC0:
+   5 0000 2530 386C 		.string	"%08lx "
+   5      7820 00
+   6               	.LC1:
+   7 0007 2020 2000 		.string	"   "
+   8               	.LC2:
+   9 000b 2025 3032 		.string	" %02x"
+   9      7800 
+  10               	.LC3:
+  11 0011 2020 2573 		.string	"  %s"
+  11      00
+  12               	.LC4:
+  13 0016 0A25 3038 		.string	"\n%08lx "
+  13      6C78 2000 
+  14               	.LC5:
+  15 001e 0A00      		.string	"\n"
+  16               	.LC6:
+  17 0020 2020 2573 		.string	"  %s\n"
+  17      0A00 
+  18               		.text
+  19               		.align	2
+  20               		.globl	pretty_dump_memory
+  21               		.type	pretty_dump_memory, @function
+  22               	pretty_dump_memory:
+  23 0000 4E56 FFEC 		link.w %fp,#-20
+  24 0004 48E7 3C30 		movm.l #0x3c30,-(%sp)
+  25 0008 282E 0008 		move.l 8(%fp),%d4
+  26 000c 2A2E 000C 		move.l 12(%fp),%d5
+  27 0010 2404      		move.l %d4,%d2
+  28 0012 41EE FFEF 		lea (-17,%fp),%a0
+  29               	.L2:
+  30 0016 10FC 0020 		move.b #32,(%a0)+
+  31 001a 200E      		move.l %fp,%d0
+  32 001c 5380      		subq.l #1,%d0
+  33 001e B088      		cmp.l %a0,%d0
+  34 0020 66F4      		jbne .L2
+  35 0022 422E FFFF 		clr.b -1(%fp)
+  36 0026 70F0      		moveq #-16,%d0
+  37 0028 C084      		and.l %d4,%d0
+  38 002a 2F00      		move.l %d0,-(%sp)
+  39 002c 4879 0000 		pea .LC0
+  39      0000 
+  40 0032 4EB9 0000 		jbsr cprintf
+  40      0000 
+  41 0038 7600      		moveq #0,%d3
+  42 003a 508F      		addq.l #8,%sp
+  43 003c 6010      		jbra .L4
+  44               	.L5:
+  45 003e 4879 0000 		pea .LC1
+  45      0000 
+  46 0044 4EB9 0000 		jbsr cprintf
+  46      0000 
+  47 004a 5283      		addq.l #1,%d3
+  48 004c 588F      		addq.l #4,%sp
+68K GAS  prettydump.s 			page 2
+
+
+  49               	.L4:
+  50 004e 700F      		moveq #15,%d0
+  51 0050 C084      		and.l %d4,%d0
+  52 0052 B083      		cmp.l %d3,%d0
+  53 0054 62E8      		jbhi .L5
+  54 0056 45F6 38EF 		lea -17(%fp,%d3.l),%a2
+  55 005a 606A      		jbra .L29
+  56               	.L8:
+  57 005c 2042      		move.l %d2,%a0
+  58 005e 1210      		move.b (%a0),%d1
+  59 0060 1001      		move.b %d1,%d0
+  60 0062 0600 FFE0 		add.b #-32,%d0
+  61 0066 0C00 005E 		cmp.b #94,%d0
+  62 006a 6204      		jbhi .L9
+  63 006c 1481      		move.b %d1,(%a2)
+  64 006e 6004      		jbra .L11
+  65               	.L9:
+  66 0070 14BC 002E 		move.b #46,(%a2)
+  67               	.L11:
+  68 0074 2042      		move.l %d2,%a0
+  69 0076 5282      		addq.l #1,%d2
+  70 0078 7000      		moveq #0,%d0
+  71 007a 1018      		move.b (%a0)+,%d0
+  72 007c 2F00      		move.l %d0,-(%sp)
+  73 007e 4879 0000 		pea .LC2
+  73      0000 
+  74 0084 47F9 0000 		lea cprintf,%a3
+  74      0000 
+  75 008a 4E93      		jbsr (%a3)
+  76 008c 5385      		subq.l #1,%d5
+  77 008e 700F      		moveq #15,%d0
+  78 0090 C082      		and.l %d2,%d0
+  79 0092 508F      		addq.l #8,%sp
+  80 0094 662E      		jbne .L12
+  81 0096 45EE FFEF 		lea (-17,%fp),%a2
+  82 009a 2F0A      		move.l %a2,-(%sp)
+  83 009c 4879 0000 		pea .LC3
+  83      0000 
+  84 00a2 4E93      		jbsr (%a3)
+  85 00a4 508F      		addq.l #8,%sp
+  86 00a6 4A85      		tst.l %d5
+  87 00a8 670E      		jbeq .L14
+  88 00aa 2F02      		move.l %d2,-(%sp)
+  89 00ac 4879 0000 		pea .LC4
+  89      0000 
+  90 00b2 4E93      		jbsr (%a3)
+  91 00b4 508F      		addq.l #8,%sp
+  92 00b6 600E      		jbra .L29
+  93               	.L14:
+  94 00b8 4879 0000 		pea .LC5
+  94      0000 
+  95 00be 4E93      		jbsr (%a3)
+  96 00c0 588F      		addq.l #4,%sp
+  97 00c2 603C      		jbra .L21
+  98               	.L12:
+  99 00c4 528A      		addq.l #1,%a2
+ 100               	.L29:
+68K GAS  prettydump.s 			page 3
+
+
+ 101 00c6 4A85      		tst.l %d5
+ 102 00c8 6692      		jbne .L8
+ 103 00ca 700F      		moveq #15,%d0
+ 104 00cc C480      		and.l %d0,%d2
+ 105 00ce 7610      		moveq #16,%d3
+ 106 00d0 9682      		sub.l %d2,%d3
+ 107 00d2 7400      		moveq #0,%d2
+ 108 00d4 6012      		jbra .L18
+ 109               	.L19:
+ 110 00d6 4879 0000 		pea .LC1
+ 110      0000 
+ 111 00dc 4E90      		jbsr (%a0)
+ 112 00de 15BC 0020 		move.b #32,(%a2,%d2.l)
+ 112      2800 
+ 113 00e4 5282      		addq.l #1,%d2
+ 114 00e6 588F      		addq.l #4,%sp
+ 115               	.L18:
+ 116 00e8 41F9 0000 		lea cprintf,%a0
+ 116      0000 
+ 117 00ee B682      		cmp.l %d2,%d3
+ 118 00f0 6EE4      		jbgt .L19
+ 119 00f2 486E FFEF 		pea -17(%fp)
+ 120 00f6 4879 0000 		pea .LC6
+ 120      0000 
+ 121 00fc 4E90      		jbsr (%a0)
+ 122 00fe 508F      		addq.l #8,%sp
+ 123               	.L21:
+ 124 0100 4CEE 0C3C 		movm.l -44(%fp),#0xc3c
+ 124      FFD4 
+ 125 0106 4E5E      		unlk %fp
+ 126 0108 4E75      		rts
+ 127               		.size	pretty_dump_memory, .-pretty_dump_memory
+ 128               		.ident	"GCC: (GNU) 4.1.1"
+68K GAS  prettydump.s 			page 4
+
+
+DEFINED SYMBOLS
+                            *ABS*:00000000 prettydump.c
+                            *ABS*:000109a0 CPU
+                            *ABS*:00000001 RETAIL
+        prettydump.s:22     .text:00000000 pretty_dump_memory
+
+UNDEFINED SYMBOLS
+cprintf

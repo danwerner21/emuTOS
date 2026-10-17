@@ -1,0 +1,4196 @@
+68K GAS  disasm.s 			page 1
+
+
+   1               	#NO_APP
+   2               		.file	"disasm.c"
+   3               		.text
+   4               		.align	2
+   5               		.globl	pdr
+   6               		.type	pdr, @function
+   7               	pdr:
+   8 0000 4E56 0000 		link.w %fp,#0
+   9 0004 2F0A      		move.l %a2,-(%sp)
+  10 0006 2F02      		move.l %d2,-(%sp)
+  11 0008 342E 000A 		move.w 10(%fp),%d2
+  12 000c 4878 0044 		pea 68.w
+  13 0010 45F9 0000 		lea _con_out,%a2
+  13      0000 
+  14 0016 4E92      		jbsr (%a2)
+  15 0018 41F9 0000 		lea nstring,%a0
+  15      0000 
+  16 001e 1030 2000 		move.b (%a0,%d2.w),%d0
+  17 0022 4880      		ext.w %d0
+  18 0024 3040      		move.w %d0,%a0
+  19 0026 2F08      		move.l %a0,-(%sp)
+  20 0028 4E92      		jbsr (%a2)
+  21 002a 508F      		addq.l #8,%sp
+  22 002c 242E FFF8 		move.l -8(%fp),%d2
+  23 0030 246E FFFC 		move.l -4(%fp),%a2
+  24 0034 4E5E      		unlk %fp
+  25 0036 4E75      		rts
+  26               		.size	pdr, .-pdr
+  27               		.align	2
+  28               		.globl	pdri
+  29               		.type	pdri, @function
+  30               	pdri:
+  31 0038 4E56 0000 		link.w %fp,#0
+  32 003c 2F0A      		move.l %a2,-(%sp)
+  33 003e 2F02      		move.l %d2,-(%sp)
+  34 0040 342E 000A 		move.w 10(%fp),%d2
+  35 0044 4878 0028 		pea 40.w
+  36 0048 45F9 0000 		lea _con_out,%a2
+  36      0000 
+  37 004e 4E92      		jbsr (%a2)
+  38 0050 3042      		move.w %d2,%a0
+  39 0052 2F08      		move.l %a0,-(%sp)
+  40 0054 61AA      		jbsr pdr
+  41 0056 4878 0029 		pea 41.w
+  42 005a 4E92      		jbsr (%a2)
+  43 005c 4FEF 000C 		lea (12,%sp),%sp
+  44 0060 242E FFF8 		move.l -8(%fp),%d2
+  45 0064 246E FFFC 		move.l -4(%fp),%a2
+  46 0068 4E5E      		unlk %fp
+  47 006a 4E75      		rts
+  48               		.size	pdri, .-pdri
+  49               		.align	2
+  50               		.globl	inf14
+  51               		.type	inf14, @function
+  52               	inf14:
+  53 006c 4E56 0000 		link.w %fp,#0
+  54 0070 3039 0000 		move.w instr,%d0
+68K GAS  disasm.s 			page 2
+
+
+  54      0000 
+  55 0076 7207      		moveq #7,%d1
+  56 0078 C081      		and.l %d1,%d0
+  57 007a 2F00      		move.l %d0,-(%sp)
+  58 007c 6182      		jbsr pdr
+  59 007e 588F      		addq.l #4,%sp
+  60 0080 4E5E      		unlk %fp
+  61 0082 4E75      		rts
+  62               		.size	inf14, .-inf14
+  63               		.section	.rodata.str1.1,"aMS",@progbits,1
+  64               	.LC0:
+  65 0000 0A2A 2A20 		.string	"\n** illegal size field **\n"
+  65      696C 6C65 
+  65      6761 6C20 
+  65      7369 7A65 
+  65      2066 6965 
+  66               	.LC1:
+  67 001b 2573 00   		.string	"%s"
+  68               		.text
+  69               		.align	2
+  70               		.globl	badsize
+  71               		.type	badsize, @function
+  72               	badsize:
+  73 0084 4E56 0000 		link.w %fp,#0
+  74 0088 4879 0000 		pea .LC0
+  74      0000 
+  75 008e 4879 0000 		pea .LC1
+  75      0000 
+  76 0094 4EB9 0000 		jbsr cprintf
+  76      0000 
+  77 009a 508F      		addq.l #8,%sp
+  78 009c 4E5E      		unlk %fp
+  79 009e 4E75      		rts
+  80               		.size	badsize, .-badsize
+  81               		.section	.rodata.str1.1
+  82               	.LC2:
+  83 001e 2530 326C 		.string	"%02lx"
+  83      7800 
+  84               		.text
+  85               		.align	2
+  86               		.globl	hexbzs
+  87               		.type	hexbzs, @function
+  88               	hexbzs:
+  89 00a0 4E56 0000 		link.w %fp,#0
+  90 00a4 102E 000B 		move.b 11(%fp),%d0
+  91 00a8 4880      		ext.w %d0
+  92 00aa 3040      		move.w %d0,%a0
+  93 00ac 2F08      		move.l %a0,-(%sp)
+  94 00ae 4879 0000 		pea .LC2
+  94      0000 
+  95 00b4 4EB9 0000 		jbsr cprintf
+  95      0000 
+  96 00ba 508F      		addq.l #8,%sp
+  97 00bc 4E5E      		unlk %fp
+  98 00be 4E75      		rts
+  99               		.size	hexbzs, .-hexbzs
+ 100               		.section	.rodata.str1.1
+68K GAS  disasm.s 			page 3
+
+
+ 101               	.LC3:
+ 102 0024 2530 346C 		.string	"%04lx"
+ 102      7800 
+ 103               		.text
+ 104               		.align	2
+ 105               		.globl	hexwzs
+ 106               		.type	hexwzs, @function
+ 107               	hexwzs:
+ 108 00c0 4E56 0000 		link.w %fp,#0
+ 109 00c4 306E 000A 		move.w 10(%fp),%a0
+ 110 00c8 2F08      		move.l %a0,-(%sp)
+ 111 00ca 4879 0000 		pea .LC3
+ 111      0000 
+ 112 00d0 4EB9 0000 		jbsr cprintf
+ 112      0000 
+ 113 00d6 508F      		addq.l #8,%sp
+ 114 00d8 4E5E      		unlk %fp
+ 115 00da 4E75      		rts
+ 116               		.size	hexwzs, .-hexwzs
+ 117               		.align	2
+ 118               		.globl	prdisp
+ 119               		.type	prdisp, @function
+ 120               	prdisp:
+ 121 00dc 4E56 0000 		link.w %fp,#0
+ 122 00e0 2F02      		move.l %d2,-(%sp)
+ 123 00e2 2079 0000 		move.l sdot,%a0
+ 123      0000 
+ 124 00e8 3418      		move.w (%a0)+,%d2
+ 125 00ea 23C8 0000 		move.l %a0,sdot
+ 125      0000 
+ 126 00f0 54B9 0000 		addq.l #2,dotinc
+ 126      0000 
+ 127 00f6 4878 0024 		pea 36.w
+ 128 00fa 4EB9 0000 		jbsr _con_out
+ 128      0000 
+ 129 0100 3042      		move.w %d2,%a0
+ 130 0102 2F08      		move.l %a0,-(%sp)
+ 131 0104 61BA      		jbsr hexwzs
+ 132 0106 508F      		addq.l #8,%sp
+ 133 0108 242E FFFC 		move.l -4(%fp),%d2
+ 134 010c 4E5E      		unlk %fp
+ 135 010e 4E75      		rts
+ 136               		.size	prdisp, .-prdisp
+ 137               		.section	.rodata.str1.1
+ 138               	.LC4:
+ 139 002a 2530 386C 		.string	"%08lx"
+ 139      7800 
+ 140               		.text
+ 141               		.align	2
+ 142               		.globl	hexlzs
+ 143               		.type	hexlzs, @function
+ 144               	hexlzs:
+ 145 0110 4E56 0000 		link.w %fp,#0
+ 146 0114 2F2E 0008 		move.l 8(%fp),-(%sp)
+ 147 0118 4879 0000 		pea .LC4
+ 147      0000 
+ 148 011e 4EB9 0000 		jbsr cprintf
+68K GAS  disasm.s 			page 4
+
+
+ 148      0000 
+ 149 0124 508F      		addq.l #8,%sp
+ 150 0126 4E5E      		unlk %fp
+ 151 0128 4E75      		rts
+ 152               		.size	hexlzs, .-hexlzs
+ 153               		.section	.rodata.str1.1
+ 154               	.LC5:
+ 155 0030 2324 00   		.string	"#$"
+ 156               		.text
+ 157               		.align	2
+ 158               		.globl	primm
+ 159               		.type	primm, @function
+ 160               	primm:
+ 161 012a 4E56 0000 		link.w %fp,#0
+ 162 012e 2F02      		move.l %d2,-(%sp)
+ 163 0130 0C6E 0002 		cmp.w #2,10(%fp)
+ 163      000A 
+ 164 0136 6704      		jbeq .L18
+ 165 0138 7000      		moveq #0,%d0
+ 166 013a 601A      		jbra .L20
+ 167               	.L18:
+ 168 013c 2079 0000 		move.l sdot,%a0
+ 168      0000 
+ 169 0142 3018      		move.w (%a0)+,%d0
+ 170 0144 48C0      		ext.l %d0
+ 171 0146 4840      		swap %d0
+ 172 0148 4240      		clr.w %d0
+ 173 014a 23C8 0000 		move.l %a0,sdot
+ 173      0000 
+ 174 0150 54B9 0000 		addq.l #2,dotinc
+ 174      0000 
+ 175               	.L20:
+ 176 0156 2079 0000 		move.l sdot,%a0
+ 176      0000 
+ 177 015c 2400      		move.l %d0,%d2
+ 178 015e 8458      		or.w (%a0)+,%d2
+ 179 0160 23C8 0000 		move.l %a0,sdot
+ 179      0000 
+ 180 0166 54B9 0000 		addq.l #2,dotinc
+ 180      0000 
+ 181 016c 4879 0000 		pea .LC5
+ 181      0000 
+ 182 0172 4879 0000 		pea .LC1
+ 182      0000 
+ 183 0178 4EB9 0000 		jbsr cprintf
+ 183      0000 
+ 184 017e 2F02      		move.l %d2,-(%sp)
+ 185 0180 618E      		jbsr hexlzs
+ 186 0182 4FEF 000C 		lea (12,%sp),%sp
+ 187 0186 242E FFFC 		move.l -4(%fp),%d2
+ 188 018a 4E5E      		unlk %fp
+ 189 018c 4E75      		rts
+ 190               		.size	primm, .-primm
+ 191               		.align	2
+ 192               		.globl	inf21
+ 193               		.type	inf21, @function
+ 194               	inf21:
+68K GAS  disasm.s 			page 5
+
+
+ 195 018e 4E56 0000 		link.w %fp,#0
+ 196 0192 4878 0001 		pea 1.w
+ 197 0196 6192      		jbsr primm
+ 198 0198 588F      		addq.l #4,%sp
+ 199 019a 4E5E      		unlk %fp
+ 200 019c 4E75      		rts
+ 201               		.size	inf21, .-inf21
+ 202               		.align	2
+ 203               		.globl	inf12
+ 204               		.type	inf12, @function
+ 205               	inf12:
+ 206 019e 4E56 0000 		link.w %fp,#0
+ 207 01a2 2F0A      		move.l %a2,-(%sp)
+ 208 01a4 3039 0000 		move.w instr,%d0
+ 208      0000 
+ 209 01aa 7207      		moveq #7,%d1
+ 210 01ac C081      		and.l %d1,%d0
+ 211 01ae 2F00      		move.l %d0,-(%sp)
+ 212 01b0 6100 FE4E 		jbsr pdr
+ 213 01b4 4878 002C 		pea 44.w
+ 214 01b8 4EB9 0000 		jbsr _con_out
+ 214      0000 
+ 215 01be 2079 0000 		move.l sdot,%a0
+ 215      0000 
+ 216 01c4 3250      		move.w (%a0),%a1
+ 217 01c6 45E8 0002 		lea (2,%a0),%a2
+ 218 01ca 23CA 0000 		move.l %a2,sdot
+ 218      0000 
+ 219 01d0 54B9 0000 		addq.l #2,dotinc
+ 219      0000 
+ 220 01d6 4871 8800 		pea (%a1,%a0.l)
+ 221 01da 6100 FF34 		jbsr hexlzs
+ 222 01de 4FEF 000C 		lea (12,%sp),%sp
+ 223 01e2 246E FFFC 		move.l -4(%fp),%a2
+ 224 01e6 4E5E      		unlk %fp
+ 225 01e8 4E75      		rts
+ 226               		.size	inf12, .-inf12
+ 227               		.section	.rodata.str1.1
+ 228               	.LC6:
+ 229 0033 5350 00   		.string	"SP"
+ 230               		.text
+ 231               		.align	2
+ 232               		.globl	par
+ 233               		.type	par, @function
+ 234               	par:
+ 235 01ea 4E56 0000 		link.w %fp,#0
+ 236 01ee 2F0A      		move.l %a2,-(%sp)
+ 237 01f0 2F02      		move.l %d2,-(%sp)
+ 238 01f2 342E 000A 		move.w 10(%fp),%d2
+ 239 01f6 0C42 0007 		cmp.w #7,%d2
+ 240 01fa 6614      		jbne .L27
+ 241 01fc 4879 0000 		pea .LC6
+ 241      0000 
+ 242 0202 4879 0000 		pea .LC1
+ 242      0000 
+ 243 0208 4EB9 0000 		jbsr cprintf
+ 243      0000 
+68K GAS  disasm.s 			page 6
+
+
+ 244 020e 601E      		jbra .L31
+ 245               	.L27:
+ 246 0210 4878 0041 		pea 65.w
+ 247 0214 45F9 0000 		lea _con_out,%a2
+ 247      0000 
+ 248 021a 4E92      		jbsr (%a2)
+ 249 021c 41F9 0000 		lea nstring,%a0
+ 249      0000 
+ 250 0222 1030 2000 		move.b (%a0,%d2.w),%d0
+ 251 0226 4880      		ext.w %d0
+ 252 0228 3040      		move.w %d0,%a0
+ 253 022a 2F08      		move.l %a0,-(%sp)
+ 254 022c 4E92      		jbsr (%a2)
+ 255               	.L31:
+ 256 022e 508F      		addq.l #8,%sp
+ 257 0230 242E FFF8 		move.l -8(%fp),%d2
+ 258 0234 246E FFFC 		move.l -4(%fp),%a2
+ 259 0238 4E5E      		unlk %fp
+ 260 023a 4E75      		rts
+ 261               		.size	par, .-par
+ 262               		.align	2
+ 263               		.globl	prtreg
+ 264               		.type	prtreg, @function
+ 265               	prtreg:
+ 266 023c 4E56 0000 		link.w %fp,#0
+ 267 0240 302E 000A 		move.w 10(%fp),%d0
+ 268 0244 0C40 0007 		cmp.w #7,%d0
+ 269 0248 6F0A      		jble .L33
+ 270 024a 5140      		subq.w #8,%d0
+ 271 024c 3040      		move.w %d0,%a0
+ 272 024e 2F08      		move.l %a0,-(%sp)
+ 273 0250 6198      		jbsr par
+ 274 0252 6008      		jbra .L37
+ 275               	.L33:
+ 276 0254 3040      		move.w %d0,%a0
+ 277 0256 2F08      		move.l %a0,-(%sp)
+ 278 0258 6100 FDA6 		jbsr pdr
+ 279               	.L37:
+ 280 025c 588F      		addq.l #4,%sp
+ 281 025e 4E5E      		unlk %fp
+ 282 0260 4E75      		rts
+ 283               		.size	prtreg, .-prtreg
+ 284               		.section	.rodata.str1.1
+ 285               	.LC7:
+ 286 0036 5043 2C00 		.string	"PC,"
+ 287               	.LC8:
+ 288 003a 2E6C 00   		.string	".l"
+ 289               		.text
+ 290               		.align	2
+ 291               		.globl	prindex
+ 292               		.type	prindex, @function
+ 293               	prindex:
+ 294 0262 4E56 0000 		link.w %fp,#0
+ 295 0266 48E7 3020 		movm.l #0x3020,-(%sp)
+ 296 026a 362E 000A 		move.w 10(%fp),%d3
+ 297 026e 2079 0000 		move.l sdot,%a0
+ 297      0000 
+68K GAS  disasm.s 			page 7
+
+
+ 298 0274 3418      		move.w (%a0)+,%d2
+ 299 0276 23C8 0000 		move.l %a0,sdot
+ 299      0000 
+ 300 027c 54B9 0000 		addq.l #2,dotinc
+ 300      0000 
+ 301 0282 4878 0024 		pea 36.w
+ 302 0286 45F9 0000 		lea _con_out,%a2
+ 302      0000 
+ 303 028c 4E92      		jbsr (%a2)
+ 304 028e 1002      		move.b %d2,%d0
+ 305 0290 4880      		ext.w %d0
+ 306 0292 3040      		move.w %d0,%a0
+ 307 0294 2F08      		move.l %a0,-(%sp)
+ 308 0296 6100 FE08 		jbsr hexbzs
+ 309 029a 4878 0028 		pea 40.w
+ 310 029e 4E92      		jbsr (%a2)
+ 311 02a0 4FEF 000C 		lea (12,%sp),%sp
+ 312 02a4 0C43 0010 		cmp.w #16,%d3
+ 313 02a8 6614      		jbne .L39
+ 314 02aa 4879 0000 		pea .LC7
+ 314      0000 
+ 315 02b0 4879 0000 		pea .LC1
+ 315      0000 
+ 316 02b6 4EB9 0000 		jbsr cprintf
+ 316      0000 
+ 317 02bc 600E      		jbra .L45
+ 318               	.L39:
+ 319 02be 3043      		move.w %d3,%a0
+ 320 02c0 2F08      		move.l %a0,-(%sp)
+ 321 02c2 6100 FF26 		jbsr par
+ 322 02c6 4878 002C 		pea 44.w
+ 323 02ca 4E92      		jbsr (%a2)
+ 324               	.L45:
+ 325 02cc 508F      		addq.l #8,%sp
+ 326 02ce 3002      		move.w %d2,%d0
+ 327 02d0 720C      		moveq #12,%d1
+ 328 02d2 E260      		asr.w %d1,%d0
+ 329 02d4 720F      		moveq #15,%d1
+ 330 02d6 C280      		and.l %d0,%d1
+ 331 02d8 2F01      		move.l %d1,-(%sp)
+ 332 02da 6100 FF60 		jbsr prtreg
+ 333 02de 588F      		addq.l #4,%sp
+ 334 02e0 0802 000B 		btst #11,%d2
+ 335 02e4 6714      		jbeq .L42
+ 336 02e6 4879 0000 		pea .LC8
+ 336      0000 
+ 337 02ec 4879 0000 		pea .LC1
+ 337      0000 
+ 338 02f2 4EB9 0000 		jbsr cprintf
+ 338      0000 
+ 339 02f8 508F      		addq.l #8,%sp
+ 340               	.L42:
+ 341 02fa 4878 0029 		pea 41.w
+ 342 02fe 4EB9 0000 		jbsr _con_out
+ 342      0000 
+ 343 0304 588F      		addq.l #4,%sp
+ 344 0306 4CEE 040C 		movm.l -12(%fp),#0x40c
+68K GAS  disasm.s 			page 8
+
+
+ 344      FFF4 
+ 345 030c 4E5E      		unlk %fp
+ 346 030e 4E75      		rts
+ 347               		.size	prindex, .-prindex
+ 348               		.align	2
+ 349               		.globl	inf22
+ 350               		.type	inf22, @function
+ 351               	inf22:
+ 352 0310 4E56 0000 		link.w %fp,#0
+ 353 0314 3039 0000 		move.w instr,%d0
+ 353      0000 
+ 354 031a 720F      		moveq #15,%d1
+ 355 031c C081      		and.l %d1,%d0
+ 356 031e 2F00      		move.l %d0,-(%sp)
+ 357 0320 6100 FF1A 		jbsr prtreg
+ 358 0324 588F      		addq.l #4,%sp
+ 359 0326 4E5E      		unlk %fp
+ 360 0328 4E75      		rts
+ 361               		.size	inf22, .-inf22
+ 362               		.align	2
+ 363               		.globl	inf13
+ 364               		.type	inf13, @function
+ 365               	inf13:
+ 366 032a 4E56 0000 		link.w %fp,#0
+ 367 032e 2F0A      		move.l %a2,-(%sp)
+ 368 0330 2F02      		move.l %d2,-(%sp)
+ 369 0332 3039 0000 		move.w instr,%d0
+ 369      0000 
+ 370 0338 2200      		move.l %d0,%d1
+ 371 033a 0281 0000 		and.l #3584,%d1
+ 371      0E00 
+ 372 0340 7409      		moveq #9,%d2
+ 373 0342 E4A9      		lsr.l %d2,%d1
+ 374 0344 3400      		move.w %d0,%d2
+ 375 0346 0242 0007 		and.w #7,%d2
+ 376 034a 0240 00F8 		and.w #248,%d0
+ 377 034e 0C40 0048 		cmp.w #72,%d0
+ 378 0352 6604      		jbne .L49
+ 379 0354 5041      		addq.w #8,%d1
+ 380 0356 6006      		jbra .L54
+ 381               	.L49:
+ 382 0358 0C40 0088 		cmp.w #136,%d0
+ 383 035c 6602      		jbne .L51
+ 384               	.L54:
+ 385 035e 5042      		addq.w #8,%d2
+ 386               	.L51:
+ 387 0360 3041      		move.w %d1,%a0
+ 388 0362 2F08      		move.l %a0,-(%sp)
+ 389 0364 45FA FED6 		lea prtreg,%a2
+ 390 0368 4E92      		jbsr (%a2)
+ 391 036a 4878 002C 		pea 44.w
+ 392 036e 4EB9 0000 		jbsr _con_out
+ 392      0000 
+ 393 0374 3042      		move.w %d2,%a0
+ 394 0376 2F08      		move.l %a0,-(%sp)
+ 395 0378 4E92      		jbsr (%a2)
+ 396 037a 4FEF 000C 		lea (12,%sp),%sp
+68K GAS  disasm.s 			page 9
+
+
+ 397 037e 242E FFF8 		move.l -8(%fp),%d2
+ 398 0382 246E FFFC 		move.l -4(%fp),%a2
+ 399 0386 4E5E      		unlk %fp
+ 400 0388 4E75      		rts
+ 401               		.size	inf13, .-inf13
+ 402               		.align	2
+ 403               		.globl	inf6
+ 404               		.type	inf6, @function
+ 405               	inf6:
+ 406 038a 4E56 0000 		link.w %fp,#0
+ 407 038e 2F02      		move.l %d2,-(%sp)
+ 408 0390 3039 0000 		move.w instr,%d0
+ 408      0000 
+ 409 0396 48C0      		ext.l %d0
+ 410 0398 2200      		move.l %d0,%d1
+ 411 039a 0281 0000 		and.l #3584,%d1
+ 411      0E00 
+ 412 03a0 7409      		moveq #9,%d2
+ 413 03a2 E4A1      		asr.l %d2,%d1
+ 414 03a4 3401      		move.w %d1,%d2
+ 415 03a6 0800 0005 		btst #5,%d0
+ 416 03aa 670C      		jbeq .L56
+ 417 03ac 3041      		move.w %d1,%a0
+ 418 03ae 2F08      		move.l %a0,-(%sp)
+ 419 03b0 6100 FC4E 		jbsr pdr
+ 420 03b4 588F      		addq.l #4,%sp
+ 421 03b6 601A      		jbra .L58
+ 422               	.L56:
+ 423 03b8 4A41      		tst.w %d1
+ 424 03ba 6602      		jbne .L59
+ 425 03bc 7408      		moveq #8,%d2
+ 426               	.L59:
+ 427 03be 4878 0023 		pea 35.w
+ 428 03c2 4EB9 0000 		jbsr _con_out
+ 428      0000 
+ 429 03c8 3042      		move.w %d2,%a0
+ 430 03ca 2F08      		move.l %a0,-(%sp)
+ 431 03cc 6100 FCD2 		jbsr hexbzs
+ 432 03d0 508F      		addq.l #8,%sp
+ 433               	.L58:
+ 434 03d2 4878 002C 		pea 44.w
+ 435 03d6 4EB9 0000 		jbsr _con_out
+ 435      0000 
+ 436 03dc 3039 0000 		move.w instr,%d0
+ 436      0000 
+ 437 03e2 7207      		moveq #7,%d1
+ 438 03e4 C081      		and.l %d1,%d0
+ 439 03e6 2F00      		move.l %d0,-(%sp)
+ 440 03e8 6100 FE52 		jbsr prtreg
+ 441 03ec 508F      		addq.l #8,%sp
+ 442 03ee 242E FFFC 		move.l -4(%fp),%d2
+ 443 03f2 4E5E      		unlk %fp
+ 444 03f4 4E75      		rts
+ 445               		.size	inf6, .-inf6
+ 446               		.align	2
+ 447               		.globl	pari
+ 448               		.type	pari, @function
+68K GAS  disasm.s 			page 10
+
+
+ 449               	pari:
+ 450 03f6 4E56 0000 		link.w %fp,#0
+ 451 03fa 2F0A      		move.l %a2,-(%sp)
+ 452 03fc 2F02      		move.l %d2,-(%sp)
+ 453 03fe 342E 000A 		move.w 10(%fp),%d2
+ 454 0402 4878 0028 		pea 40.w
+ 455 0406 45F9 0000 		lea _con_out,%a2
+ 455      0000 
+ 456 040c 4E92      		jbsr (%a2)
+ 457 040e 3042      		move.w %d2,%a0
+ 458 0410 2F08      		move.l %a0,-(%sp)
+ 459 0412 6100 FDD6 		jbsr par
+ 460 0416 4878 0029 		pea 41.w
+ 461 041a 4E92      		jbsr (%a2)
+ 462 041c 4FEF 000C 		lea (12,%sp),%sp
+ 463 0420 242E FFF8 		move.l -8(%fp),%d2
+ 464 0424 246E FFFC 		move.l -4(%fp),%a2
+ 465 0428 4E5E      		unlk %fp
+ 466 042a 4E75      		rts
+ 467               		.size	pari, .-pari
+ 468               		.align	2
+ 469               		.globl	paripi
+ 470               		.type	paripi, @function
+ 471               	paripi:
+ 472 042c 4E56 0000 		link.w %fp,#0
+ 473 0430 306E 000A 		move.w 10(%fp),%a0
+ 474 0434 2F08      		move.l %a0,-(%sp)
+ 475 0436 61BE      		jbsr pari
+ 476 0438 4878 002B 		pea 43.w
+ 477 043c 4EB9 0000 		jbsr _con_out
+ 477      0000 
+ 478 0442 508F      		addq.l #8,%sp
+ 479 0444 4E5E      		unlk %fp
+ 480 0446 4E75      		rts
+ 481               		.size	paripi, .-paripi
+ 482               		.align	2
+ 483               		.globl	inf11
+ 484               		.type	inf11, @function
+ 485               	inf11:
+ 486 0448 4E56 0000 		link.w %fp,#0
+ 487 044c 2F0A      		move.l %a2,-(%sp)
+ 488 044e 3039 0000 		move.w instr,%d0
+ 488      0000 
+ 489 0454 7207      		moveq #7,%d1
+ 490 0456 C081      		and.l %d1,%d0
+ 491 0458 2F00      		move.l %d0,-(%sp)
+ 492 045a 45FA FFD0 		lea paripi,%a2
+ 493 045e 4E92      		jbsr (%a2)
+ 494 0460 4878 002C 		pea 44.w
+ 495 0464 4EB9 0000 		jbsr _con_out
+ 495      0000 
+ 496 046a 1039 0000 		move.b instr,%d0
+ 496      0000 
+ 497 0470 E288      		lsr.l #1,%d0
+ 498 0472 7207      		moveq #7,%d1
+ 499 0474 C280      		and.l %d0,%d1
+ 500 0476 2F01      		move.l %d1,-(%sp)
+68K GAS  disasm.s 			page 11
+
+
+ 501 0478 4E92      		jbsr (%a2)
+ 502 047a 4FEF 000C 		lea (12,%sp),%sp
+ 503 047e 246E FFFC 		move.l -4(%fp),%a2
+ 504 0482 4E5E      		unlk %fp
+ 505 0484 4E75      		rts
+ 506               		.size	inf11, .-inf11
+ 507               		.align	2
+ 508               		.globl	paripd
+ 509               		.type	paripd, @function
+ 510               	paripd:
+ 511 0486 4E56 0000 		link.w %fp,#0
+ 512 048a 2F02      		move.l %d2,-(%sp)
+ 513 048c 342E 000A 		move.w 10(%fp),%d2
+ 514 0490 4878 002D 		pea 45.w
+ 515 0494 4EB9 0000 		jbsr _con_out
+ 515      0000 
+ 516 049a 3042      		move.w %d2,%a0
+ 517 049c 2F08      		move.l %a0,-(%sp)
+ 518 049e 6100 FF56 		jbsr pari
+ 519 04a2 508F      		addq.l #8,%sp
+ 520 04a4 242E FFFC 		move.l -4(%fp),%d2
+ 521 04a8 4E5E      		unlk %fp
+ 522 04aa 4E75      		rts
+ 523               		.size	paripd, .-paripd
+ 524               		.section	.rodata.str1.1
+ 525               	.LC9:
+ 526 003d 2850 4329 		.string	"(PC)"
+ 526      00
+ 527               		.text
+ 528               		.align	2
+ 529               		.globl	prtop
+ 530               		.type	prtop, @function
+ 531               	prtop:
+ 532 04ac 4E56 0000 		link.w %fp,#0
+ 533 04b0 2F03      		move.l %d3,-(%sp)
+ 534 04b2 2F02      		move.l %d2,-(%sp)
+ 535 04b4 302E 000A 		move.w 10(%fp),%d0
+ 536 04b8 322E 000E 		move.w 14(%fp),%d1
+ 537 04bc 3400      		move.w %d0,%d2
+ 538 04be 0242 0007 		and.w #7,%d2
+ 539 04c2 7638      		moveq #56,%d3
+ 540 04c4 C083      		and.l %d3,%d0
+ 541 04c6 E680      		asr.l #3,%d0
+ 542 04c8 0C40 0007 		cmp.w #7,%d0
+ 543 04cc 6200 0110 		jbhi .L89
+ 544 04d0 D080      		add.l %d0,%d0
+ 545               		.set .LI80,.+2
+ 546 04d2 303B 0806 		move.w .L80-.LI80.b(%pc,%d0.l),%d0
+ 547 04d6 4EFB 0002 		jmp %pc@(2,%d0:w)
+ 548               		.align	2
+ 549               		.swbeg	&8
+ 550               	.L80:
+ 551 04da 0010      		.word .L72-.L80
+ 552 04dc 001C      		.word .L73-.L80
+ 553 04de 0044      		.word .L93-.L80
+ 554 04e0 0028      		.word .L75-.L80
+ 555 04e2 0034      		.word .L76-.L80
+68K GAS  disasm.s 			page 12
+
+
+ 556 04e4 0040      		.word .L77-.L80
+ 557 04e6 0050      		.word .L78-.L80
+ 558 04e8 0058      		.word .L79-.L80
+ 559               	.L72:
+ 560 04ea 3042      		move.w %d2,%a0
+ 561 04ec 2F08      		move.l %a0,-(%sp)
+ 562 04ee 6100 FB10 		jbsr pdr
+ 563 04f2 6000 00E8 		jbra .L90
+ 564               	.L73:
+ 565 04f6 3042      		move.w %d2,%a0
+ 566 04f8 2F08      		move.l %a0,-(%sp)
+ 567 04fa 6100 FCEE 		jbsr par
+ 568 04fe 6000 00DC 		jbra .L90
+ 569               	.L75:
+ 570 0502 3042      		move.w %d2,%a0
+ 571 0504 2F08      		move.l %a0,-(%sp)
+ 572 0506 6100 FF24 		jbsr paripi
+ 573 050a 6000 00D0 		jbra .L90
+ 574               	.L76:
+ 575 050e 3042      		move.w %d2,%a0
+ 576 0510 2F08      		move.l %a0,-(%sp)
+ 577 0512 6100 FF72 		jbsr paripd
+ 578 0516 6000 00C4 		jbra .L90
+ 579               	.L77:
+ 580 051a 6100 FBC0 		jbsr prdisp
+ 581               	.L93:
+ 582 051e 3042      		move.w %d2,%a0
+ 583 0520 2F08      		move.l %a0,-(%sp)
+ 584 0522 6100 FED2 		jbsr pari
+ 585 0526 6000 00B4 		jbra .L90
+ 586               	.L78:
+ 587 052a 3042      		move.w %d2,%a0
+ 588 052c 2F08      		move.l %a0,-(%sp)
+ 589 052e 6000 009E 		jbra .L92
+ 590               	.L79:
+ 591 0532 0C42 0004 		cmp.w #4,%d2
+ 592 0536 6200 00A6 		jbhi .L89
+ 593 053a 7000      		moveq #0,%d0
+ 594 053c 3002      		move.w %d2,%d0
+ 595 053e D080      		add.l %d0,%d0
+ 596               		.set .LI86,.+2
+ 597 0540 303B 0806 		move.w .L86-.LI86.b(%pc,%d0.l),%d0
+ 598 0544 4EFB 0002 		jmp %pc@(2,%d0:w)
+ 599               		.align	2
+ 600               		.swbeg	&5
+ 601               	.L86:
+ 602 0548 000A      		.word .L81-.L86
+ 603 054a 0036      		.word .L82-.L86
+ 604 054c 0068      		.word .L83-.L86
+ 605 054e 0082      		.word .L84-.L86
+ 606 0550 008C      		.word .L85-.L86
+ 607               	.L81:
+ 608 0552 2239 0000 		move.l sdot,%d1
+ 608      0000 
+ 609 0558 2041      		move.l %d1,%a0
+ 610 055a 3010      		move.w (%a0),%d0
+ 611 055c 48C0      		ext.l %d0
+68K GAS  disasm.s 			page 13
+
+
+ 612 055e 4A40      		tst.w %d0
+ 613 0560 6C06      		jbge .L87
+ 614 0562 0080 FFFF 		or.l #-65536,%d0
+ 614      0000 
+ 615               	.L87:
+ 616 0568 5481      		addq.l #2,%d1
+ 617 056a 23C1 0000 		move.l %d1,sdot
+ 617      0000 
+ 618 0570 54B9 0000 		addq.l #2,dotinc
+ 618      0000 
+ 619 0576 2F00      		move.l %d0,-(%sp)
+ 620 0578 6100 FB96 		jbsr hexlzs
+ 621 057c 605E      		jbra .L90
+ 622               	.L82:
+ 623 057e 2079 0000 		move.l sdot,%a0
+ 623      0000 
+ 624 0584 3418      		move.w (%a0)+,%d2
+ 625 0586 48C2      		ext.l %d2
+ 626 0588 4842      		swap %d2
+ 627 058a 4242      		clr.w %d2
+ 628 058c 7000      		moveq #0,%d0
+ 629 058e 3018      		move.w (%a0)+,%d0
+ 630 0590 D480      		add.l %d0,%d2
+ 631 0592 23C8 0000 		move.l %a0,sdot
+ 631      0000 
+ 632 0598 58B9 0000 		addq.l #4,dotinc
+ 632      0000 
+ 633 059e 4878 0024 		pea 36.w
+ 634 05a2 4EB9 0000 		jbsr _con_out
+ 634      0000 
+ 635 05a8 2F02      		move.l %d2,-(%sp)
+ 636 05aa 6100 FB64 		jbsr hexlzs
+ 637 05ae 6016      		jbra .L91
+ 638               	.L83:
+ 639 05b0 6100 FB2A 		jbsr prdisp
+ 640 05b4 4879 0000 		pea .LC9
+ 640      0000 
+ 641 05ba 4879 0000 		pea .LC1
+ 641      0000 
+ 642 05c0 4EB9 0000 		jbsr cprintf
+ 642      0000 
+ 643               	.L91:
+ 644 05c6 508F      		addq.l #8,%sp
+ 645 05c8 6014      		jbra .L89
+ 646               	.L84:
+ 647 05ca 4878 0010 		pea 16.w
+ 648               	.L92:
+ 649 05ce 6100 FC92 		jbsr prindex
+ 650 05d2 6008      		jbra .L90
+ 651               	.L85:
+ 652 05d4 3041      		move.w %d1,%a0
+ 653 05d6 2F08      		move.l %a0,-(%sp)
+ 654 05d8 6100 FB50 		jbsr primm
+ 655               	.L90:
+ 656 05dc 588F      		addq.l #4,%sp
+ 657               	.L89:
+ 658 05de 242E FFF8 		move.l -8(%fp),%d2
+68K GAS  disasm.s 			page 14
+
+
+ 659 05e2 262E FFFC 		move.l -4(%fp),%d3
+ 660 05e6 4E5E      		unlk %fp
+ 661 05e8 4E75      		rts
+ 662               		.size	prtop, .-prtop
+ 663               		.align	2
+ 664               		.globl	inf25
+ 665               		.type	inf25, @function
+ 666               	inf25:
+ 667 05ea 4E56 0000 		link.w %fp,#0
+ 668 05ee 48E7 3800 		movm.l #0x3800,-(%sp)
+ 669 05f2 3639 0000 		move.w instr,%d3
+ 669      0000 
+ 670 05f8 2079 0000 		move.l sdot,%a0
+ 670      0000 
+ 671 05fe 3258      		move.w (%a0)+,%a1
+ 672 0600 23C8 0000 		move.l %a0,sdot
+ 672      0000 
+ 673 0606 54B9 0000 		addq.l #2,dotinc
+ 673      0000 
+ 674 060c 2209      		move.l %a1,%d1
+ 675 060e 2009      		move.l %a1,%d0
+ 676 0610 0280 0000 		and.l #61440,%d0
+ 676      F000 
+ 677 0616 2400      		move.l %d0,%d2
+ 678 0618 780C      		moveq #12,%d4
+ 679 061a E8AA      		lsr.l %d4,%d2
+ 680 061c 0801 000B 		btst #11,%d1
+ 681 0620 6714      		jbeq .L95
+ 682 0622 3042      		move.w %d2,%a0
+ 683 0624 2F08      		move.l %a0,-(%sp)
+ 684 0626 6100 FC14 		jbsr prtreg
+ 685 062a 4878 002C 		pea 44.w
+ 686 062e 4EB9 0000 		jbsr _con_out
+ 686      0000 
+ 687 0634 508F      		addq.l #8,%sp
+ 688               	.L95:
+ 689 0636 703F      		moveq #63,%d0
+ 690 0638 4600      		not.b %d0
+ 691 063a C083      		and.l %d3,%d0
+ 692 063c 2F00      		move.l %d0,-(%sp)
+ 693 063e 3239 0000 		move.w instr,%d1
+ 693      0000 
+ 694 0644 783F      		moveq #63,%d4
+ 695 0646 C284      		and.l %d4,%d1
+ 696 0648 2F01      		move.l %d1,-(%sp)
+ 697 064a 6100 FE60 		jbsr prtop
+ 698 064e 508F      		addq.l #8,%sp
+ 699 0650 0839 0003 		btst #3,instr
+ 699      0000 0000 
+ 700 0658 6614      		jbne .L99
+ 701 065a 4878 002C 		pea 44.w
+ 702 065e 4EB9 0000 		jbsr _con_out
+ 702      0000 
+ 703 0664 3042      		move.w %d2,%a0
+ 704 0666 2F08      		move.l %a0,-(%sp)
+ 705 0668 6100 FBD2 		jbsr prtreg
+ 706 066c 508F      		addq.l #8,%sp
+68K GAS  disasm.s 			page 15
+
+
+ 707               	.L99:
+ 708 066e 4CEE 001C 		movm.l -12(%fp),#0x1c
+ 708      FFF4 
+ 709 0674 4E5E      		unlk %fp
+ 710 0676 4E75      		rts
+ 711               		.size	inf25, .-inf25
+ 712               		.align	2
+ 713               		.globl	inf16
+ 714               		.type	inf16, @function
+ 715               	inf16:
+ 716 0678 4E56 0000 		link.w %fp,#0
+ 717 067c 48E7 2030 		movm.l #0x2030,-(%sp)
+ 718 0680 3039 0000 		move.w instr,%d0
+ 718      0000 
+ 719 0686 0240 3000 		and.w #12288,%d0
+ 720 068a 0C40 1000 		cmp.w #4096,%d0
+ 721 068e 6604      		jbne .L101
+ 722 0690 4240      		clr.w %d0
+ 723 0692 6016      		jbra .L103
+ 724               	.L101:
+ 725 0694 0C40 3000 		cmp.w #12288,%d0
+ 726 0698 670E      		jbeq .L109
+ 727 069a 0C40 2000 		cmp.w #8192,%d0
+ 728 069e 6604      		jbne .L106
+ 729 06a0 7002      		moveq #2,%d0
+ 730 06a2 6006      		jbra .L103
+ 731               	.L106:
+ 732 06a4 6100 F9DE 		jbsr badsize
+ 733               	.L109:
+ 734 06a8 7001      		moveq #1,%d0
+ 735               	.L103:
+ 736 06aa 3440      		move.w %d0,%a2
+ 737 06ac 2F0A      		move.l %a2,-(%sp)
+ 738 06ae 3039 0000 		move.w instr,%d0
+ 738      0000 
+ 739 06b4 723F      		moveq #63,%d1
+ 740 06b6 C081      		and.l %d1,%d0
+ 741 06b8 2F00      		move.l %d0,-(%sp)
+ 742 06ba 47FA FDF0 		lea prtop,%a3
+ 743 06be 4E93      		jbsr (%a3)
+ 744 06c0 4878 002C 		pea 44.w
+ 745 06c4 4EB9 0000 		jbsr _con_out
+ 745      0000 
+ 746 06ca 3039 0000 		move.w instr,%d0
+ 746      0000 
+ 747 06d0 48C0      		ext.l %d0
+ 748 06d2 2F0A      		move.l %a2,-(%sp)
+ 749 06d4 2200      		move.l %d0,%d1
+ 750 06d6 0281 0000 		and.l #3584,%d1
+ 750      0E00 
+ 751 06dc 7409      		moveq #9,%d2
+ 752 06de E4A1      		asr.l %d2,%d1
+ 753 06e0 0280 0000 		and.l #448,%d0
+ 753      01C0 
+ 754 06e6 E680      		asr.l #3,%d0
+ 755 06e8 8280      		or.l %d0,%d1
+ 756 06ea 2F01      		move.l %d1,-(%sp)
+68K GAS  disasm.s 			page 16
+
+
+ 757 06ec 4E93      		jbsr (%a3)
+ 758 06ee 4FEF 0014 		lea (20,%sp),%sp
+ 759 06f2 4CEE 0C04 		movm.l -12(%fp),#0xc04
+ 759      FFF4 
+ 760 06f8 4E5E      		unlk %fp
+ 761 06fa 4E75      		rts
+ 762               		.size	inf16, .-inf16
+ 763               		.align	2
+ 764               		.globl	inf10
+ 765               		.type	inf10, @function
+ 766               	inf10:
+ 767 06fc 4E56 0000 		link.w %fp,#0
+ 768 0700 3039 0000 		move.w instr,%d0
+ 768      0000 
+ 769 0706 48C0      		ext.l %d0
+ 770 0708 0800 0008 		btst #8,%d0
+ 771 070c 6712      		jbeq .L111
+ 772 070e 7209      		moveq #9,%d1
+ 773 0710 E2A8      		lsr.l %d1,%d0
+ 774 0712 123C 0007 		move.b #7,%d1
+ 775 0716 C280      		and.l %d0,%d1
+ 776 0718 2F01      		move.l %d1,-(%sp)
+ 777 071a 6100 F8E4 		jbsr pdr
+ 778 071e 6008      		jbra .L115
+ 779               	.L111:
+ 780 0720 4878 0001 		pea 1.w
+ 781 0724 6100 FA04 		jbsr primm
+ 782               	.L115:
+ 783 0728 2EBC 0000 		move.l #44,(%sp)
+ 783      002C 
+ 784 072e 4EB9 0000 		jbsr _con_out
+ 784      0000 
+ 785 0734 4878 0001 		pea 1.w
+ 786 0738 3039 0000 		move.w instr,%d0
+ 786      0000 
+ 787 073e 723F      		moveq #63,%d1
+ 788 0740 C081      		and.l %d1,%d0
+ 789 0742 2F00      		move.l %d0,-(%sp)
+ 790 0744 6100 FD66 		jbsr prtop
+ 791 0748 4FEF 000C 		lea (12,%sp),%sp
+ 792 074c 4E5E      		unlk %fp
+ 793 074e 4E75      		rts
+ 794               		.size	inf10, .-inf10
+ 795               		.align	2
+ 796               		.globl	inf9
+ 797               		.type	inf9, @function
+ 798               	inf9:
+ 799 0750 4E56 0000 		link.w %fp,#0
+ 800 0754 4878 0001 		pea 1.w
+ 801 0758 3039 0000 		move.w instr,%d0
+ 801      0000 
+ 802 075e 723F      		moveq #63,%d1
+ 803 0760 C081      		and.l %d1,%d0
+ 804 0762 2F00      		move.l %d0,-(%sp)
+ 805 0764 6100 FD46 		jbsr prtop
+ 806 0768 4878 002C 		pea 44.w
+ 807 076c 4EB9 0000 		jbsr _con_out
+68K GAS  disasm.s 			page 17
+
+
+ 807      0000 
+ 808 0772 1039 0000 		move.b instr,%d0
+ 808      0000 
+ 809 0778 E288      		lsr.l #1,%d0
+ 810 077a 7207      		moveq #7,%d1
+ 811 077c C280      		and.l %d0,%d1
+ 812 077e 2F01      		move.l %d1,-(%sp)
+ 813 0780 6100 F87E 		jbsr pdr
+ 814 0784 4FEF 0010 		lea (16,%sp),%sp
+ 815 0788 4E5E      		unlk %fp
+ 816 078a 4E75      		rts
+ 817               		.size	inf9, .-inf9
+ 818               		.align	2
+ 819               		.globl	inf7
+ 820               		.type	inf7, @function
+ 821               	inf7:
+ 822 078c 4E56 0000 		link.w %fp,#0
+ 823 0790 4878 0001 		pea 1.w
+ 824 0794 3039 0000 		move.w instr,%d0
+ 824      0000 
+ 825 079a 723F      		moveq #63,%d1
+ 826 079c C081      		and.l %d1,%d0
+ 827 079e 2F00      		move.l %d0,-(%sp)
+ 828 07a0 6100 FD0A 		jbsr prtop
+ 829 07a4 508F      		addq.l #8,%sp
+ 830 07a6 4E5E      		unlk %fp
+ 831 07a8 4E75      		rts
+ 832               		.size	inf7, .-inf7
+ 833               		.align	2
+ 834               		.globl	inf2
+ 835               		.type	inf2, @function
+ 836               	inf2:
+ 837 07aa 4E56 0000 		link.w %fp,#0
+ 838 07ae 2F03      		move.l %d3,-(%sp)
+ 839 07b0 2F02      		move.l %d2,-(%sp)
+ 840 07b2 3239 0000 		move.w instr,%d1
+ 840      0000 
+ 841 07b8 48C1      		ext.l %d1
+ 842 07ba 2001      		move.l %d1,%d0
+ 843 07bc 0280 0000 		and.l #3584,%d0
+ 843      0E00 
+ 844 07c2 2600      		move.l %d0,%d3
+ 845 07c4 7409      		moveq #9,%d2
+ 846 07c6 E4AB      		lsr.l %d2,%d3
+ 847 07c8 703F      		moveq #63,%d0
+ 848 07ca 4600      		not.b %d0
+ 849 07cc C081      		and.l %d1,%d0
+ 850 07ce 0C80 0000 		cmp.l #192,%d0
+ 850      00C0 
+ 851 07d4 661A      		jbne .L121
+ 852 07d6 2001      		move.l %d1,%d0
+ 853 07d8 0280 0000 		and.l #448,%d0
+ 853      01C0 
+ 854 07de 0C80 0000 		cmp.l #448,%d0
+ 854      01C0 
+ 855 07e4 56C0      		sne %d0
+ 856 07e6 1400      		move.b %d0,%d2
+68K GAS  disasm.s 			page 18
+
+
+ 857 07e8 4882      		ext.w %d2
+ 858 07ea 5442      		addq.w #2,%d2
+ 859 07ec 5043      		addq.w #8,%d3
+ 860 07ee 6004      		jbra .L126
+ 861               	.L121:
+ 862 07f0 2400      		move.l %d0,%d2
+ 863 07f2 EC8A      		lsr.l #6,%d2
+ 864               	.L126:
+ 865 07f4 0C43 0007 		cmp.w #7,%d3
+ 866 07f8 6E06      		jbgt .L127
+ 867 07fa 0801 0008 		btst #8,%d1
+ 868 07fe 6622      		jbne .L129
+ 869               	.L127:
+ 870 0800 3042      		move.w %d2,%a0
+ 871 0802 2F08      		move.l %a0,-(%sp)
+ 872 0804 703F      		moveq #63,%d0
+ 873 0806 C081      		and.l %d1,%d0
+ 874 0808 2F00      		move.l %d0,-(%sp)
+ 875 080a 6100 FCA0 		jbsr prtop
+ 876 080e 4878 002C 		pea 44.w
+ 877 0812 4EB9 0000 		jbsr _con_out
+ 877      0000 
+ 878 0818 3043      		move.w %d3,%a0
+ 879 081a 2F08      		move.l %a0,-(%sp)
+ 880 081c 6100 FA1E 		jbsr prtreg
+ 881 0820 6026      		jbra .L132
+ 882               	.L129:
+ 883 0822 3043      		move.w %d3,%a0
+ 884 0824 2F08      		move.l %a0,-(%sp)
+ 885 0826 6100 FA14 		jbsr prtreg
+ 886 082a 4878 002C 		pea 44.w
+ 887 082e 4EB9 0000 		jbsr _con_out
+ 887      0000 
+ 888 0834 3042      		move.w %d2,%a0
+ 889 0836 2F08      		move.l %a0,-(%sp)
+ 890 0838 3039 0000 		move.w instr,%d0
+ 890      0000 
+ 891 083e 723F      		moveq #63,%d1
+ 892 0840 C081      		and.l %d1,%d0
+ 893 0842 2F00      		move.l %d0,-(%sp)
+ 894 0844 6100 FC66 		jbsr prtop
+ 895               	.L132:
+ 896 0848 4FEF 0010 		lea (16,%sp),%sp
+ 897 084c 242E FFF8 		move.l -8(%fp),%d2
+ 898 0850 262E FFFC 		move.l -4(%fp),%d3
+ 899 0854 4E5E      		unlk %fp
+ 900 0856 4E75      		rts
+ 901               		.size	inf2, .-inf2
+ 902               		.align	2
+ 903               		.globl	inf1
+ 904               		.type	inf1, @function
+ 905               	inf1:
+ 906 0858 4E56 0000 		link.w %fp,#0
+ 907 085c 48E7 3030 		movm.l #0x3030,-(%sp)
+ 908 0860 3039 0000 		move.w instr,%d0
+ 908      0000 
+ 909 0866 48C0      		ext.l %d0
+68K GAS  disasm.s 			page 19
+
+
+ 910 0868 2400      		move.l %d0,%d2
+ 911 086a 0282 0000 		and.l #3584,%d2
+ 911      0E00 
+ 912 0870 7207      		moveq #7,%d1
+ 913 0872 C280      		and.l %d0,%d1
+ 914 0874 47F9 0000 		lea _con_out,%a3
+ 914      0000 
+ 915 087a 7609      		moveq #9,%d3
+ 916 087c E6AA      		lsr.l %d3,%d2
+ 917 087e 0800 0003 		btst #3,%d0
+ 918 0882 6708      		jbeq .L134
+ 919 0884 2F01      		move.l %d1,-(%sp)
+ 920 0886 45FA FBFE 		lea paripd,%a2
+ 921 088a 6006      		jbra .L138
+ 922               	.L134:
+ 923 088c 2F01      		move.l %d1,-(%sp)
+ 924 088e 45FA F770 		lea pdr,%a2
+ 925               	.L138:
+ 926 0892 4E92      		jbsr (%a2)
+ 927 0894 4878 002C 		pea 44.w
+ 928 0898 4E93      		jbsr (%a3)
+ 929 089a 2F02      		move.l %d2,-(%sp)
+ 930 089c 4E92      		jbsr (%a2)
+ 931 089e 4FEF 000C 		lea (12,%sp),%sp
+ 932 08a2 4CEE 0C0C 		movm.l -16(%fp),#0xc0c
+ 932      FFF0 
+ 933 08a8 4E5E      		unlk %fp
+ 934 08aa 4E75      		rts
+ 935               		.size	inf1, .-inf1
+ 936               		.align	2
+ 937               		.globl	inf19
+ 938               		.type	inf19, @function
+ 939               	inf19:
+ 940 08ac 4E56 0000 		link.w %fp,#0
+ 941 08b0 48E7 2030 		movm.l #0x2030,-(%sp)
+ 942 08b4 3039 0000 		move.w instr,%d0
+ 942      0000 
+ 943 08ba 3400      		move.w %d0,%d2
+ 944 08bc 0242 0180 		and.w #384,%d2
+ 945 08c0 45FA F7FE 		lea hexwzs,%a2
+ 946 08c4 47FA FB30 		lea pari,%a3
+ 947 08c8 0C42 0180 		cmp.w #384,%d2
+ 948 08cc 663A      		jbne .L140
+ 949 08ce 7209      		moveq #9,%d1
+ 950 08d0 E2A8      		lsr.l %d1,%d0
+ 951 08d2 123C 0007 		move.b #7,%d1
+ 952 08d6 C280      		and.l %d0,%d1
+ 953 08d8 2F01      		move.l %d1,-(%sp)
+ 954 08da 6100 F960 		jbsr prtreg
+ 955 08de 4878 002C 		pea 44.w
+ 956 08e2 4EB9 0000 		jbsr _con_out
+ 956      0000 
+ 957 08e8 2079 0000 		move.l sdot,%a0
+ 957      0000 
+ 958 08ee 3050      		move.w (%a0),%a0
+ 959 08f0 2F08      		move.l %a0,-(%sp)
+ 960 08f2 4E92      		jbsr (%a2)
+68K GAS  disasm.s 			page 20
+
+
+ 961 08f4 3039 0000 		move.w instr,%d0
+ 961      0000 
+ 962 08fa 7207      		moveq #7,%d1
+ 963 08fc C081      		and.l %d1,%d0
+ 964 08fe 2F00      		move.l %d0,-(%sp)
+ 965 0900 4E93      		jbsr (%a3)
+ 966 0902 4FEF 0010 		lea (16,%sp),%sp
+ 967 0906 6040      		jbra .L142
+ 968               	.L140:
+ 969 0908 2079 0000 		move.l sdot,%a0
+ 969      0000 
+ 970 090e 3050      		move.w (%a0),%a0
+ 971 0910 2F08      		move.l %a0,-(%sp)
+ 972 0912 4E92      		jbsr (%a2)
+ 973 0914 3039 0000 		move.w instr,%d0
+ 973      0000 
+ 974 091a 7207      		moveq #7,%d1
+ 975 091c C081      		and.l %d1,%d0
+ 976 091e 2F00      		move.l %d0,-(%sp)
+ 977 0920 4E93      		jbsr (%a3)
+ 978 0922 508F      		addq.l #8,%sp
+ 979 0924 0C42 0100 		cmp.w #256,%d2
+ 980 0928 661E      		jbne .L142
+ 981 092a 4878 002C 		pea 44.w
+ 982 092e 4EB9 0000 		jbsr _con_out
+ 982      0000 
+ 983 0934 1039 0000 		move.b instr,%d0
+ 983      0000 
+ 984 093a E288      		lsr.l #1,%d0
+ 985 093c 7207      		moveq #7,%d1
+ 986 093e C280      		and.l %d0,%d1
+ 987 0940 2F01      		move.l %d1,-(%sp)
+ 988 0942 6100 F8F8 		jbsr prtreg
+ 989 0946 508F      		addq.l #8,%sp
+ 990               	.L142:
+ 991 0948 54B9 0000 		addq.l #2,sdot
+ 991      0000 
+ 992 094e 54B9 0000 		addq.l #2,dotinc
+ 992      0000 
+ 993 0954 4CEE 0C04 		movm.l -12(%fp),#0xc04
+ 993      FFF4 
+ 994 095a 4E5E      		unlk %fp
+ 995 095c 4E75      		rts
+ 996               		.size	inf19, .-inf19
+ 997               		.section	.rodata.str1.1
+ 998               	.LC10:
+ 999 0042 4137 00   		.string	"A7"
+ 1000               		.text
+ 1001               		.align	2
+ 1002               		.globl	putrlist
+ 1003               		.type	putrlist, @function
+ 1004               	putrlist:
+ 1005 095e 4E56 0000 		link.w %fp,#0
+ 1006 0962 48E7 2030 		movm.l #0x2030,-(%sp)
+ 1007 0966 342E 000E 		move.w 14(%fp),%d2
+ 1008 096a 266E 0008 		move.l 8(%fp),%a3
+ 1009 096e 72FF      		moveq #-1,%d1
+68K GAS  disasm.s 			page 21
+
+
+ 1010 0970 347C FFFF 		move.w #-1,%a2
+ 1011               	.L146:
+ 1012 0974 3002      		move.w %d2,%d0
+ 1013 0976 C05B      		and.w (%a3)+,%d0
+ 1014 0978 6730      		jbeq .L147
+ 1015 097a 4A41      		tst.w %d1
+ 1016 097c 660E      		jbne .L149
+ 1017 097e 4878 002F 		pea 47.w
+ 1018 0982 4EB9 0000 		jbsr _con_out
+ 1018      0000 
+ 1019 0988 588F      		addq.l #4,%sp
+ 1020 098a 6006      		jbra .L151
+ 1021               	.L149:
+ 1022 098c 0C41 0001 		cmp.w #1,%d1
+ 1023 0990 6728      		jbeq .L152
+ 1024               	.L151:
+ 1025 0992 486A 0001 		pea 1(%a2)
+ 1026 0996 6100 F8A4 		jbsr prtreg
+ 1027 099a 4878 002D 		pea 45.w
+ 1028 099e 4EB9 0000 		jbsr _con_out
+ 1028      0000 
+ 1029 09a4 7201      		moveq #1,%d1
+ 1030 09a6 508F      		addq.l #8,%sp
+ 1031 09a8 6010      		jbra .L152
+ 1032               	.L147:
+ 1033 09aa 0C41 0001 		cmp.w #1,%d1
+ 1034 09ae 660A      		jbne .L152
+ 1035 09b0 2F0A      		move.l %a2,-(%sp)
+ 1036 09b2 6100 F888 		jbsr prtreg
+ 1037 09b6 4241      		clr.w %d1
+ 1038 09b8 588F      		addq.l #4,%sp
+ 1039               	.L152:
+ 1040 09ba 528A      		addq.l #1,%a2
+ 1041 09bc 700F      		moveq #15,%d0
+ 1042 09be B08A      		cmp.l %a2,%d0
+ 1043 09c0 66B2      		jbne .L146
+ 1044 09c2 0C41 0001 		cmp.w #1,%d1
+ 1045 09c6 6614      		jbne .L157
+ 1046 09c8 4879 0000 		pea .LC10
+ 1046      0000 
+ 1047 09ce 4879 0000 		pea .LC1
+ 1047      0000 
+ 1048 09d4 4EB9 0000 		jbsr cprintf
+ 1048      0000 
+ 1049 09da 508F      		addq.l #8,%sp
+ 1050               	.L157:
+ 1051 09dc 4CEE 0C04 		movm.l -12(%fp),#0xc04
+ 1051      FFF4 
+ 1052 09e2 4E5E      		unlk %fp
+ 1053 09e4 4E75      		rts
+ 1054               		.size	putrlist, .-putrlist
+ 1055               		.align	2
+ 1056               		.globl	inf18
+ 1057               		.type	inf18, @function
+ 1058               	inf18:
+ 1059 09e6 4E56 0000 		link.w %fp,#0
+ 1060 09ea 2F02      		move.l %d2,-(%sp)
+68K GAS  disasm.s 			page 22
+
+
+ 1061 09ec 2079 0000 		move.l sdot,%a0
+ 1061      0000 
+ 1062 09f2 3418      		move.w (%a0)+,%d2
+ 1063 09f4 23C8 0000 		move.l %a0,sdot
+ 1063      0000 
+ 1064 09fa 54B9 0000 		addq.l #2,dotinc
+ 1064      0000 
+ 1065 0a00 3039 0000 		move.w instr,%d0
+ 1065      0000 
+ 1066 0a06 48C0      		ext.l %d0
+ 1067 0a08 0800 000A 		btst #10,%d0
+ 1068 0a0c 672C      		jbeq .L161
+ 1069 0a0e 4878 0001 		pea 1.w
+ 1070 0a12 723F      		moveq #63,%d1
+ 1071 0a14 C280      		and.l %d0,%d1
+ 1072 0a16 2F01      		move.l %d1,-(%sp)
+ 1073 0a18 6100 FA92 		jbsr prtop
+ 1074 0a1c 4878 002C 		pea 44.w
+ 1075 0a20 4EB9 0000 		jbsr _con_out
+ 1075      0000 
+ 1076 0a26 3042      		move.w %d2,%a0
+ 1077 0a28 2F08      		move.l %a0,-(%sp)
+ 1078 0a2a 4879 0000 		pea regmsk1
+ 1078      0000 
+ 1079 0a30 6100 FF2C 		jbsr putrlist
+ 1080 0a34 4FEF 0014 		lea (20,%sp),%sp
+ 1081 0a38 604C      		jbra .L167
+ 1082               	.L161:
+ 1083 0a3a 7238      		moveq #56,%d1
+ 1084 0a3c C081      		and.l %d1,%d0
+ 1085 0a3e 3042      		move.w %d2,%a0
+ 1086 0a40 43FA FF1C 		lea putrlist,%a1
+ 1087 0a44 123C 0020 		move.b #32,%d1
+ 1088 0a48 B280      		cmp.l %d0,%d1
+ 1089 0a4a 660A      		jbne .L164
+ 1090 0a4c 2F08      		move.l %a0,-(%sp)
+ 1091 0a4e 4879 0000 		pea regmsk0
+ 1091      0000 
+ 1092 0a54 6008      		jbra .L168
+ 1093               	.L164:
+ 1094 0a56 2F08      		move.l %a0,-(%sp)
+ 1095 0a58 4879 0000 		pea regmsk1
+ 1095      0000 
+ 1096               	.L168:
+ 1097 0a5e 4E91      		jbsr (%a1)
+ 1098 0a60 584F      		addq.w #4,%sp
+ 1099 0a62 2EBC 0000 		move.l #44,(%sp)
+ 1099      002C 
+ 1100 0a68 4EB9 0000 		jbsr _con_out
+ 1100      0000 
+ 1101 0a6e 4878 0001 		pea 1.w
+ 1102 0a72 3039 0000 		move.w instr,%d0
+ 1102      0000 
+ 1103 0a78 723F      		moveq #63,%d1
+ 1104 0a7a C081      		and.l %d1,%d0
+ 1105 0a7c 2F00      		move.l %d0,-(%sp)
+ 1106 0a7e 6100 FA2C 		jbsr prtop
+68K GAS  disasm.s 			page 23
+
+
+ 1107 0a82 4FEF 000C 		lea (12,%sp),%sp
+ 1108               	.L167:
+ 1109 0a86 242E FFFC 		move.l -4(%fp),%d2
+ 1110 0a8a 4E5E      		unlk %fp
+ 1111 0a8c 4E75      		rts
+ 1112               		.size	inf18, .-inf18
+ 1113               		.section	.rodata.str1.1
+ 1114               	.LC11:
+ 1115 0045 5346 4300 		.string	"SFC"
+ 1116               	.LC12:
+ 1117 0049 4446 4300 		.string	"DFC"
+ 1118               	.LC13:
+ 1119 004d 4341 4352 		.string	"CACR"
+ 1119      00
+ 1120               	.LC14:
+ 1121 0052 5553 5000 		.string	"USP"
+ 1122               	.LC15:
+ 1123 0056 5642 5200 		.string	"VBR"
+ 1124               	.LC16:
+ 1125 005a 4341 4152 		.string	"CAAR"
+ 1125      00
+ 1126               	.LC17:
+ 1127 005f 4D53 5000 		.string	"MSP"
+ 1128               	.LC18:
+ 1129 0063 4953 5000 		.string	"ISP"
+ 1130               	.LC19:
+ 1131 0067 2A69 6C6C 		.string	"*illegal Control Register"
+ 1131      6567 616C 
+ 1131      2043 6F6E 
+ 1131      7472 6F6C 
+ 1131      2052 6567 
+ 1132               		.text
+ 1133               		.align	2
+ 1134               		.globl	inf24
+ 1135               		.type	inf24, @function
+ 1136               	inf24:
+ 1137 0a8e 4E56 0000 		link.w %fp,#0
+ 1138 0a92 2F03      		move.l %d3,-(%sp)
+ 1139 0a94 2F02      		move.l %d2,-(%sp)
+ 1140 0a96 2079 0000 		move.l sdot,%a0
+ 1140      0000 
+ 1141 0a9c 3418      		move.w (%a0)+,%d2
+ 1142 0a9e 23C8 0000 		move.l %a0,sdot
+ 1142      0000 
+ 1143 0aa4 54B9 0000 		addq.l #2,dotinc
+ 1143      0000 
+ 1144 0aaa 2002      		move.l %d2,%d0
+ 1145 0aac 0280 0000 		and.l #61440,%d0
+ 1145      F000 
+ 1146 0ab2 2600      		move.l %d0,%d3
+ 1147 0ab4 720C      		moveq #12,%d1
+ 1148 0ab6 E2AB      		lsr.l %d1,%d3
+ 1149 0ab8 0839 0000 		btst #0,instr+1
+ 1149      0000 0000 
+ 1150 0ac0 6714      		jbeq .L170
+ 1151 0ac2 3043      		move.w %d3,%a0
+ 1152 0ac4 2F08      		move.l %a0,-(%sp)
+68K GAS  disasm.s 			page 24
+
+
+ 1153 0ac6 6100 F774 		jbsr prtreg
+ 1154 0aca 4878 002C 		pea 44.w
+ 1155 0ace 4EB9 0000 		jbsr _con_out
+ 1155      0000 
+ 1156 0ad4 508F      		addq.l #8,%sp
+ 1157               	.L170:
+ 1158 0ad6 3002      		move.w %d2,%d0
+ 1159 0ad8 0240 0FFF 		and.w #4095,%d0
+ 1160 0adc 0C40 0800 		cmp.w #2048,%d0
+ 1161 0ae0 6742      		jbeq .L176
+ 1162 0ae2 6E12      		jbgt .L181
+ 1163 0ae4 0C40 0001 		cmp.w #1,%d0
+ 1164 0ae8 672A      		jbeq .L174
+ 1165 0aea 0C40 0002 		cmp.w #2,%d0
+ 1166 0aee 672C      		jbeq .L175
+ 1167 0af0 4A40      		tst.w %d0
+ 1168 0af2 6718      		jbeq .L173
+ 1169 0af4 6056      		jbra .L172
+ 1170               	.L181:
+ 1171 0af6 0C40 0802 		cmp.w #2050,%d0
+ 1172 0afa 6738      		jbeq .L178
+ 1173 0afc 6D2E      		jblt .L177
+ 1174 0afe 0C40 0803 		cmp.w #2051,%d0
+ 1175 0b02 6738      		jbeq .L179
+ 1176 0b04 0C40 0804 		cmp.w #2052,%d0
+ 1177 0b08 6642      		jbne .L172
+ 1178 0b0a 6038      		jbra .L180
+ 1179               	.L173:
+ 1180 0b0c 4879 0000 		pea .LC11
+ 1180      0000 
+ 1181 0b12 603E      		jbra .L186
+ 1182               	.L174:
+ 1183 0b14 4879 0000 		pea .LC12
+ 1183      0000 
+ 1184 0b1a 6036      		jbra .L186
+ 1185               	.L175:
+ 1186 0b1c 4879 0000 		pea .LC13
+ 1186      0000 
+ 1187 0b22 602E      		jbra .L186
+ 1188               	.L176:
+ 1189 0b24 4879 0000 		pea .LC14
+ 1189      0000 
+ 1190 0b2a 6026      		jbra .L186
+ 1191               	.L177:
+ 1192 0b2c 4879 0000 		pea .LC15
+ 1192      0000 
+ 1193 0b32 601E      		jbra .L186
+ 1194               	.L178:
+ 1195 0b34 4879 0000 		pea .LC16
+ 1195      0000 
+ 1196 0b3a 6016      		jbra .L186
+ 1197               	.L179:
+ 1198 0b3c 4879 0000 		pea .LC17
+ 1198      0000 
+ 1199 0b42 600E      		jbra .L186
+ 1200               	.L180:
+ 1201 0b44 4879 0000 		pea .LC18
+68K GAS  disasm.s 			page 25
+
+
+ 1201      0000 
+ 1202 0b4a 6006      		jbra .L186
+ 1203               	.L172:
+ 1204 0b4c 4879 0000 		pea .LC19
+ 1204      0000 
+ 1205               	.L186:
+ 1206 0b52 4879 0000 		pea .LC1
+ 1206      0000 
+ 1207 0b58 4EB9 0000 		jbsr cprintf
+ 1207      0000 
+ 1208 0b5e 508F      		addq.l #8,%sp
+ 1209 0b60 0839 0000 		btst #0,instr+1
+ 1209      0000 0000 
+ 1210 0b68 6614      		jbne .L185
+ 1211 0b6a 4878 002C 		pea 44.w
+ 1212 0b6e 4EB9 0000 		jbsr _con_out
+ 1212      0000 
+ 1213 0b74 3043      		move.w %d3,%a0
+ 1214 0b76 2F08      		move.l %a0,-(%sp)
+ 1215 0b78 6100 F6C2 		jbsr prtreg
+ 1216 0b7c 508F      		addq.l #8,%sp
+ 1217               	.L185:
+ 1218 0b7e 242E FFF8 		move.l -8(%fp),%d2
+ 1219 0b82 262E FFFC 		move.l -4(%fp),%d3
+ 1220 0b86 4E5E      		unlk %fp
+ 1221 0b88 4E75      		rts
+ 1222               		.size	inf24, .-inf24
+ 1223               		.align	2
+ 1224               		.globl	inf23
+ 1225               		.type	inf23, @function
+ 1226               	inf23:
+ 1227 0b8a 4E56 0000 		link.w %fp,#0
+ 1228 0b8e 4879 0000 		pea .LC5
+ 1228      0000 
+ 1229 0b94 4879 0000 		pea .LC1
+ 1229      0000 
+ 1230 0b9a 4EB9 0000 		jbsr cprintf
+ 1230      0000 
+ 1231 0ba0 1039 0000 		move.b instr+1,%d0
+ 1231      0000 
+ 1232 0ba6 720F      		moveq #15,%d1
+ 1233 0ba8 C081      		and.l %d1,%d0
+ 1234 0baa 2F00      		move.l %d0,-(%sp)
+ 1235 0bac 6100 F4F2 		jbsr hexbzs
+ 1236 0bb0 4FEF 000C 		lea (12,%sp),%sp
+ 1237 0bb4 4E5E      		unlk %fp
+ 1238 0bb6 4E75      		rts
+ 1239               		.size	inf23, .-inf23
+ 1240               		.align	2
+ 1241               		.globl	inf20
+ 1242               		.type	inf20, @function
+ 1243               	inf20:
+ 1244 0bb8 4E56 0000 		link.w %fp,#0
+ 1245 0bbc 4879 0000 		pea .LC5
+ 1245      0000 
+ 1246 0bc2 4879 0000 		pea .LC1
+ 1246      0000 
+68K GAS  disasm.s 			page 26
+
+
+ 1247 0bc8 4EB9 0000 		jbsr cprintf
+ 1247      0000 
+ 1248 0bce 1039 0000 		move.b instr+1,%d0
+ 1248      0000 
+ 1249 0bd4 4880      		ext.w %d0
+ 1250 0bd6 3040      		move.w %d0,%a0
+ 1251 0bd8 2F08      		move.l %a0,-(%sp)
+ 1252 0bda 6100 F4C4 		jbsr hexbzs
+ 1253 0bde 4878 002C 		pea 44.w
+ 1254 0be2 4EB9 0000 		jbsr _con_out
+ 1254      0000 
+ 1255 0be8 1039 0000 		move.b instr,%d0
+ 1255      0000 
+ 1256 0bee E288      		lsr.l #1,%d0
+ 1257 0bf0 7207      		moveq #7,%d1
+ 1258 0bf2 C280      		and.l %d0,%d1
+ 1259 0bf4 2F01      		move.l %d1,-(%sp)
+ 1260 0bf6 6100 F644 		jbsr prtreg
+ 1261 0bfa 4FEF 0014 		lea (20,%sp),%sp
+ 1262 0bfe 4E5E      		unlk %fp
+ 1263 0c00 4E75      		rts
+ 1264               		.size	inf20, .-inf20
+ 1265               		.section	.rodata.str1.1
+ 1266               	.LC20:
+ 1267 0081 5553 502C 		.string	"USP,"
+ 1267      00
+ 1268               	.LC21:
+ 1269 0086 2C55 5350 		.string	",USP"
+ 1269      00
+ 1270               		.text
+ 1271               		.align	2
+ 1272               		.globl	inf17
+ 1273               		.type	inf17, @function
+ 1274               	inf17:
+ 1275 0c02 4E56 0000 		link.w %fp,#0
+ 1276 0c06 48E7 2030 		movm.l #0x2030,-(%sp)
+ 1277 0c0a 3039 0000 		move.w instr,%d0
+ 1277      0000 
+ 1278 0c10 47F9 0000 		lea cprintf,%a3
+ 1278      0000 
+ 1279 0c16 7407      		moveq #7,%d2
+ 1280 0c18 C480      		and.l %d0,%d2
+ 1281 0c1a 45FA F5CE 		lea par,%a2
+ 1282 0c1e 0800 0003 		btst #3,%d0
+ 1283 0c22 6714      		jbeq .L192
+ 1284 0c24 4879 0000 		pea .LC20
+ 1284      0000 
+ 1285 0c2a 4879 0000 		pea .LC1
+ 1285      0000 
+ 1286 0c30 4E93      		jbsr (%a3)
+ 1287 0c32 2F02      		move.l %d2,-(%sp)
+ 1288 0c34 4E92      		jbsr (%a2)
+ 1289 0c36 6012      		jbra .L196
+ 1290               	.L192:
+ 1291 0c38 2F02      		move.l %d2,-(%sp)
+ 1292 0c3a 4E92      		jbsr (%a2)
+ 1293 0c3c 4879 0000 		pea .LC21
+68K GAS  disasm.s 			page 27
+
+
+ 1293      0000 
+ 1294 0c42 4879 0000 		pea .LC1
+ 1294      0000 
+ 1295 0c48 4E93      		jbsr (%a3)
+ 1296               	.L196:
+ 1297 0c4a 4FEF 000C 		lea (12,%sp),%sp
+ 1298 0c4e 4CEE 0C04 		movm.l -12(%fp),#0xc04
+ 1298      FFF4 
+ 1299 0c54 4E5E      		unlk %fp
+ 1300 0c56 4E75      		rts
+ 1301               		.size	inf17, .-inf17
+ 1302               		.section	.rodata.str1.1
+ 1303               	.LC22:
+ 1304 008b 2C23 2400 		.string	",#$"
+ 1305               		.text
+ 1306               		.align	2
+ 1307               		.globl	inf15
+ 1308               		.type	inf15, @function
+ 1309               	inf15:
+ 1310 0c58 4E56 0000 		link.w %fp,#0
+ 1311 0c5c 3039 0000 		move.w instr,%d0
+ 1311      0000 
+ 1312 0c62 7207      		moveq #7,%d1
+ 1313 0c64 C081      		and.l %d1,%d0
+ 1314 0c66 2F00      		move.l %d0,-(%sp)
+ 1315 0c68 6100 F580 		jbsr par
+ 1316 0c6c 4879 0000 		pea .LC22
+ 1316      0000 
+ 1317 0c72 4879 0000 		pea .LC1
+ 1317      0000 
+ 1318 0c78 4EB9 0000 		jbsr cprintf
+ 1318      0000 
+ 1319 0c7e 2079 0000 		move.l sdot,%a0
+ 1319      0000 
+ 1320 0c84 3050      		move.w (%a0),%a0
+ 1321 0c86 2F08      		move.l %a0,-(%sp)
+ 1322 0c88 6100 F436 		jbsr hexwzs
+ 1323 0c8c 54B9 0000 		addq.l #2,sdot
+ 1323      0000 
+ 1324 0c92 54B9 0000 		addq.l #2,dotinc
+ 1324      0000 
+ 1325 0c98 4FEF 0010 		lea (16,%sp),%sp
+ 1326 0c9c 4E5E      		unlk %fp
+ 1327 0c9e 4E75      		rts
+ 1328               		.size	inf15, .-inf15
+ 1329               		.section	.rodata.str1.1
+ 1330               	.LC23:
+ 1331 008f 2400      		.string	"$"
+ 1332               		.text
+ 1333               		.align	2
+ 1334               		.globl	inf8
+ 1335               		.type	inf8, @function
+ 1336               	inf8:
+ 1337 0ca0 4E56 0000 		link.w %fp,#0
+ 1338 0ca4 2F0A      		move.l %a2,-(%sp)
+ 1339 0ca6 3039 0000 		move.w instr,%d0
+ 1339      0000 
+68K GAS  disasm.s 			page 28
+
+
+ 1340 0cac 4A00      		tst.b %d0
+ 1341 0cae 661E      		jbne .L200
+ 1342 0cb0 2039 0000 		move.l sdot,%d0
+ 1342      0000 
+ 1343 0cb6 2240      		move.l %d0,%a1
+ 1344 0cb8 3051      		move.w (%a1),%a0
+ 1345 0cba 45F0 0800 		lea (%a0,%d0.l),%a2
+ 1346 0cbe 5480      		addq.l #2,%d0
+ 1347 0cc0 23C0 0000 		move.l %d0,sdot
+ 1347      0000 
+ 1348 0cc6 54B9 0000 		addq.l #2,dotinc
+ 1348      0000 
+ 1349 0ccc 602E      		jbra .L202
+ 1350               	.L200:
+ 1351 0cce 0C00 FFFF 		cmp.b #-1,%d0
+ 1352 0cd2 661C      		jbne .L203
+ 1353 0cd4 2039 0000 		move.l sdot,%d0
+ 1353      0000 
+ 1354 0cda 2440      		move.l %d0,%a2
+ 1355 0cdc 2040      		move.l %d0,%a0
+ 1356 0cde D5D0      		add.l (%a0),%a2
+ 1357 0ce0 5880      		addq.l #4,%d0
+ 1358 0ce2 23C0 0000 		move.l %d0,sdot
+ 1358      0000 
+ 1359 0ce8 58B9 0000 		addq.l #4,dotinc
+ 1359      0000 
+ 1360 0cee 600C      		jbra .L202
+ 1361               	.L203:
+ 1362 0cf0 4880      		ext.w %d0
+ 1363 0cf2 3040      		move.w %d0,%a0
+ 1364 0cf4 2448      		move.l %a0,%a2
+ 1365 0cf6 D5F9 0000 		add.l sdot,%a2
+ 1365      0000 
+ 1366               	.L202:
+ 1367 0cfc 4879 0000 		pea .LC23
+ 1367      0000 
+ 1368 0d02 4879 0000 		pea .LC1
+ 1368      0000 
+ 1369 0d08 4EB9 0000 		jbsr cprintf
+ 1369      0000 
+ 1370 0d0e 2F0A      		move.l %a2,-(%sp)
+ 1371 0d10 6100 F3FE 		jbsr hexlzs
+ 1372 0d14 4FEF 000C 		lea (12,%sp),%sp
+ 1373 0d18 246E FFFC 		move.l -4(%fp),%a2
+ 1374 0d1c 4E5E      		unlk %fp
+ 1375 0d1e 4E75      		rts
+ 1376               		.size	inf8, .-inf8
+ 1377               		.section	.rodata.str1.1
+ 1378               	.LC24:
+ 1379 0091 5352 2C00 		.string	"SR,"
+ 1380               	.LC25:
+ 1381 0095 4343 522C 		.string	"CCR,"
+ 1381      00
+ 1382               	.LC26:
+ 1383 009a 2C43 4352 		.string	",CCR"
+ 1383      00
+ 1384               	.LC27:
+68K GAS  disasm.s 			page 29
+
+
+ 1385 009f 2C53 5200 		.string	",SR"
+ 1386               		.text
+ 1387               		.align	2
+ 1388               		.globl	inf5
+ 1389               		.type	inf5, @function
+ 1390               	inf5:
+ 1391 0d20 4E56 0000 		link.w %fp,#0
+ 1392 0d24 2F02      		move.l %d2,-(%sp)
+ 1393 0d26 3039 0000 		move.w instr,%d0
+ 1393      0000 
+ 1394 0d2c 3400      		move.w %d0,%d2
+ 1395 0d2e 0242 0600 		and.w #1536,%d2
+ 1396 0d32 6608      		jbne .L207
+ 1397 0d34 4879 0000 		pea .LC24
+ 1397      0000 
+ 1398 0d3a 600C      		jbra .L217
+ 1399               	.L207:
+ 1400 0d3c 0C42 0200 		cmp.w #512,%d2
+ 1401 0d40 662E      		jbne .L210
+ 1402 0d42 4879 0000 		pea .LC25
+ 1402      0000 
+ 1403               	.L217:
+ 1404 0d48 4879 0000 		pea .LC1
+ 1404      0000 
+ 1405 0d4e 4EB9 0000 		jbsr cprintf
+ 1405      0000 
+ 1406 0d54 584F      		addq.w #4,%sp
+ 1407 0d56 2EBC 0000 		move.l #1,(%sp)
+ 1407      0001 
+ 1408 0d5c 3039 0000 		move.w instr,%d0
+ 1408      0000 
+ 1409 0d62 723F      		moveq #63,%d1
+ 1410 0d64 C081      		and.l %d1,%d0
+ 1411 0d66 2F00      		move.l %d0,-(%sp)
+ 1412 0d68 6100 F742 		jbsr prtop
+ 1413 0d6c 508F      		addq.l #8,%sp
+ 1414 0d6e 601E      		jbra .L212
+ 1415               	.L210:
+ 1416 0d70 4878 0001 		pea 1.w
+ 1417 0d74 723F      		moveq #63,%d1
+ 1418 0d76 C280      		and.l %d0,%d1
+ 1419 0d78 2F01      		move.l %d1,-(%sp)
+ 1420 0d7a 6100 F730 		jbsr prtop
+ 1421 0d7e 508F      		addq.l #8,%sp
+ 1422 0d80 0C42 0400 		cmp.w #1024,%d2
+ 1423 0d84 6608      		jbne .L212
+ 1424 0d86 4879 0000 		pea .LC26
+ 1424      0000 
+ 1425 0d8c 600C      		jbra .L218
+ 1426               	.L212:
+ 1427 0d8e 0C42 0600 		cmp.w #1536,%d2
+ 1428 0d92 6614      		jbne .L216
+ 1429 0d94 4879 0000 		pea .LC27
+ 1429      0000 
+ 1430               	.L218:
+ 1431 0d9a 4879 0000 		pea .LC1
+ 1431      0000 
+68K GAS  disasm.s 			page 30
+
+
+ 1432 0da0 4EB9 0000 		jbsr cprintf
+ 1432      0000 
+ 1433 0da6 508F      		addq.l #8,%sp
+ 1434               	.L216:
+ 1435 0da8 242E FFFC 		move.l -4(%fp),%d2
+ 1436 0dac 4E5E      		unlk %fp
+ 1437 0dae 4E75      		rts
+ 1438               		.size	inf5, .-inf5
+ 1439               		.align	2
+ 1440               		.globl	inf4
+ 1441               		.type	inf4, @function
+ 1442               	inf4:
+ 1443 0db0 4E56 0000 		link.w %fp,#0
+ 1444 0db4 2F02      		move.l %d2,-(%sp)
+ 1445 0db6 3039 0000 		move.w instr,%d0
+ 1445      0000 
+ 1446 0dbc 0280 0000 		and.l #3584,%d0
+ 1446      0E00 
+ 1447 0dc2 7209      		moveq #9,%d1
+ 1448 0dc4 E2A0      		asr.l %d1,%d0
+ 1449 0dc6 3400      		move.w %d0,%d2
+ 1450 0dc8 6602      		jbne .L220
+ 1451 0dca 7408      		moveq #8,%d2
+ 1452               	.L220:
+ 1453 0dcc 4879 0000 		pea .LC5
+ 1453      0000 
+ 1454 0dd2 4879 0000 		pea .LC1
+ 1454      0000 
+ 1455 0dd8 4EB9 0000 		jbsr cprintf
+ 1455      0000 
+ 1456 0dde 3042      		move.w %d2,%a0
+ 1457 0de0 2F08      		move.l %a0,-(%sp)
+ 1458 0de2 6100 F2BC 		jbsr hexbzs
+ 1459 0de6 4878 002C 		pea 44.w
+ 1460 0dea 4EB9 0000 		jbsr _con_out
+ 1460      0000 
+ 1461 0df0 4878 0001 		pea 1.w
+ 1462 0df4 3039 0000 		move.w instr,%d0
+ 1462      0000 
+ 1463 0dfa 723F      		moveq #63,%d1
+ 1464 0dfc C081      		and.l %d1,%d0
+ 1465 0dfe 2F00      		move.l %d0,-(%sp)
+ 1466 0e00 6100 F6AA 		jbsr prtop
+ 1467 0e04 4FEF 0018 		lea (24,%sp),%sp
+ 1468 0e08 242E FFFC 		move.l -4(%fp),%d2
+ 1469 0e0c 4E5E      		unlk %fp
+ 1470 0e0e 4E75      		rts
+ 1471               		.size	inf4, .-inf4
+ 1472               		.section	.rodata.str1.1
+ 1473               	.LC28:
+ 1474 00a3 5352 00   		.string	"SR"
+ 1475               	.LC29:
+ 1476 00a6 4343 5200 		.string	"CCR"
+ 1477               		.text
+ 1478               		.align	2
+ 1479               		.globl	inf3
+ 1480               		.type	inf3, @function
+68K GAS  disasm.s 			page 31
+
+
+ 1481               	inf3:
+ 1482 0e10 4E56 0000 		link.w %fp,#0
+ 1483 0e14 2F02      		move.l %d2,-(%sp)
+ 1484 0e16 3439 0000 		move.w instr,%d2
+ 1484      0000 
+ 1485 0e1c 703F      		moveq #63,%d0
+ 1486 0e1e 4600      		not.b %d0
+ 1487 0e20 C480      		and.l %d0,%d2
+ 1488 0e22 EC8A      		lsr.l #6,%d2
+ 1489 0e24 2F02      		move.l %d2,-(%sp)
+ 1490 0e26 6100 F302 		jbsr primm
+ 1491 0e2a 4878 002C 		pea 44.w
+ 1492 0e2e 4EB9 0000 		jbsr _con_out
+ 1492      0000 
+ 1493 0e34 3039 0000 		move.w instr,%d0
+ 1493      0000 
+ 1494 0e3a 508F      		addq.l #8,%sp
+ 1495 0e3c 0C40 023C 		cmp.w #572,%d0
+ 1496 0e40 672A      		jbeq .L225
+ 1497 0e42 6E0E      		jbgt .L227
+ 1498 0e44 0C40 003C 		cmp.w #60,%d0
+ 1499 0e48 6722      		jbeq .L225
+ 1500 0e4a 0C40 007C 		cmp.w #124,%d0
+ 1501 0e4e 6630      		jbne .L224
+ 1502 0e50 6012      		jbra .L226
+ 1503               	.L227:
+ 1504 0e52 0C40 0A3C 		cmp.w #2620,%d0
+ 1505 0e56 6714      		jbeq .L225
+ 1506 0e58 0C40 0A7C 		cmp.w #2684,%d0
+ 1507 0e5c 6706      		jbeq .L226
+ 1508 0e5e 0C40 027C 		cmp.w #636,%d0
+ 1509 0e62 661C      		jbne .L224
+ 1510               	.L226:
+ 1511 0e64 4879 0000 		pea .LC28
+ 1511      0000 
+ 1512 0e6a 6006      		jbra .L231
+ 1513               	.L225:
+ 1514 0e6c 4879 0000 		pea .LC29
+ 1514      0000 
+ 1515               	.L231:
+ 1516 0e72 4879 0000 		pea .LC1
+ 1516      0000 
+ 1517 0e78 4EB9 0000 		jbsr cprintf
+ 1517      0000 
+ 1518 0e7e 600C      		jbra .L230
+ 1519               	.L224:
+ 1520 0e80 2F02      		move.l %d2,-(%sp)
+ 1521 0e82 723F      		moveq #63,%d1
+ 1522 0e84 C280      		and.l %d0,%d1
+ 1523 0e86 2F01      		move.l %d1,-(%sp)
+ 1524 0e88 6100 F622 		jbsr prtop
+ 1525               	.L230:
+ 1526 0e8c 508F      		addq.l #8,%sp
+ 1527 0e8e 242E FFFC 		move.l -4(%fp),%d2
+ 1528 0e92 4E5E      		unlk %fp
+ 1529 0e94 4E75      		rts
+ 1530               		.size	inf3, .-inf3
+68K GAS  disasm.s 			page 32
+
+
+ 1531               		.section	.rodata.str1.1
+ 1532               	.LC30:
+ 1533 00aa 696C 6C65 		.string	"illegal instruction format #\n"
+ 1533      6761 6C20 
+ 1533      696E 7374 
+ 1533      7275 6374 
+ 1533      696F 6E20 
+ 1534               		.text
+ 1535               		.align	2
+ 1536               		.globl	noin
+ 1537               		.type	noin, @function
+ 1538               	noin:
+ 1539 0e96 4E56 0000 		link.w %fp,#0
+ 1540 0e9a 4879 0000 		pea .LC30
+ 1540      0000 
+ 1541 0ea0 4879 0000 		pea .LC1
+ 1541      0000 
+ 1542 0ea6 4EB9 0000 		jbsr cprintf
+ 1542      0000 
+ 1543 0eac 508F      		addq.l #8,%sp
+ 1544 0eae 4E5E      		unlk %fp
+ 1545 0eb0 4E75      		rts
+ 1546               		.size	noin, .-noin
+ 1547               		.section	.rodata.str1.1
+ 1548               	.LC31:
+ 1549 00c8 2020 00   		.string	"  "
+ 1550               		.text
+ 1551               		.align	2
+ 1552               		.globl	pinstr
+ 1553               		.type	pinstr, @function
+ 1554               	pinstr:
+ 1555 0eb2 4E56 0000 		link.w %fp,#0
+ 1556 0eb6 48E7 2030 		movm.l #0x2030,-(%sp)
+ 1557 0eba 202E 0008 		move.l 8(%fp),%d0
+ 1558 0ebe 23C0 0000 		move.l %d0,dot
+ 1558      0000 
+ 1559 0ec4 2200      		move.l %d0,%d1
+ 1560 0ec6 5481      		addq.l #2,%d1
+ 1561 0ec8 23C1 0000 		move.l %d1,sdot
+ 1561      0000 
+ 1562 0ece 7202      		moveq #2,%d1
+ 1563 0ed0 23C1 0000 		move.l %d1,dotinc
+ 1563      0000 
+ 1564 0ed6 2040      		move.l %d0,%a0
+ 1565 0ed8 3410      		move.w (%a0),%d2
+ 1566 0eda 33C2 0000 		move.w %d2,instr
+ 1566      0000 
+ 1567 0ee0 47F9 0000 		lea optab,%a3
+ 1567      0000 
+ 1568 0ee6 41F3 B800 		lea (%a3,%a3.l),%a0
+ 1569               	.L235:
+ 1570 0eea 223C 0000 		move.l #optab,%d1
+ 1570      0000 
+ 1571 0ef0 4481      		neg.l %d1
+ 1572 0ef2 3002      		move.w %d2,%d0
+ 1573 0ef4 C070 1800 		and.w (%a0,%d1.l),%d0
+ 1574 0ef8 B070 1802 		cmp.w 2(%a0,%d1.l),%d0
+68K GAS  disasm.s 			page 33
+
+
+ 1575 0efc 670A      		jbeq .L236
+ 1576 0efe 47EB 000C 		lea (12,%a3),%a3
+ 1577 0f02 41E8 000C 		lea (12,%a0),%a0
+ 1578 0f06 60E2      		jbra .L235
+ 1579               	.L236:
+ 1580 0f08 2F2B 0008 		move.l 8(%a3),-(%sp)
+ 1581 0f0c 4879 0000 		pea .LC1
+ 1581      0000 
+ 1582 0f12 45F9 0000 		lea cprintf,%a2
+ 1582      0000 
+ 1583 0f18 4E92      		jbsr (%a2)
+ 1584 0f1a 4879 0000 		pea .LC31
+ 1584      0000 
+ 1585 0f20 4879 0000 		pea .LC1
+ 1585      0000 
+ 1586 0f26 4E92      		jbsr (%a2)
+ 1587 0f28 302B 0004 		move.w 4(%a3),%d0
+ 1588 0f2c 4FEF 0010 		lea (16,%sp),%sp
+ 1589 0f30 0C40 001C 		cmp.w #28,%d0
+ 1590 0f34 6200 00FC 		jbhi .L238
+ 1591 0f38 4A40      		tst.w %d0
+ 1592 0f3a 6700 0102 		jbeq .L240
+ 1593 0f3e 0C40 0019 		cmp.w #25,%d0
+ 1594 0f42 6200 00FA 		jbhi .L240
+ 1595 0f46 0280 0000 		and.l #65535,%d0
+ 1595      FFFF 
+ 1596 0f4c D080      		add.l %d0,%d0
+ 1597               		.set .LI268,.+2
+ 1598 0f4e 303B 0806 		move.w .L268-.LI268.b(%pc,%d0.l),%d0
+ 1599 0f52 4EFB 0002 		jmp %pc@(2,%d0:w)
+ 1600               		.align	2
+ 1601               		.swbeg	&26
+ 1602               	.L268:
+ 1603 0f56 0034      		.word .L242-.L268
+ 1604 0f58 003C      		.word .L243-.L268
+ 1605 0f5a 0044      		.word .L244-.L268
+ 1606 0f5c 004C      		.word .L245-.L268
+ 1607 0f5e 0054      		.word .L246-.L268
+ 1608 0f60 005C      		.word .L247-.L268
+ 1609 0f62 0064      		.word .L248-.L268
+ 1610 0f64 006A      		.word .L249-.L268
+ 1611 0f66 0070      		.word .L250-.L268
+ 1612 0f68 0076      		.word .L251-.L268
+ 1613 0f6a 007C      		.word .L252-.L268
+ 1614 0f6c 0082      		.word .L253-.L268
+ 1615 0f6e 0088      		.word .L254-.L268
+ 1616 0f70 008E      		.word .L255-.L268
+ 1617 0f72 0094      		.word .L256-.L268
+ 1618 0f74 009A      		.word .L257-.L268
+ 1619 0f76 00A0      		.word .L258-.L268
+ 1620 0f78 00A6      		.word .L259-.L268
+ 1621 0f7a 00AC      		.word .L260-.L268
+ 1622 0f7c 00B2      		.word .L261-.L268
+ 1623 0f7e 00B8      		.word .L262-.L268
+ 1624 0f80 00BE      		.word .L263-.L268
+ 1625 0f82 00C4      		.word .L264-.L268
+ 1626 0f84 00CA      		.word .L265-.L268
+68K GAS  disasm.s 			page 34
+
+
+ 1627 0f86 00D0      		.word .L266-.L268
+ 1628 0f88 00D6      		.word .L267-.L268
+ 1629               	.L242:
+ 1630 0f8a 6100 FF0A 		jbsr noin
+ 1631 0f8e 6000 00AE 		jbra .L240
+ 1632               	.L243:
+ 1633 0f92 6100 F8C4 		jbsr inf1
+ 1634 0f96 6000 00A6 		jbra .L240
+ 1635               	.L244:
+ 1636 0f9a 6100 F80E 		jbsr inf2
+ 1637 0f9e 6000 009E 		jbra .L240
+ 1638               	.L245:
+ 1639 0fa2 6100 FE6C 		jbsr inf3
+ 1640 0fa6 6000 0096 		jbra .L240
+ 1641               	.L246:
+ 1642 0faa 6100 FE04 		jbsr inf4
+ 1643 0fae 6000 008E 		jbra .L240
+ 1644               	.L247:
+ 1645 0fb2 6100 FD6C 		jbsr inf5
+ 1646 0fb6 6000 0086 		jbra .L240
+ 1647               	.L248:
+ 1648 0fba 6100 F3CE 		jbsr inf6
+ 1649 0fbe 607E      		jbra .L240
+ 1650               	.L249:
+ 1651 0fc0 6100 F7CA 		jbsr inf7
+ 1652 0fc4 6078      		jbra .L240
+ 1653               	.L250:
+ 1654 0fc6 6100 FCD8 		jbsr inf8
+ 1655 0fca 6072      		jbra .L240
+ 1656               	.L251:
+ 1657 0fcc 6100 F782 		jbsr inf9
+ 1658 0fd0 606C      		jbra .L240
+ 1659               	.L252:
+ 1660 0fd2 6100 F728 		jbsr inf10
+ 1661 0fd6 6066      		jbra .L240
+ 1662               	.L253:
+ 1663 0fd8 6100 F46E 		jbsr inf11
+ 1664 0fdc 6060      		jbra .L240
+ 1665               	.L254:
+ 1666 0fde 6100 F1BE 		jbsr inf12
+ 1667 0fe2 605A      		jbra .L240
+ 1668               	.L255:
+ 1669 0fe4 6100 F344 		jbsr inf13
+ 1670 0fe8 6054      		jbra .L240
+ 1671               	.L256:
+ 1672 0fea 6100 F080 		jbsr inf14
+ 1673 0fee 604E      		jbra .L240
+ 1674               	.L257:
+ 1675 0ff0 6100 FC66 		jbsr inf15
+ 1676 0ff4 6048      		jbra .L240
+ 1677               	.L258:
+ 1678 0ff6 6100 F680 		jbsr inf16
+ 1679 0ffa 6042      		jbra .L240
+ 1680               	.L259:
+ 1681 0ffc 6100 FC04 		jbsr inf17
+ 1682 1000 603C      		jbra .L240
+ 1683               	.L260:
+68K GAS  disasm.s 			page 35
+
+
+ 1684 1002 6100 F9E2 		jbsr inf18
+ 1685 1006 6036      		jbra .L240
+ 1686               	.L261:
+ 1687 1008 6100 F8A2 		jbsr inf19
+ 1688 100c 6030      		jbra .L240
+ 1689               	.L262:
+ 1690 100e 6100 FBA8 		jbsr inf20
+ 1691 1012 602A      		jbra .L240
+ 1692               	.L263:
+ 1693 1014 6100 F178 		jbsr inf21
+ 1694 1018 6024      		jbra .L240
+ 1695               	.L264:
+ 1696 101a 6100 F2F4 		jbsr inf22
+ 1697 101e 601E      		jbra .L240
+ 1698               	.L265:
+ 1699 1020 6100 FB68 		jbsr inf23
+ 1700 1024 6018      		jbra .L240
+ 1701               	.L266:
+ 1702 1026 6100 FA66 		jbsr inf24
+ 1703 102a 6012      		jbra .L240
+ 1704               	.L267:
+ 1705 102c 6100 F5BC 		jbsr inf25
+ 1706 1030 600C      		jbra .L240
+ 1707               	.L238:
+ 1708 1032 4878 003F 		pea 63.w
+ 1709 1036 4EB9 0000 		jbsr _con_out
+ 1709      0000 
+ 1710 103c 588F      		addq.l #4,%sp
+ 1711               	.L240:
+ 1712 103e 2039 0000 		move.l dotinc,%d0
+ 1712      0000 
+ 1713 1044 4CEE 0C04 		movm.l -12(%fp),#0xc04
+ 1713      FFF4 
+ 1714 104a 4E5E      		unlk %fp
+ 1715 104c 4E75      		rts
+ 1716               		.size	pinstr, .-pinstr
+ 1717               		.globl	optab
+ 1718               		.section	.rodata.str1.1
+ 1719               	.LC32:
+ 1720 00cb 616E 6469 		.string	"andi.b"
+ 1720      2E62 00
+ 1721               	.LC33:
+ 1722 00d2 616E 6469 		.string	"andi.w"
+ 1722      2E77 00
+ 1723               	.LC34:
+ 1724 00d9 656F 7269 		.string	"eori.b"
+ 1724      2E62 00
+ 1725               	.LC35:
+ 1726 00e0 656F 7269 		.string	"eori.w"
+ 1726      2E77 00
+ 1727               	.LC36:
+ 1728 00e7 696C 6C65 		.string	"illegal"
+ 1728      6761 6C00 
+ 1729               	.LC37:
+ 1730 00ef 6E6F 7000 		.string	"nop"
+ 1731               	.LC38:
+ 1732 00f3 6F72 692E 		.string	"ori.b"
+68K GAS  disasm.s 			page 36
+
+
+ 1732      6200 
+ 1733               	.LC39:
+ 1734 00f9 6F72 692E 		.string	"ori.w"
+ 1734      7700 
+ 1735               	.LC40:
+ 1736 00ff 7265 7365 		.string	"reset"
+ 1736      7400 
+ 1737               	.LC41:
+ 1738 0105 7274 6400 		.string	"rtd"
+ 1739               	.LC42:
+ 1740 0109 7274 6500 		.string	"rte"
+ 1741               	.LC43:
+ 1742 010d 7274 7200 		.string	"rtr"
+ 1743               	.LC44:
+ 1744 0111 7274 7300 		.string	"rts"
+ 1745               	.LC45:
+ 1746 0115 7374 6F70 		.string	"stop"
+ 1746      00
+ 1747               	.LC46:
+ 1748 011a 7472 6170 		.string	"trapv"
+ 1748      7600 
+ 1749               	.LC47:
+ 1750 0120 6D6F 7665 		.string	"movec"
+ 1750      6300 
+ 1751               	.LC48:
+ 1752 0126 6462 7400 		.string	"dbt"
+ 1753               	.LC49:
+ 1754 012a 6462 7261 		.string	"dbra"
+ 1754      00
+ 1755               	.LC50:
+ 1756 012f 6462 6869 		.string	"dbhi"
+ 1756      00
+ 1757               	.LC51:
+ 1758 0134 6462 6C73 		.string	"dbls"
+ 1758      00
+ 1759               	.LC52:
+ 1760 0139 6462 6363 		.string	"dbcc"
+ 1760      00
+ 1761               	.LC53:
+ 1762 013e 6462 6373 		.string	"dbcs"
+ 1762      00
+ 1763               	.LC54:
+ 1764 0143 6462 6E65 		.string	"dbne"
+ 1764      00
+ 1765               	.LC55:
+ 1766 0148 6462 6571 		.string	"dbeq"
+ 1766      00
+ 1767               	.LC56:
+ 1768 014d 6462 7663 		.string	"dbvc"
+ 1768      00
+ 1769               	.LC57:
+ 1770 0152 6462 7673 		.string	"dbvs"
+ 1770      00
+ 1771               	.LC58:
+ 1772 0157 6462 706C 		.string	"dbpl"
+ 1772      00
+ 1773               	.LC59:
+68K GAS  disasm.s 			page 37
+
+
+ 1774 015c 6462 6D69 		.string	"dbmi"
+ 1774      00
+ 1775               	.LC60:
+ 1776 0161 6462 6765 		.string	"dbge"
+ 1776      00
+ 1777               	.LC61:
+ 1778 0166 6462 6C74 		.string	"dblt"
+ 1778      00
+ 1779               	.LC62:
+ 1780 016b 6462 6774 		.string	"dbgt"
+ 1780      00
+ 1781               	.LC63:
+ 1782 0170 6462 6C65 		.string	"dble"
+ 1782      00
+ 1783               	.LC64:
+ 1784 0175 6578 742E 		.string	"ext.w"
+ 1784      7700 
+ 1785               	.LC65:
+ 1786 017b 6578 742E 		.string	"ext.l"
+ 1786      6C00 
+ 1787               	.LC66:
+ 1788 0181 6C69 6E6B 		.string	"link"
+ 1788      00
+ 1789               	.LC67:
+ 1790 0186 6D6F 7665 		.string	"move.l"
+ 1790      2E6C 00
+ 1791               	.LC68:
+ 1792 018d 7377 6170 		.string	"swap"
+ 1792      00
+ 1793               	.LC69:
+ 1794 0192 756E 6C6B 		.string	"unlk"
+ 1794      00
+ 1795               	.LC70:
+ 1796 0197 7472 6170 		.string	"trap"
+ 1796      00
+ 1797               	.LC71:
+ 1798 019c 6164 6469 		.string	"addi.b"
+ 1798      2E62 00
+ 1799               	.LC72:
+ 1800 01a3 6164 6469 		.string	"addi.w"
+ 1800      2E77 00
+ 1801               	.LC73:
+ 1802 01aa 6164 6469 		.string	"addi.l"
+ 1802      2E6C 00
+ 1803               	.LC74:
+ 1804 01b1 616E 6469 		.string	"andi.l"
+ 1804      2E6C 00
+ 1805               	.LC75:
+ 1806 01b8 6173 6C00 		.string	"asl"
+ 1807               	.LC76:
+ 1808 01bc 6173 7200 		.string	"asr"
+ 1809               	.LC77:
+ 1810 01c0 6263 6867 		.string	"bchg"
+ 1810      00
+ 1811               	.LC78:
+ 1812 01c5 6263 6C72 		.string	"bclr"
+ 1812      00
+68K GAS  disasm.s 			page 38
+
+
+ 1813               	.LC79:
+ 1814 01ca 6273 6574 		.string	"bset"
+ 1814      00
+ 1815               	.LC80:
+ 1816 01cf 6274 7374 		.string	"btst"
+ 1816      00
+ 1817               	.LC81:
+ 1818 01d4 636C 722E 		.string	"clr.b"
+ 1818      6200 
+ 1819               	.LC82:
+ 1820 01da 636C 722E 		.string	"clr.w"
+ 1820      7700 
+ 1821               	.LC83:
+ 1822 01e0 636C 722E 		.string	"clr.l"
+ 1822      6C00 
+ 1823               	.LC84:
+ 1824 01e6 636D 7069 		.string	"cmpi.b"
+ 1824      2E62 00
+ 1825               	.LC85:
+ 1826 01ed 636D 7069 		.string	"cmpi.w"
+ 1826      2E77 00
+ 1827               	.LC86:
+ 1828 01f4 636D 7069 		.string	"cmpi.l"
+ 1828      2E6C 00
+ 1829               	.LC87:
+ 1830 01fb 656F 7269 		.string	"eori.l"
+ 1830      2E6C 00
+ 1831               	.LC88:
+ 1832 0202 6A6D 7000 		.string	"jmp"
+ 1833               	.LC89:
+ 1834 0206 6A73 7200 		.string	"jsr"
+ 1835               	.LC90:
+ 1836 020a 6C73 6C00 		.string	"lsl"
+ 1837               	.LC91:
+ 1838 020e 6C73 7200 		.string	"lsr"
+ 1839               	.LC92:
+ 1840 0212 6D6F 7665 		.string	"move.w"
+ 1840      2E77 00
+ 1841               	.LC93:
+ 1842 0219 6D6F 7665 		.string	"movem.w"
+ 1842      6D2E 7700 
+ 1843               	.LC94:
+ 1844 0221 6D6F 7665 		.string	"movem.l"
+ 1844      6D2E 6C00 
+ 1845               	.LC95:
+ 1846 0229 6D6F 7665 		.string	"moves.b"
+ 1846      732E 6200 
+ 1847               	.LC96:
+ 1848 0231 6D6F 7665 		.string	"moves.w"
+ 1848      732E 7700 
+ 1849               	.LC97:
+ 1850 0239 6D6F 7665 		.string	"moves.l"
+ 1850      732E 6C00 
+ 1851               	.LC98:
+ 1852 0241 6E62 6364 		.string	"nbcd"
+ 1852      00
+ 1853               	.LC99:
+68K GAS  disasm.s 			page 39
+
+
+ 1854 0246 6E65 672E 		.string	"neg.b"
+ 1854      6200 
+ 1855               	.LC100:
+ 1856 024c 6E65 672E 		.string	"neg.w"
+ 1856      7700 
+ 1857               	.LC101:
+ 1858 0252 6E65 672E 		.string	"neg.l"
+ 1858      6C00 
+ 1859               	.LC102:
+ 1860 0258 6E65 6778 		.string	"negx.b"
+ 1860      2E62 00
+ 1861               	.LC103:
+ 1862 025f 6E65 6778 		.string	"negx.w"
+ 1862      2E77 00
+ 1863               	.LC104:
+ 1864 0266 6E65 6778 		.string	"negx.l"
+ 1864      2E6C 00
+ 1865               	.LC105:
+ 1866 026d 6E6F 742E 		.string	"not.b"
+ 1866      6200 
+ 1867               	.LC106:
+ 1868 0273 6E6F 742E 		.string	"not.w"
+ 1868      7700 
+ 1869               	.LC107:
+ 1870 0279 6E6F 742E 		.string	"not.l"
+ 1870      6C00 
+ 1871               	.LC108:
+ 1872 027f 6F72 692E 		.string	"ori.l"
+ 1872      6C00 
+ 1873               	.LC109:
+ 1874 0285 7065 6100 		.string	"pea"
+ 1875               	.LC110:
+ 1876 0289 726F 6C00 		.string	"rol"
+ 1877               	.LC111:
+ 1878 028d 726F 7200 		.string	"ror"
+ 1879               	.LC112:
+ 1880 0291 726F 786C 		.string	"roxl"
+ 1880      00
+ 1881               	.LC113:
+ 1882 0296 726F 7872 		.string	"roxr"
+ 1882      00
+ 1883               	.LC114:
+ 1884 029b 7374 00   		.string	"st"
+ 1885               	.LC115:
+ 1886 029e 7366 00   		.string	"sf"
+ 1887               	.LC116:
+ 1888 02a1 7368 6900 		.string	"shi"
+ 1889               	.LC117:
+ 1890 02a5 736C 7300 		.string	"sls"
+ 1891               	.LC118:
+ 1892 02a9 7363 6300 		.string	"scc"
+ 1893               	.LC119:
+ 1894 02ad 7363 7300 		.string	"scs"
+ 1895               	.LC120:
+ 1896 02b1 736E 6500 		.string	"sne"
+ 1897               	.LC121:
+ 1898 02b5 7365 7100 		.string	"seq"
+68K GAS  disasm.s 			page 40
+
+
+ 1899               	.LC122:
+ 1900 02b9 7376 6300 		.string	"svc"
+ 1901               	.LC123:
+ 1902 02bd 7376 7300 		.string	"svs"
+ 1903               	.LC124:
+ 1904 02c1 7370 6C00 		.string	"spl"
+ 1905               	.LC125:
+ 1906 02c5 736D 6900 		.string	"smi"
+ 1907               	.LC126:
+ 1908 02c9 7367 6500 		.string	"sge"
+ 1909               	.LC127:
+ 1910 02cd 736C 7400 		.string	"slt"
+ 1911               	.LC128:
+ 1912 02d1 7367 7400 		.string	"sgt"
+ 1913               	.LC129:
+ 1914 02d5 736C 6500 		.string	"sle"
+ 1915               	.LC130:
+ 1916 02d9 7375 6269 		.string	"subi.b"
+ 1916      2E62 00
+ 1917               	.LC131:
+ 1918 02e0 7375 6269 		.string	"subi.w"
+ 1918      2E77 00
+ 1919               	.LC132:
+ 1920 02e7 7375 6269 		.string	"subi.l"
+ 1920      2E6C 00
+ 1921               	.LC133:
+ 1922 02ee 7461 732E 		.string	"tas.b"
+ 1922      6200 
+ 1923               	.LC134:
+ 1924 02f4 7473 742E 		.string	"tst.b"
+ 1924      6200 
+ 1925               	.LC135:
+ 1926 02fa 7473 742E 		.string	"tst.w"
+ 1926      7700 
+ 1927               	.LC136:
+ 1928 0300 7473 742E 		.string	"tst.l"
+ 1928      6C00 
+ 1929               	.LC137:
+ 1930 0306 6268 6900 		.string	"bhi"
+ 1931               	.LC138:
+ 1932 030a 626C 7300 		.string	"bls"
+ 1933               	.LC139:
+ 1934 030e 6263 6300 		.string	"bcc"
+ 1935               	.LC140:
+ 1936 0312 6263 7300 		.string	"bcs"
+ 1937               	.LC141:
+ 1938 0316 626E 6500 		.string	"bne"
+ 1939               	.LC142:
+ 1940 031a 6265 7100 		.string	"beq"
+ 1941               	.LC143:
+ 1942 031e 6276 6300 		.string	"bvc"
+ 1943               	.LC144:
+ 1944 0322 6276 7300 		.string	"bvs"
+ 1945               	.LC145:
+ 1946 0326 6270 6C00 		.string	"bpl"
+ 1947               	.LC146:
+ 1948 032a 626D 6900 		.string	"bmi"
+68K GAS  disasm.s 			page 41
+
+
+ 1949               	.LC147:
+ 1950 032e 6267 6500 		.string	"bge"
+ 1951               	.LC148:
+ 1952 0332 626C 7400 		.string	"blt"
+ 1953               	.LC149:
+ 1954 0336 6267 7400 		.string	"bgt"
+ 1955               	.LC150:
+ 1956 033a 626C 6500 		.string	"ble"
+ 1957               	.LC151:
+ 1958 033e 6272 6100 		.string	"bra"
+ 1959               	.LC152:
+ 1960 0342 6273 7200 		.string	"bsr"
+ 1961               	.LC153:
+ 1962 0346 6162 6364 		.string	"abcd"
+ 1962      00
+ 1963               	.LC154:
+ 1964 034b 6164 6478 		.string	"addx.b"
+ 1964      2E62 00
+ 1965               	.LC155:
+ 1966 0352 6164 6478 		.string	"addx.w"
+ 1966      2E77 00
+ 1967               	.LC156:
+ 1968 0359 6164 6478 		.string	"addx.l"
+ 1968      2E6C 00
+ 1969               	.LC157:
+ 1970 0360 6578 6700 		.string	"exg"
+ 1971               	.LC158:
+ 1972 0364 6173 6C2E 		.string	"asl.b"
+ 1972      6200 
+ 1973               	.LC159:
+ 1974 036a 6173 6C2E 		.string	"asl.w"
+ 1974      7700 
+ 1975               	.LC160:
+ 1976 0370 6173 6C2E 		.string	"asl.l"
+ 1976      6C00 
+ 1977               	.LC161:
+ 1978 0376 6173 722E 		.string	"asr.b"
+ 1978      6200 
+ 1979               	.LC162:
+ 1980 037c 6173 722E 		.string	"asr.w"
+ 1980      7700 
+ 1981               	.LC163:
+ 1982 0382 6173 722E 		.string	"asr.l"
+ 1982      6C00 
+ 1983               	.LC164:
+ 1984 0388 636D 706D 		.string	"cmpm.b"
+ 1984      2E62 00
+ 1985               	.LC165:
+ 1986 038f 636D 706D 		.string	"cmpm.w"
+ 1986      2E77 00
+ 1987               	.LC166:
+ 1988 0396 636D 706D 		.string	"cmpm.l"
+ 1988      2E6C 00
+ 1989               	.LC167:
+ 1990 039d 6C73 6C2E 		.string	"lsl.b"
+ 1990      6200 
+ 1991               	.LC168:
+68K GAS  disasm.s 			page 42
+
+
+ 1992 03a3 6C73 6C2E 		.string	"lsl.w"
+ 1992      7700 
+ 1993               	.LC169:
+ 1994 03a9 6C73 6C2E 		.string	"lsl.l"
+ 1994      6C00 
+ 1995               	.LC170:
+ 1996 03af 6C73 722E 		.string	"lsr.b"
+ 1996      6200 
+ 1997               	.LC171:
+ 1998 03b5 6C73 722E 		.string	"lsr.w"
+ 1998      7700 
+ 1999               	.LC172:
+ 2000 03bb 6C73 722E 		.string	"lsr.l"
+ 2000      6C00 
+ 2001               	.LC173:
+ 2002 03c1 6D6F 7665 		.string	"movep.w"
+ 2002      702E 7700 
+ 2003               	.LC174:
+ 2004 03c9 6D6F 7665 		.string	"movep.l"
+ 2004      702E 6C00 
+ 2005               	.LC175:
+ 2006 03d1 726F 6C2E 		.string	"rol.b"
+ 2006      6200 
+ 2007               	.LC176:
+ 2008 03d7 726F 6C2E 		.string	"rol.w"
+ 2008      7700 
+ 2009               	.LC177:
+ 2010 03dd 726F 6C2E 		.string	"rol.l"
+ 2010      6C00 
+ 2011               	.LC178:
+ 2012 03e3 726F 722E 		.string	"ror.b"
+ 2012      6200 
+ 2013               	.LC179:
+ 2014 03e9 726F 722E 		.string	"ror.w"
+ 2014      7700 
+ 2015               	.LC180:
+ 2016 03ef 726F 722E 		.string	"ror.l"
+ 2016      6C00 
+ 2017               	.LC181:
+ 2018 03f5 726F 786C 		.string	"roxl.b"
+ 2018      2E62 00
+ 2019               	.LC182:
+ 2020 03fc 726F 786C 		.string	"roxl.w"
+ 2020      2E77 00
+ 2021               	.LC183:
+ 2022 0403 726F 786C 		.string	"roxl.l"
+ 2022      2E6C 00
+ 2023               	.LC184:
+ 2024 040a 726F 7872 		.string	"roxr.b"
+ 2024      2E62 00
+ 2025               	.LC185:
+ 2026 0411 726F 7872 		.string	"roxr.w"
+ 2026      2E77 00
+ 2027               	.LC186:
+ 2028 0418 726F 7872 		.string	"roxr.l"
+ 2028      2E6C 00
+ 2029               	.LC187:
+68K GAS  disasm.s 			page 43
+
+
+ 2030 041f 7362 6364 		.string	"sbcd"
+ 2030      00
+ 2031               	.LC188:
+ 2032 0424 7375 6278 		.string	"subx.b"
+ 2032      2E62 00
+ 2033               	.LC189:
+ 2034 042b 7375 6278 		.string	"subx.w"
+ 2034      2E77 00
+ 2035               	.LC190:
+ 2036 0432 7375 6278 		.string	"subx.l"
+ 2036      2E6C 00
+ 2037               	.LC191:
+ 2038 0439 6164 642E 		.string	"add.b"
+ 2038      6200 
+ 2039               	.LC192:
+ 2040 043f 6164 642E 		.string	"add.w"
+ 2040      7700 
+ 2041               	.LC193:
+ 2042 0445 6164 642E 		.string	"add.l"
+ 2042      6C00 
+ 2043               	.LC194:
+ 2044 044b 6164 6461 		.string	"adda.w"
+ 2044      2E77 00
+ 2045               	.LC195:
+ 2046 0452 6164 6461 		.string	"adda.l"
+ 2046      2E6C 00
+ 2047               	.LC196:
+ 2048 0459 6164 6471 		.string	"addq.b"
+ 2048      2E62 00
+ 2049               	.LC197:
+ 2050 0460 6164 6471 		.string	"addq.w"
+ 2050      2E77 00
+ 2051               	.LC198:
+ 2052 0467 6164 6471 		.string	"addq.l"
+ 2052      2E6C 00
+ 2053               	.LC199:
+ 2054 046e 616E 642E 		.string	"and.b"
+ 2054      6200 
+ 2055               	.LC200:
+ 2056 0474 616E 642E 		.string	"and.w"
+ 2056      7700 
+ 2057               	.LC201:
+ 2058 047a 616E 642E 		.string	"and.l"
+ 2058      6C00 
+ 2059               	.LC202:
+ 2060 0480 6368 6B00 		.string	"chk"
+ 2061               	.LC203:
+ 2062 0484 636D 702E 		.string	"cmp.b"
+ 2062      6200 
+ 2063               	.LC204:
+ 2064 048a 636D 702E 		.string	"cmp.w"
+ 2064      7700 
+ 2065               	.LC205:
+ 2066 0490 636D 702E 		.string	"cmp.l"
+ 2066      6C00 
+ 2067               	.LC206:
+ 2068 0496 636D 7061 		.string	"cmpa.w"
+68K GAS  disasm.s 			page 44
+
+
+ 2068      2E77 00
+ 2069               	.LC207:
+ 2070 049d 636D 7061 		.string	"cmpa.l"
+ 2070      2E6C 00
+ 2071               	.LC208:
+ 2072 04a4 6469 7673 		.string	"divs"
+ 2072      00
+ 2073               	.LC209:
+ 2074 04a9 6469 7675 		.string	"divu"
+ 2074      00
+ 2075               	.LC210:
+ 2076 04ae 656F 722E 		.string	"eor.b"
+ 2076      6200 
+ 2077               	.LC211:
+ 2078 04b4 656F 722E 		.string	"eor.w"
+ 2078      7700 
+ 2079               	.LC212:
+ 2080 04ba 656F 722E 		.string	"eor.l"
+ 2080      6C00 
+ 2081               	.LC213:
+ 2082 04c0 6C65 6100 		.string	"lea"
+ 2083               	.LC214:
+ 2084 04c4 6D6F 7665 		.string	"movea.w"
+ 2084      612E 7700 
+ 2085               	.LC215:
+ 2086 04cc 6D6F 7665 		.string	"movea.l"
+ 2086      612E 6C00 
+ 2087               	.LC216:
+ 2088 04d4 6D75 6C73 		.string	"muls"
+ 2088      00
+ 2089               	.LC217:
+ 2090 04d9 6D75 6C75 		.string	"mulu"
+ 2090      00
+ 2091               	.LC218:
+ 2092 04de 6F72 2E62 		.string	"or.b"
+ 2092      00
+ 2093               	.LC219:
+ 2094 04e3 6F72 2E77 		.string	"or.w"
+ 2094      00
+ 2095               	.LC220:
+ 2096 04e8 6F72 2E6C 		.string	"or.l"
+ 2096      00
+ 2097               	.LC221:
+ 2098 04ed 7375 622E 		.string	"sub.b"
+ 2098      6200 
+ 2099               	.LC222:
+ 2100 04f3 7375 622E 		.string	"sub.w"
+ 2100      7700 
+ 2101               	.LC223:
+ 2102 04f9 7375 622E 		.string	"sub.l"
+ 2102      6C00 
+ 2103               	.LC224:
+ 2104 04ff 7375 6261 		.string	"suba.w"
+ 2104      2E77 00
+ 2105               	.LC225:
+ 2106 0506 7375 6261 		.string	"suba.l"
+ 2106      2E6C 00
+68K GAS  disasm.s 			page 45
+
+
+ 2107               	.LC226:
+ 2108 050d 7375 6271 		.string	"subq.b"
+ 2108      2E62 00
+ 2109               	.LC227:
+ 2110 0514 7375 6271 		.string	"subq.w"
+ 2110      2E77 00
+ 2111               	.LC228:
+ 2112 051b 7375 6271 		.string	"subq.l"
+ 2112      2E6C 00
+ 2113               	.LC229:
+ 2114 0522 6D6F 7665 		.string	"moveq.l"
+ 2114      712E 6C00 
+ 2115               	.LC230:
+ 2116 052a 6D6F 7665 		.string	"move.b"
+ 2116      2E62 00
+ 2117               	.LC231:
+ 2118 0531 2A75 6E6B 		.string	"*unknown instruction*"
+ 2118      6E6F 776E 
+ 2118      2069 6E73 
+ 2118      7472 7563 
+ 2118      7469 6F6E 
+ 2119               		.section	.rodata
+ 2120               		.align	4
+ 2121               		.type	optab, @object
+ 2122               		.size	optab, 3216
+ 2123               	optab:
+ 2124 0000 FFFF      		.word	-1
+ 2125 0002 023C      		.word	572
+ 2126 0004 0003      		.word	3
+ 2127 0006 0000      		.zero	2
+ 2128 0008 0000 0000 		.long	.LC32
+ 2129 000c FFFF      		.word	-1
+ 2130 000e 027C      		.word	636
+ 2131 0010 0003      		.word	3
+ 2132 0012 0000      		.zero	2
+ 2133 0014 0000 0000 		.long	.LC33
+ 2134 0018 FFFF      		.word	-1
+ 2135 001a 0A3C      		.word	2620
+ 2136 001c 0003      		.word	3
+ 2137 001e 0000      		.zero	2
+ 2138 0020 0000 0000 		.long	.LC34
+ 2139 0024 FFFF      		.word	-1
+ 2140 0026 0A7C      		.word	2684
+ 2141 0028 0003      		.word	3
+ 2142 002a 0000      		.zero	2
+ 2143 002c 0000 0000 		.long	.LC35
+ 2144 0030 FFFF      		.word	-1
+ 2145 0032 4AFA      		.word	19194
+ 2146 0034 0000      		.word	0
+ 2147 0036 0000      		.zero	2
+ 2148 0038 0000 0000 		.long	.LC36
+ 2149 003c FFFF      		.word	-1
+ 2150 003e 4AFB      		.word	19195
+ 2151 0040 0000      		.word	0
+ 2152 0042 0000      		.zero	2
+ 2153 0044 0000 0000 		.long	.LC36
+ 2154 0048 FFFF      		.word	-1
+68K GAS  disasm.s 			page 46
+
+
+ 2155 004a 4AFC      		.word	19196
+ 2156 004c 0000      		.word	0
+ 2157 004e 0000      		.zero	2
+ 2158 0050 0000 0000 		.long	.LC36
+ 2159 0054 FFFF      		.word	-1
+ 2160 0056 4E71      		.word	20081
+ 2161 0058 0000      		.word	0
+ 2162 005a 0000      		.zero	2
+ 2163 005c 0000 0000 		.long	.LC37
+ 2164 0060 FFFF      		.word	-1
+ 2165 0062 003C      		.word	60
+ 2166 0064 0003      		.word	3
+ 2167 0066 0000      		.zero	2
+ 2168 0068 0000 0000 		.long	.LC38
+ 2169 006c FFFF      		.word	-1
+ 2170 006e 007C      		.word	124
+ 2171 0070 0003      		.word	3
+ 2172 0072 0000      		.zero	2
+ 2173 0074 0000 0000 		.long	.LC39
+ 2174 0078 FFFF      		.word	-1
+ 2175 007a 4E70      		.word	20080
+ 2176 007c 0000      		.word	0
+ 2177 007e 0000      		.zero	2
+ 2178 0080 0000 0000 		.long	.LC40
+ 2179 0084 FFFF      		.word	-1
+ 2180 0086 4E74      		.word	20084
+ 2181 0088 0015      		.word	21
+ 2182 008a 0000      		.zero	2
+ 2183 008c 0000 0000 		.long	.LC41
+ 2184 0090 FFFF      		.word	-1
+ 2185 0092 4E73      		.word	20083
+ 2186 0094 0000      		.word	0
+ 2187 0096 0000      		.zero	2
+ 2188 0098 0000 0000 		.long	.LC42
+ 2189 009c FFFF      		.word	-1
+ 2190 009e 4E77      		.word	20087
+ 2191 00a0 0000      		.word	0
+ 2192 00a2 0000      		.zero	2
+ 2193 00a4 0000 0000 		.long	.LC43
+ 2194 00a8 FFFF      		.word	-1
+ 2195 00aa 4E75      		.word	20085
+ 2196 00ac 0000      		.word	0
+ 2197 00ae 0000      		.zero	2
+ 2198 00b0 0000 0000 		.long	.LC44
+ 2199 00b4 FFFF      		.word	-1
+ 2200 00b6 4E72      		.word	20082
+ 2201 00b8 0015      		.word	21
+ 2202 00ba 0000      		.zero	2
+ 2203 00bc 0000 0000 		.long	.LC45
+ 2204 00c0 FFFF      		.word	-1
+ 2205 00c2 4E76      		.word	20086
+ 2206 00c4 0000      		.word	0
+ 2207 00c6 0000      		.zero	2
+ 2208 00c8 0000 0000 		.long	.LC46
+ 2209 00cc FFFE      		.word	-2
+ 2210 00ce 4E7A      		.word	20090
+ 2211 00d0 0018      		.word	24
+68K GAS  disasm.s 			page 47
+
+
+ 2212 00d2 0000      		.zero	2
+ 2213 00d4 0000 0000 		.long	.LC47
+ 2214 00d8 FFF8      		.word	-8
+ 2215 00da 50C8      		.word	20680
+ 2216 00dc 000C      		.word	12
+ 2217 00de 0000      		.zero	2
+ 2218 00e0 0000 0000 		.long	.LC48
+ 2219 00e4 FFF8      		.word	-8
+ 2220 00e6 51C8      		.word	20936
+ 2221 00e8 000C      		.word	12
+ 2222 00ea 0000      		.zero	2
+ 2223 00ec 0000 0000 		.long	.LC49
+ 2224 00f0 FFF8      		.word	-8
+ 2225 00f2 52C8      		.word	21192
+ 2226 00f4 000C      		.word	12
+ 2227 00f6 0000      		.zero	2
+ 2228 00f8 0000 0000 		.long	.LC50
+ 2229 00fc FFF8      		.word	-8
+ 2230 00fe 53C8      		.word	21448
+ 2231 0100 000C      		.word	12
+ 2232 0102 0000      		.zero	2
+ 2233 0104 0000 0000 		.long	.LC51
+ 2234 0108 FFF8      		.word	-8
+ 2235 010a 54C8      		.word	21704
+ 2236 010c 000C      		.word	12
+ 2237 010e 0000      		.zero	2
+ 2238 0110 0000 0000 		.long	.LC52
+ 2239 0114 FFF8      		.word	-8
+ 2240 0116 55C8      		.word	21960
+ 2241 0118 000C      		.word	12
+ 2242 011a 0000      		.zero	2
+ 2243 011c 0000 0000 		.long	.LC53
+ 2244 0120 FFF8      		.word	-8
+ 2245 0122 56C8      		.word	22216
+ 2246 0124 000C      		.word	12
+ 2247 0126 0000      		.zero	2
+ 2248 0128 0000 0000 		.long	.LC54
+ 2249 012c FFF8      		.word	-8
+ 2250 012e 57C8      		.word	22472
+ 2251 0130 000C      		.word	12
+ 2252 0132 0000      		.zero	2
+ 2253 0134 0000 0000 		.long	.LC55
+ 2254 0138 FFF8      		.word	-8
+ 2255 013a 58C8      		.word	22728
+ 2256 013c 000C      		.word	12
+ 2257 013e 0000      		.zero	2
+ 2258 0140 0000 0000 		.long	.LC56
+ 2259 0144 FFF8      		.word	-8
+ 2260 0146 59C8      		.word	22984
+ 2261 0148 000C      		.word	12
+ 2262 014a 0000      		.zero	2
+ 2263 014c 0000 0000 		.long	.LC57
+ 2264 0150 FFF8      		.word	-8
+ 2265 0152 5AC8      		.word	23240
+ 2266 0154 000C      		.word	12
+ 2267 0156 0000      		.zero	2
+ 2268 0158 0000 0000 		.long	.LC58
+68K GAS  disasm.s 			page 48
+
+
+ 2269 015c FFF8      		.word	-8
+ 2270 015e 5BC8      		.word	23496
+ 2271 0160 000C      		.word	12
+ 2272 0162 0000      		.zero	2
+ 2273 0164 0000 0000 		.long	.LC59
+ 2274 0168 FFF8      		.word	-8
+ 2275 016a 5CC8      		.word	23752
+ 2276 016c 000C      		.word	12
+ 2277 016e 0000      		.zero	2
+ 2278 0170 0000 0000 		.long	.LC60
+ 2279 0174 FFF8      		.word	-8
+ 2280 0176 5DC8      		.word	24008
+ 2281 0178 000C      		.word	12
+ 2282 017a 0000      		.zero	2
+ 2283 017c 0000 0000 		.long	.LC61
+ 2284 0180 FFF8      		.word	-8
+ 2285 0182 5EC8      		.word	24264
+ 2286 0184 000C      		.word	12
+ 2287 0186 0000      		.zero	2
+ 2288 0188 0000 0000 		.long	.LC62
+ 2289 018c FFF8      		.word	-8
+ 2290 018e 5FC8      		.word	24520
+ 2291 0190 000C      		.word	12
+ 2292 0192 0000      		.zero	2
+ 2293 0194 0000 0000 		.long	.LC63
+ 2294 0198 FFF8      		.word	-8
+ 2295 019a 4880      		.word	18560
+ 2296 019c 000E      		.word	14
+ 2297 019e 0000      		.zero	2
+ 2298 01a0 0000 0000 		.long	.LC64
+ 2299 01a4 FFF8      		.word	-8
+ 2300 01a6 48C0      		.word	18624
+ 2301 01a8 000E      		.word	14
+ 2302 01aa 0000      		.zero	2
+ 2303 01ac 0000 0000 		.long	.LC65
+ 2304 01b0 FFF8      		.word	-8
+ 2305 01b2 4E50      		.word	20048
+ 2306 01b4 000F      		.word	15
+ 2307 01b6 0000      		.zero	2
+ 2308 01b8 0000 0000 		.long	.LC66
+ 2309 01bc FFF8      		.word	-8
+ 2310 01be 4E60      		.word	20064
+ 2311 01c0 0011      		.word	17
+ 2312 01c2 0000      		.zero	2
+ 2313 01c4 0000 0000 		.long	.LC67
+ 2314 01c8 FFF8      		.word	-8
+ 2315 01ca 4E68      		.word	20072
+ 2316 01cc 0011      		.word	17
+ 2317 01ce 0000      		.zero	2
+ 2318 01d0 0000 0000 		.long	.LC67
+ 2319 01d4 FFF8      		.word	-8
+ 2320 01d6 4840      		.word	18496
+ 2321 01d8 0016      		.word	22
+ 2322 01da 0000      		.zero	2
+ 2323 01dc 0000 0000 		.long	.LC68
+ 2324 01e0 FFF8      		.word	-8
+ 2325 01e2 4E58      		.word	20056
+68K GAS  disasm.s 			page 49
+
+
+ 2326 01e4 0016      		.word	22
+ 2327 01e6 0000      		.zero	2
+ 2328 01e8 0000 0000 		.long	.LC69
+ 2329 01ec FFF0      		.word	-16
+ 2330 01ee 4E40      		.word	20032
+ 2331 01f0 0017      		.word	23
+ 2332 01f2 0000      		.zero	2
+ 2333 01f4 0000 0000 		.long	.LC70
+ 2334 01f8 FFC0      		.word	-64
+ 2335 01fa 0600      		.word	1536
+ 2336 01fc 0003      		.word	3
+ 2337 01fe 0000      		.zero	2
+ 2338 0200 0000 0000 		.long	.LC71
+ 2339 0204 FFC0      		.word	-64
+ 2340 0206 0640      		.word	1600
+ 2341 0208 0003      		.word	3
+ 2342 020a 0000      		.zero	2
+ 2343 020c 0000 0000 		.long	.LC72
+ 2344 0210 FFC0      		.word	-64
+ 2345 0212 0680      		.word	1664
+ 2346 0214 0003      		.word	3
+ 2347 0216 0000      		.zero	2
+ 2348 0218 0000 0000 		.long	.LC73
+ 2349 021c FFC0      		.word	-64
+ 2350 021e 0200      		.word	512
+ 2351 0220 0003      		.word	3
+ 2352 0222 0000      		.zero	2
+ 2353 0224 0000 0000 		.long	.LC32
+ 2354 0228 FFC0      		.word	-64
+ 2355 022a 0240      		.word	576
+ 2356 022c 0003      		.word	3
+ 2357 022e 0000      		.zero	2
+ 2358 0230 0000 0000 		.long	.LC33
+ 2359 0234 FFC0      		.word	-64
+ 2360 0236 0280      		.word	640
+ 2361 0238 0003      		.word	3
+ 2362 023a 0000      		.zero	2
+ 2363 023c 0000 0000 		.long	.LC74
+ 2364 0240 FFC0      		.word	-64
+ 2365 0242 E1C0      		.word	-7744
+ 2366 0244 0007      		.word	7
+ 2367 0246 0000      		.zero	2
+ 2368 0248 0000 0000 		.long	.LC75
+ 2369 024c FFC0      		.word	-64
+ 2370 024e E0C0      		.word	-8000
+ 2371 0250 0007      		.word	7
+ 2372 0252 0000      		.zero	2
+ 2373 0254 0000 0000 		.long	.LC76
+ 2374 0258 FFC0      		.word	-64
+ 2375 025a 0840      		.word	2112
+ 2376 025c 000A      		.word	10
+ 2377 025e 0000      		.zero	2
+ 2378 0260 0000 0000 		.long	.LC77
+ 2379 0264 FFC0      		.word	-64
+ 2380 0266 0880      		.word	2176
+ 2381 0268 000A      		.word	10
+ 2382 026a 0000      		.zero	2
+68K GAS  disasm.s 			page 50
+
+
+ 2383 026c 0000 0000 		.long	.LC78
+ 2384 0270 FFC0      		.word	-64
+ 2385 0272 08C0      		.word	2240
+ 2386 0274 000A      		.word	10
+ 2387 0276 0000      		.zero	2
+ 2388 0278 0000 0000 		.long	.LC79
+ 2389 027c FFC0      		.word	-64
+ 2390 027e 0800      		.word	2048
+ 2391 0280 000A      		.word	10
+ 2392 0282 0000      		.zero	2
+ 2393 0284 0000 0000 		.long	.LC80
+ 2394 0288 FFC0      		.word	-64
+ 2395 028a 4200      		.word	16896
+ 2396 028c 0007      		.word	7
+ 2397 028e 0000      		.zero	2
+ 2398 0290 0000 0000 		.long	.LC81
+ 2399 0294 FFC0      		.word	-64
+ 2400 0296 4240      		.word	16960
+ 2401 0298 0007      		.word	7
+ 2402 029a 0000      		.zero	2
+ 2403 029c 0000 0000 		.long	.LC82
+ 2404 02a0 FFC0      		.word	-64
+ 2405 02a2 4280      		.word	17024
+ 2406 02a4 0007      		.word	7
+ 2407 02a6 0000      		.zero	2
+ 2408 02a8 0000 0000 		.long	.LC83
+ 2409 02ac FFC0      		.word	-64
+ 2410 02ae 0C00      		.word	3072
+ 2411 02b0 0003      		.word	3
+ 2412 02b2 0000      		.zero	2
+ 2413 02b4 0000 0000 		.long	.LC84
+ 2414 02b8 FFC0      		.word	-64
+ 2415 02ba 0C40      		.word	3136
+ 2416 02bc 0003      		.word	3
+ 2417 02be 0000      		.zero	2
+ 2418 02c0 0000 0000 		.long	.LC85
+ 2419 02c4 FFC0      		.word	-64
+ 2420 02c6 0C80      		.word	3200
+ 2421 02c8 0003      		.word	3
+ 2422 02ca 0000      		.zero	2
+ 2423 02cc 0000 0000 		.long	.LC86
+ 2424 02d0 FFC0      		.word	-64
+ 2425 02d2 0A00      		.word	2560
+ 2426 02d4 0003      		.word	3
+ 2427 02d6 0000      		.zero	2
+ 2428 02d8 0000 0000 		.long	.LC34
+ 2429 02dc FFC0      		.word	-64
+ 2430 02de 0A40      		.word	2624
+ 2431 02e0 0003      		.word	3
+ 2432 02e2 0000      		.zero	2
+ 2433 02e4 0000 0000 		.long	.LC35
+ 2434 02e8 FFC0      		.word	-64
+ 2435 02ea 0A80      		.word	2688
+ 2436 02ec 0003      		.word	3
+ 2437 02ee 0000      		.zero	2
+ 2438 02f0 0000 0000 		.long	.LC87
+ 2439 02f4 FFC0      		.word	-64
+68K GAS  disasm.s 			page 51
+
+
+ 2440 02f6 4EC0      		.word	20160
+ 2441 02f8 0007      		.word	7
+ 2442 02fa 0000      		.zero	2
+ 2443 02fc 0000 0000 		.long	.LC88
+ 2444 0300 FFC0      		.word	-64
+ 2445 0302 4E80      		.word	20096
+ 2446 0304 0007      		.word	7
+ 2447 0306 0000      		.zero	2
+ 2448 0308 0000 0000 		.long	.LC89
+ 2449 030c FFC0      		.word	-64
+ 2450 030e E3C0      		.word	-7232
+ 2451 0310 0007      		.word	7
+ 2452 0312 0000      		.zero	2
+ 2453 0314 0000 0000 		.long	.LC90
+ 2454 0318 FFC0      		.word	-64
+ 2455 031a E2C0      		.word	-7488
+ 2456 031c 0007      		.word	7
+ 2457 031e 0000      		.zero	2
+ 2458 0320 0000 0000 		.long	.LC91
+ 2459 0324 FFC0      		.word	-64
+ 2460 0326 42C0      		.word	17088
+ 2461 0328 0005      		.word	5
+ 2462 032a 0000      		.zero	2
+ 2463 032c 0000 0000 		.long	.LC92
+ 2464 0330 FFC0      		.word	-64
+ 2465 0332 44C0      		.word	17600
+ 2466 0334 0005      		.word	5
+ 2467 0336 0000      		.zero	2
+ 2468 0338 0000 0000 		.long	.LC92
+ 2469 033c FFC0      		.word	-64
+ 2470 033e 46C0      		.word	18112
+ 2471 0340 0005      		.word	5
+ 2472 0342 0000      		.zero	2
+ 2473 0344 0000 0000 		.long	.LC92
+ 2474 0348 FFC0      		.word	-64
+ 2475 034a 40C0      		.word	16576
+ 2476 034c 0005      		.word	5
+ 2477 034e 0000      		.zero	2
+ 2478 0350 0000 0000 		.long	.LC92
+ 2479 0354 FFC0      		.word	-64
+ 2480 0356 4C80      		.word	19584
+ 2481 0358 0012      		.word	18
+ 2482 035a 0000      		.zero	2
+ 2483 035c 0000 0000 		.long	.LC93
+ 2484 0360 FFC0      		.word	-64
+ 2485 0362 4CC0      		.word	19648
+ 2486 0364 0012      		.word	18
+ 2487 0366 0000      		.zero	2
+ 2488 0368 0000 0000 		.long	.LC94
+ 2489 036c FFC0      		.word	-64
+ 2490 036e 4880      		.word	18560
+ 2491 0370 0012      		.word	18
+ 2492 0372 0000      		.zero	2
+ 2493 0374 0000 0000 		.long	.LC93
+ 2494 0378 FFC0      		.word	-64
+ 2495 037a 48C0      		.word	18624
+ 2496 037c 0012      		.word	18
+68K GAS  disasm.s 			page 52
+
+
+ 2497 037e 0000      		.zero	2
+ 2498 0380 0000 0000 		.long	.LC94
+ 2499 0384 FFC0      		.word	-64
+ 2500 0386 0E00      		.word	3584
+ 2501 0388 0019      		.word	25
+ 2502 038a 0000      		.zero	2
+ 2503 038c 0000 0000 		.long	.LC95
+ 2504 0390 FFC0      		.word	-64
+ 2505 0392 0E40      		.word	3648
+ 2506 0394 0019      		.word	25
+ 2507 0396 0000      		.zero	2
+ 2508 0398 0000 0000 		.long	.LC96
+ 2509 039c FFC0      		.word	-64
+ 2510 039e 0E80      		.word	3712
+ 2511 03a0 0019      		.word	25
+ 2512 03a2 0000      		.zero	2
+ 2513 03a4 0000 0000 		.long	.LC97
+ 2514 03a8 FFC0      		.word	-64
+ 2515 03aa 4800      		.word	18432
+ 2516 03ac 0007      		.word	7
+ 2517 03ae 0000      		.zero	2
+ 2518 03b0 0000 0000 		.long	.LC98
+ 2519 03b4 FFC0      		.word	-64
+ 2520 03b6 4400      		.word	17408
+ 2521 03b8 0007      		.word	7
+ 2522 03ba 0000      		.zero	2
+ 2523 03bc 0000 0000 		.long	.LC99
+ 2524 03c0 FFC0      		.word	-64
+ 2525 03c2 4440      		.word	17472
+ 2526 03c4 0007      		.word	7
+ 2527 03c6 0000      		.zero	2
+ 2528 03c8 0000 0000 		.long	.LC100
+ 2529 03cc FFC0      		.word	-64
+ 2530 03ce 4480      		.word	17536
+ 2531 03d0 0007      		.word	7
+ 2532 03d2 0000      		.zero	2
+ 2533 03d4 0000 0000 		.long	.LC101
+ 2534 03d8 FFC0      		.word	-64
+ 2535 03da 4000      		.word	16384
+ 2536 03dc 0007      		.word	7
+ 2537 03de 0000      		.zero	2
+ 2538 03e0 0000 0000 		.long	.LC102
+ 2539 03e4 FFC0      		.word	-64
+ 2540 03e6 4040      		.word	16448
+ 2541 03e8 0007      		.word	7
+ 2542 03ea 0000      		.zero	2
+ 2543 03ec 0000 0000 		.long	.LC103
+ 2544 03f0 FFC0      		.word	-64
+ 2545 03f2 4080      		.word	16512
+ 2546 03f4 0007      		.word	7
+ 2547 03f6 0000      		.zero	2
+ 2548 03f8 0000 0000 		.long	.LC104
+ 2549 03fc FFC0      		.word	-64
+ 2550 03fe 4600      		.word	17920
+ 2551 0400 0007      		.word	7
+ 2552 0402 0000      		.zero	2
+ 2553 0404 0000 0000 		.long	.LC105
+68K GAS  disasm.s 			page 53
+
+
+ 2554 0408 FFC0      		.word	-64
+ 2555 040a 4640      		.word	17984
+ 2556 040c 0007      		.word	7
+ 2557 040e 0000      		.zero	2
+ 2558 0410 0000 0000 		.long	.LC106
+ 2559 0414 FFC0      		.word	-64
+ 2560 0416 4680      		.word	18048
+ 2561 0418 0007      		.word	7
+ 2562 041a 0000      		.zero	2
+ 2563 041c 0000 0000 		.long	.LC107
+ 2564 0420 FFC0      		.word	-64
+ 2565 0422 0000      		.word	0
+ 2566 0424 0003      		.word	3
+ 2567 0426 0000      		.zero	2
+ 2568 0428 0000 0000 		.long	.LC38
+ 2569 042c FFC0      		.word	-64
+ 2570 042e 0040      		.word	64
+ 2571 0430 0003      		.word	3
+ 2572 0432 0000      		.zero	2
+ 2573 0434 0000 0000 		.long	.LC39
+ 2574 0438 FFC0      		.word	-64
+ 2575 043a 0080      		.word	128
+ 2576 043c 0003      		.word	3
+ 2577 043e 0000      		.zero	2
+ 2578 0440 0000 0000 		.long	.LC108
+ 2579 0444 FFC0      		.word	-64
+ 2580 0446 4840      		.word	18496
+ 2581 0448 0007      		.word	7
+ 2582 044a 0000      		.zero	2
+ 2583 044c 0000 0000 		.long	.LC109
+ 2584 0450 FFC0      		.word	-64
+ 2585 0452 E7C0      		.word	-6208
+ 2586 0454 0007      		.word	7
+ 2587 0456 0000      		.zero	2
+ 2588 0458 0000 0000 		.long	.LC110
+ 2589 045c FFC0      		.word	-64
+ 2590 045e E6C0      		.word	-6464
+ 2591 0460 0007      		.word	7
+ 2592 0462 0000      		.zero	2
+ 2593 0464 0000 0000 		.long	.LC111
+ 2594 0468 FFC0      		.word	-64
+ 2595 046a E5C0      		.word	-6720
+ 2596 046c 0007      		.word	7
+ 2597 046e 0000      		.zero	2
+ 2598 0470 0000 0000 		.long	.LC112
+ 2599 0474 FFC0      		.word	-64
+ 2600 0476 E4C0      		.word	-6976
+ 2601 0478 0007      		.word	7
+ 2602 047a 0000      		.zero	2
+ 2603 047c 0000 0000 		.long	.LC113
+ 2604 0480 FFC0      		.word	-64
+ 2605 0482 50C0      		.word	20672
+ 2606 0484 0007      		.word	7
+ 2607 0486 0000      		.zero	2
+ 2608 0488 0000 0000 		.long	.LC114
+ 2609 048c FFC0      		.word	-64
+ 2610 048e 51C0      		.word	20928
+68K GAS  disasm.s 			page 54
+
+
+ 2611 0490 0007      		.word	7
+ 2612 0492 0000      		.zero	2
+ 2613 0494 0000 0000 		.long	.LC115
+ 2614 0498 FFC0      		.word	-64
+ 2615 049a 52C0      		.word	21184
+ 2616 049c 0007      		.word	7
+ 2617 049e 0000      		.zero	2
+ 2618 04a0 0000 0000 		.long	.LC116
+ 2619 04a4 FFC0      		.word	-64
+ 2620 04a6 53C0      		.word	21440
+ 2621 04a8 0007      		.word	7
+ 2622 04aa 0000      		.zero	2
+ 2623 04ac 0000 0000 		.long	.LC117
+ 2624 04b0 FFC0      		.word	-64
+ 2625 04b2 54C0      		.word	21696
+ 2626 04b4 0007      		.word	7
+ 2627 04b6 0000      		.zero	2
+ 2628 04b8 0000 0000 		.long	.LC118
+ 2629 04bc FFC0      		.word	-64
+ 2630 04be 55C0      		.word	21952
+ 2631 04c0 0007      		.word	7
+ 2632 04c2 0000      		.zero	2
+ 2633 04c4 0000 0000 		.long	.LC119
+ 2634 04c8 FFC0      		.word	-64
+ 2635 04ca 56C0      		.word	22208
+ 2636 04cc 0007      		.word	7
+ 2637 04ce 0000      		.zero	2
+ 2638 04d0 0000 0000 		.long	.LC120
+ 2639 04d4 FFC0      		.word	-64
+ 2640 04d6 57C0      		.word	22464
+ 2641 04d8 0007      		.word	7
+ 2642 04da 0000      		.zero	2
+ 2643 04dc 0000 0000 		.long	.LC121
+ 2644 04e0 FFC0      		.word	-64
+ 2645 04e2 58C0      		.word	22720
+ 2646 04e4 0007      		.word	7
+ 2647 04e6 0000      		.zero	2
+ 2648 04e8 0000 0000 		.long	.LC122
+ 2649 04ec FFC0      		.word	-64
+ 2650 04ee 59C0      		.word	22976
+ 2651 04f0 0007      		.word	7
+ 2652 04f2 0000      		.zero	2
+ 2653 04f4 0000 0000 		.long	.LC123
+ 2654 04f8 FFC0      		.word	-64
+ 2655 04fa 5AC0      		.word	23232
+ 2656 04fc 0007      		.word	7
+ 2657 04fe 0000      		.zero	2
+ 2658 0500 0000 0000 		.long	.LC124
+ 2659 0504 FFC0      		.word	-64
+ 2660 0506 5BC0      		.word	23488
+ 2661 0508 0007      		.word	7
+ 2662 050a 0000      		.zero	2
+ 2663 050c 0000 0000 		.long	.LC125
+ 2664 0510 FFC0      		.word	-64
+ 2665 0512 5CC0      		.word	23744
+ 2666 0514 0007      		.word	7
+ 2667 0516 0000      		.zero	2
+68K GAS  disasm.s 			page 55
+
+
+ 2668 0518 0000 0000 		.long	.LC126
+ 2669 051c FFC0      		.word	-64
+ 2670 051e 5DC0      		.word	24000
+ 2671 0520 0007      		.word	7
+ 2672 0522 0000      		.zero	2
+ 2673 0524 0000 0000 		.long	.LC127
+ 2674 0528 FFC0      		.word	-64
+ 2675 052a 5EC0      		.word	24256
+ 2676 052c 0007      		.word	7
+ 2677 052e 0000      		.zero	2
+ 2678 0530 0000 0000 		.long	.LC128
+ 2679 0534 FFC0      		.word	-64
+ 2680 0536 5FC0      		.word	24512
+ 2681 0538 0007      		.word	7
+ 2682 053a 0000      		.zero	2
+ 2683 053c 0000 0000 		.long	.LC129
+ 2684 0540 FFC0      		.word	-64
+ 2685 0542 0400      		.word	1024
+ 2686 0544 0003      		.word	3
+ 2687 0546 0000      		.zero	2
+ 2688 0548 0000 0000 		.long	.LC130
+ 2689 054c FFC0      		.word	-64
+ 2690 054e 0440      		.word	1088
+ 2691 0550 0003      		.word	3
+ 2692 0552 0000      		.zero	2
+ 2693 0554 0000 0000 		.long	.LC131
+ 2694 0558 FFC0      		.word	-64
+ 2695 055a 0480      		.word	1152
+ 2696 055c 0003      		.word	3
+ 2697 055e 0000      		.zero	2
+ 2698 0560 0000 0000 		.long	.LC132
+ 2699 0564 FFC0      		.word	-64
+ 2700 0566 4AC0      		.word	19136
+ 2701 0568 0007      		.word	7
+ 2702 056a 0000      		.zero	2
+ 2703 056c 0000 0000 		.long	.LC133
+ 2704 0570 FFC0      		.word	-64
+ 2705 0572 4A00      		.word	18944
+ 2706 0574 0007      		.word	7
+ 2707 0576 0000      		.zero	2
+ 2708 0578 0000 0000 		.long	.LC134
+ 2709 057c FFC0      		.word	-64
+ 2710 057e 4A40      		.word	19008
+ 2711 0580 0007      		.word	7
+ 2712 0582 0000      		.zero	2
+ 2713 0584 0000 0000 		.long	.LC135
+ 2714 0588 FFC0      		.word	-64
+ 2715 058a 4A80      		.word	19072
+ 2716 058c 0007      		.word	7
+ 2717 058e 0000      		.zero	2
+ 2718 0590 0000 0000 		.long	.LC136
+ 2719 0594 FF00      		.word	-256
+ 2720 0596 6200      		.word	25088
+ 2721 0598 0008      		.word	8
+ 2722 059a 0000      		.zero	2
+ 2723 059c 0000 0000 		.long	.LC137
+ 2724 05a0 FF00      		.word	-256
+68K GAS  disasm.s 			page 56
+
+
+ 2725 05a2 6300      		.word	25344
+ 2726 05a4 0008      		.word	8
+ 2727 05a6 0000      		.zero	2
+ 2728 05a8 0000 0000 		.long	.LC138
+ 2729 05ac FF00      		.word	-256
+ 2730 05ae 6400      		.word	25600
+ 2731 05b0 0008      		.word	8
+ 2732 05b2 0000      		.zero	2
+ 2733 05b4 0000 0000 		.long	.LC139
+ 2734 05b8 FF00      		.word	-256
+ 2735 05ba 6500      		.word	25856
+ 2736 05bc 0008      		.word	8
+ 2737 05be 0000      		.zero	2
+ 2738 05c0 0000 0000 		.long	.LC140
+ 2739 05c4 FF00      		.word	-256
+ 2740 05c6 6600      		.word	26112
+ 2741 05c8 0008      		.word	8
+ 2742 05ca 0000      		.zero	2
+ 2743 05cc 0000 0000 		.long	.LC141
+ 2744 05d0 FF00      		.word	-256
+ 2745 05d2 6700      		.word	26368
+ 2746 05d4 0008      		.word	8
+ 2747 05d6 0000      		.zero	2
+ 2748 05d8 0000 0000 		.long	.LC142
+ 2749 05dc FF00      		.word	-256
+ 2750 05de 6800      		.word	26624
+ 2751 05e0 0008      		.word	8
+ 2752 05e2 0000      		.zero	2
+ 2753 05e4 0000 0000 		.long	.LC143
+ 2754 05e8 FF00      		.word	-256
+ 2755 05ea 6900      		.word	26880
+ 2756 05ec 0008      		.word	8
+ 2757 05ee 0000      		.zero	2
+ 2758 05f0 0000 0000 		.long	.LC144
+ 2759 05f4 FF00      		.word	-256
+ 2760 05f6 6A00      		.word	27136
+ 2761 05f8 0008      		.word	8
+ 2762 05fa 0000      		.zero	2
+ 2763 05fc 0000 0000 		.long	.LC145
+ 2764 0600 FF00      		.word	-256
+ 2765 0602 6B00      		.word	27392
+ 2766 0604 0008      		.word	8
+ 2767 0606 0000      		.zero	2
+ 2768 0608 0000 0000 		.long	.LC146
+ 2769 060c FF00      		.word	-256
+ 2770 060e 6C00      		.word	27648
+ 2771 0610 0008      		.word	8
+ 2772 0612 0000      		.zero	2
+ 2773 0614 0000 0000 		.long	.LC147
+ 2774 0618 FF00      		.word	-256
+ 2775 061a 6D00      		.word	27904
+ 2776 061c 0008      		.word	8
+ 2777 061e 0000      		.zero	2
+ 2778 0620 0000 0000 		.long	.LC148
+ 2779 0624 FF00      		.word	-256
+ 2780 0626 6E00      		.word	28160
+ 2781 0628 0008      		.word	8
+68K GAS  disasm.s 			page 57
+
+
+ 2782 062a 0000      		.zero	2
+ 2783 062c 0000 0000 		.long	.LC149
+ 2784 0630 FF00      		.word	-256
+ 2785 0632 6F00      		.word	28416
+ 2786 0634 0008      		.word	8
+ 2787 0636 0000      		.zero	2
+ 2788 0638 0000 0000 		.long	.LC150
+ 2789 063c FF00      		.word	-256
+ 2790 063e 6000      		.word	24576
+ 2791 0640 0008      		.word	8
+ 2792 0642 0000      		.zero	2
+ 2793 0644 0000 0000 		.long	.LC151
+ 2794 0648 FF00      		.word	-256
+ 2795 064a 6100      		.word	24832
+ 2796 064c 0008      		.word	8
+ 2797 064e 0000      		.zero	2
+ 2798 0650 0000 0000 		.long	.LC152
+ 2799 0654 F1F8      		.word	-3592
+ 2800 0656 C100      		.word	-16128
+ 2801 0658 0001      		.word	1
+ 2802 065a 0000      		.zero	2
+ 2803 065c 0000 0000 		.long	.LC153
+ 2804 0660 F1F8      		.word	-3592
+ 2805 0662 C108      		.word	-16120
+ 2806 0664 0001      		.word	1
+ 2807 0666 0000      		.zero	2
+ 2808 0668 0000 0000 		.long	.LC153
+ 2809 066c F1F8      		.word	-3592
+ 2810 066e D100      		.word	-12032
+ 2811 0670 0001      		.word	1
+ 2812 0672 0000      		.zero	2
+ 2813 0674 0000 0000 		.long	.LC154
+ 2814 0678 F1F8      		.word	-3592
+ 2815 067a D140      		.word	-11968
+ 2816 067c 0001      		.word	1
+ 2817 067e 0000      		.zero	2
+ 2818 0680 0000 0000 		.long	.LC155
+ 2819 0684 F1F8      		.word	-3592
+ 2820 0686 D180      		.word	-11904
+ 2821 0688 0001      		.word	1
+ 2822 068a 0000      		.zero	2
+ 2823 068c 0000 0000 		.long	.LC156
+ 2824 0690 F1F8      		.word	-3592
+ 2825 0692 D108      		.word	-12024
+ 2826 0694 0001      		.word	1
+ 2827 0696 0000      		.zero	2
+ 2828 0698 0000 0000 		.long	.LC154
+ 2829 069c F1F8      		.word	-3592
+ 2830 069e D148      		.word	-11960
+ 2831 06a0 0001      		.word	1
+ 2832 06a2 0000      		.zero	2
+ 2833 06a4 0000 0000 		.long	.LC155
+ 2834 06a8 F1F8      		.word	-3592
+ 2835 06aa D188      		.word	-11896
+ 2836 06ac 0001      		.word	1
+ 2837 06ae 0000      		.zero	2
+ 2838 06b0 0000 0000 		.long	.LC156
+68K GAS  disasm.s 			page 58
+
+
+ 2839 06b4 F1F8      		.word	-3592
+ 2840 06b6 C140      		.word	-16064
+ 2841 06b8 000D      		.word	13
+ 2842 06ba 0000      		.zero	2
+ 2843 06bc 0000 0000 		.long	.LC157
+ 2844 06c0 F1F8      		.word	-3592
+ 2845 06c2 C148      		.word	-16056
+ 2846 06c4 000D      		.word	13
+ 2847 06c6 0000      		.zero	2
+ 2848 06c8 0000 0000 		.long	.LC157
+ 2849 06cc F1F8      		.word	-3592
+ 2850 06ce C188      		.word	-15992
+ 2851 06d0 000D      		.word	13
+ 2852 06d2 0000      		.zero	2
+ 2853 06d4 0000 0000 		.long	.LC157
+ 2854 06d8 F1F8      		.word	-3592
+ 2855 06da E100      		.word	-7936
+ 2856 06dc 0006      		.word	6
+ 2857 06de 0000      		.zero	2
+ 2858 06e0 0000 0000 		.long	.LC158
+ 2859 06e4 F1F8      		.word	-3592
+ 2860 06e6 E140      		.word	-7872
+ 2861 06e8 0006      		.word	6
+ 2862 06ea 0000      		.zero	2
+ 2863 06ec 0000 0000 		.long	.LC159
+ 2864 06f0 F1F8      		.word	-3592
+ 2865 06f2 E180      		.word	-7808
+ 2866 06f4 0006      		.word	6
+ 2867 06f6 0000      		.zero	2
+ 2868 06f8 0000 0000 		.long	.LC160
+ 2869 06fc F1F8      		.word	-3592
+ 2870 06fe E120      		.word	-7904
+ 2871 0700 0006      		.word	6
+ 2872 0702 0000      		.zero	2
+ 2873 0704 0000 0000 		.long	.LC158
+ 2874 0708 F1F8      		.word	-3592
+ 2875 070a E160      		.word	-7840
+ 2876 070c 0006      		.word	6
+ 2877 070e 0000      		.zero	2
+ 2878 0710 0000 0000 		.long	.LC159
+ 2879 0714 F1F8      		.word	-3592
+ 2880 0716 E1A0      		.word	-7776
+ 2881 0718 0006      		.word	6
+ 2882 071a 0000      		.zero	2
+ 2883 071c 0000 0000 		.long	.LC160
+ 2884 0720 F1F8      		.word	-3592
+ 2885 0722 E000      		.word	-8192
+ 2886 0724 0006      		.word	6
+ 2887 0726 0000      		.zero	2
+ 2888 0728 0000 0000 		.long	.LC161
+ 2889 072c F1F8      		.word	-3592
+ 2890 072e E040      		.word	-8128
+ 2891 0730 0006      		.word	6
+ 2892 0732 0000      		.zero	2
+ 2893 0734 0000 0000 		.long	.LC162
+ 2894 0738 F1F8      		.word	-3592
+ 2895 073a E080      		.word	-8064
+68K GAS  disasm.s 			page 59
+
+
+ 2896 073c 0006      		.word	6
+ 2897 073e 0000      		.zero	2
+ 2898 0740 0000 0000 		.long	.LC163
+ 2899 0744 F1F8      		.word	-3592
+ 2900 0746 E020      		.word	-8160
+ 2901 0748 0006      		.word	6
+ 2902 074a 0000      		.zero	2
+ 2903 074c 0000 0000 		.long	.LC161
+ 2904 0750 F1F8      		.word	-3592
+ 2905 0752 E060      		.word	-8096
+ 2906 0754 0006      		.word	6
+ 2907 0756 0000      		.zero	2
+ 2908 0758 0000 0000 		.long	.LC162
+ 2909 075c F1F8      		.word	-3592
+ 2910 075e E0A0      		.word	-8032
+ 2911 0760 0006      		.word	6
+ 2912 0762 0000      		.zero	2
+ 2913 0764 0000 0000 		.long	.LC163
+ 2914 0768 F1F8      		.word	-3592
+ 2915 076a B108      		.word	-20216
+ 2916 076c 000B      		.word	11
+ 2917 076e 0000      		.zero	2
+ 2918 0770 0000 0000 		.long	.LC164
+ 2919 0774 F1F8      		.word	-3592
+ 2920 0776 B148      		.word	-20152
+ 2921 0778 000B      		.word	11
+ 2922 077a 0000      		.zero	2
+ 2923 077c 0000 0000 		.long	.LC165
+ 2924 0780 F1F8      		.word	-3592
+ 2925 0782 B188      		.word	-20088
+ 2926 0784 000B      		.word	11
+ 2927 0786 0000      		.zero	2
+ 2928 0788 0000 0000 		.long	.LC166
+ 2929 078c F1F8      		.word	-3592
+ 2930 078e E108      		.word	-7928
+ 2931 0790 0006      		.word	6
+ 2932 0792 0000      		.zero	2
+ 2933 0794 0000 0000 		.long	.LC167
+ 2934 0798 F1F8      		.word	-3592
+ 2935 079a E148      		.word	-7864
+ 2936 079c 0006      		.word	6
+ 2937 079e 0000      		.zero	2
+ 2938 07a0 0000 0000 		.long	.LC168
+ 2939 07a4 F1F8      		.word	-3592
+ 2940 07a6 E188      		.word	-7800
+ 2941 07a8 0006      		.word	6
+ 2942 07aa 0000      		.zero	2
+ 2943 07ac 0000 0000 		.long	.LC169
+ 2944 07b0 F1F8      		.word	-3592
+ 2945 07b2 E128      		.word	-7896
+ 2946 07b4 0006      		.word	6
+ 2947 07b6 0000      		.zero	2
+ 2948 07b8 0000 0000 		.long	.LC167
+ 2949 07bc F1F8      		.word	-3592
+ 2950 07be E168      		.word	-7832
+ 2951 07c0 0006      		.word	6
+ 2952 07c2 0000      		.zero	2
+68K GAS  disasm.s 			page 60
+
+
+ 2953 07c4 0000 0000 		.long	.LC168
+ 2954 07c8 F1F8      		.word	-3592
+ 2955 07ca E1A8      		.word	-7768
+ 2956 07cc 0006      		.word	6
+ 2957 07ce 0000      		.zero	2
+ 2958 07d0 0000 0000 		.long	.LC169
+ 2959 07d4 F1F8      		.word	-3592
+ 2960 07d6 E008      		.word	-8184
+ 2961 07d8 0006      		.word	6
+ 2962 07da 0000      		.zero	2
+ 2963 07dc 0000 0000 		.long	.LC170
+ 2964 07e0 F1F8      		.word	-3592
+ 2965 07e2 E048      		.word	-8120
+ 2966 07e4 0006      		.word	6
+ 2967 07e6 0000      		.zero	2
+ 2968 07e8 0000 0000 		.long	.LC171
+ 2969 07ec F1F8      		.word	-3592
+ 2970 07ee E088      		.word	-8056
+ 2971 07f0 0006      		.word	6
+ 2972 07f2 0000      		.zero	2
+ 2973 07f4 0000 0000 		.long	.LC172
+ 2974 07f8 F1F8      		.word	-3592
+ 2975 07fa E028      		.word	-8152
+ 2976 07fc 0006      		.word	6
+ 2977 07fe 0000      		.zero	2
+ 2978 0800 0000 0000 		.long	.LC170
+ 2979 0804 F1F8      		.word	-3592
+ 2980 0806 E068      		.word	-8088
+ 2981 0808 0006      		.word	6
+ 2982 080a 0000      		.zero	2
+ 2983 080c 0000 0000 		.long	.LC171
+ 2984 0810 F1F8      		.word	-3592
+ 2985 0812 E0A8      		.word	-8024
+ 2986 0814 0006      		.word	6
+ 2987 0816 0000      		.zero	2
+ 2988 0818 0000 0000 		.long	.LC172
+ 2989 081c F1F8      		.word	-3592
+ 2990 081e 0108      		.word	264
+ 2991 0820 0013      		.word	19
+ 2992 0822 0000      		.zero	2
+ 2993 0824 0000 0000 		.long	.LC173
+ 2994 0828 F1F8      		.word	-3592
+ 2995 082a 0148      		.word	328
+ 2996 082c 0013      		.word	19
+ 2997 082e 0000      		.zero	2
+ 2998 0830 0000 0000 		.long	.LC174
+ 2999 0834 F1F8      		.word	-3592
+ 3000 0836 0188      		.word	392
+ 3001 0838 0013      		.word	19
+ 3002 083a 0000      		.zero	2
+ 3003 083c 0000 0000 		.long	.LC173
+ 3004 0840 F1F8      		.word	-3592
+ 3005 0842 01C8      		.word	456
+ 3006 0844 0013      		.word	19
+ 3007 0846 0000      		.zero	2
+ 3008 0848 0000 0000 		.long	.LC174
+ 3009 084c F1F8      		.word	-3592
+68K GAS  disasm.s 			page 61
+
+
+ 3010 084e E118      		.word	-7912
+ 3011 0850 0006      		.word	6
+ 3012 0852 0000      		.zero	2
+ 3013 0854 0000 0000 		.long	.LC175
+ 3014 0858 F1F8      		.word	-3592
+ 3015 085a E158      		.word	-7848
+ 3016 085c 0006      		.word	6
+ 3017 085e 0000      		.zero	2
+ 3018 0860 0000 0000 		.long	.LC176
+ 3019 0864 F1F8      		.word	-3592
+ 3020 0866 E198      		.word	-7784
+ 3021 0868 0006      		.word	6
+ 3022 086a 0000      		.zero	2
+ 3023 086c 0000 0000 		.long	.LC177
+ 3024 0870 F1F8      		.word	-3592
+ 3025 0872 E138      		.word	-7880
+ 3026 0874 0006      		.word	6
+ 3027 0876 0000      		.zero	2
+ 3028 0878 0000 0000 		.long	.LC175
+ 3029 087c F1F8      		.word	-3592
+ 3030 087e E178      		.word	-7816
+ 3031 0880 0006      		.word	6
+ 3032 0882 0000      		.zero	2
+ 3033 0884 0000 0000 		.long	.LC176
+ 3034 0888 F1F8      		.word	-3592
+ 3035 088a E1B8      		.word	-7752
+ 3036 088c 0006      		.word	6
+ 3037 088e 0000      		.zero	2
+ 3038 0890 0000 0000 		.long	.LC177
+ 3039 0894 F1F8      		.word	-3592
+ 3040 0896 E018      		.word	-8168
+ 3041 0898 0006      		.word	6
+ 3042 089a 0000      		.zero	2
+ 3043 089c 0000 0000 		.long	.LC178
+ 3044 08a0 F1F8      		.word	-3592
+ 3045 08a2 E058      		.word	-8104
+ 3046 08a4 0006      		.word	6
+ 3047 08a6 0000      		.zero	2
+ 3048 08a8 0000 0000 		.long	.LC179
+ 3049 08ac F1F8      		.word	-3592
+ 3050 08ae E098      		.word	-8040
+ 3051 08b0 0006      		.word	6
+ 3052 08b2 0000      		.zero	2
+ 3053 08b4 0000 0000 		.long	.LC180
+ 3054 08b8 F1F8      		.word	-3592
+ 3055 08ba E038      		.word	-8136
+ 3056 08bc 0006      		.word	6
+ 3057 08be 0000      		.zero	2
+ 3058 08c0 0000 0000 		.long	.LC178
+ 3059 08c4 F1F8      		.word	-3592
+ 3060 08c6 E078      		.word	-8072
+ 3061 08c8 0006      		.word	6
+ 3062 08ca 0000      		.zero	2
+ 3063 08cc 0000 0000 		.long	.LC179
+ 3064 08d0 F1F8      		.word	-3592
+ 3065 08d2 E0B8      		.word	-8008
+ 3066 08d4 0006      		.word	6
+68K GAS  disasm.s 			page 62
+
+
+ 3067 08d6 0000      		.zero	2
+ 3068 08d8 0000 0000 		.long	.LC180
+ 3069 08dc F1F8      		.word	-3592
+ 3070 08de E110      		.word	-7920
+ 3071 08e0 0006      		.word	6
+ 3072 08e2 0000      		.zero	2
+ 3073 08e4 0000 0000 		.long	.LC181
+ 3074 08e8 F1F8      		.word	-3592
+ 3075 08ea E150      		.word	-7856
+ 3076 08ec 0006      		.word	6
+ 3077 08ee 0000      		.zero	2
+ 3078 08f0 0000 0000 		.long	.LC182
+ 3079 08f4 F1F8      		.word	-3592
+ 3080 08f6 E190      		.word	-7792
+ 3081 08f8 0006      		.word	6
+ 3082 08fa 0000      		.zero	2
+ 3083 08fc 0000 0000 		.long	.LC183
+ 3084 0900 F1F8      		.word	-3592
+ 3085 0902 E130      		.word	-7888
+ 3086 0904 0006      		.word	6
+ 3087 0906 0000      		.zero	2
+ 3088 0908 0000 0000 		.long	.LC181
+ 3089 090c F1F8      		.word	-3592
+ 3090 090e E170      		.word	-7824
+ 3091 0910 0006      		.word	6
+ 3092 0912 0000      		.zero	2
+ 3093 0914 0000 0000 		.long	.LC182
+ 3094 0918 F1F8      		.word	-3592
+ 3095 091a E1B0      		.word	-7760
+ 3096 091c 0006      		.word	6
+ 3097 091e 0000      		.zero	2
+ 3098 0920 0000 0000 		.long	.LC183
+ 3099 0924 F1F8      		.word	-3592
+ 3100 0926 E010      		.word	-8176
+ 3101 0928 0006      		.word	6
+ 3102 092a 0000      		.zero	2
+ 3103 092c 0000 0000 		.long	.LC184
+ 3104 0930 F1F8      		.word	-3592
+ 3105 0932 E050      		.word	-8112
+ 3106 0934 0006      		.word	6
+ 3107 0936 0000      		.zero	2
+ 3108 0938 0000 0000 		.long	.LC185
+ 3109 093c F1F8      		.word	-3592
+ 3110 093e E090      		.word	-8048
+ 3111 0940 0006      		.word	6
+ 3112 0942 0000      		.zero	2
+ 3113 0944 0000 0000 		.long	.LC186
+ 3114 0948 F1F8      		.word	-3592
+ 3115 094a E030      		.word	-8144
+ 3116 094c 0006      		.word	6
+ 3117 094e 0000      		.zero	2
+ 3118 0950 0000 0000 		.long	.LC184
+ 3119 0954 F1F8      		.word	-3592
+ 3120 0956 E070      		.word	-8080
+ 3121 0958 0006      		.word	6
+ 3122 095a 0000      		.zero	2
+ 3123 095c 0000 0000 		.long	.LC185
+68K GAS  disasm.s 			page 63
+
+
+ 3124 0960 F1F8      		.word	-3592
+ 3125 0962 E0B0      		.word	-8016
+ 3126 0964 0006      		.word	6
+ 3127 0966 0000      		.zero	2
+ 3128 0968 0000 0000 		.long	.LC186
+ 3129 096c F1F8      		.word	-3592
+ 3130 096e 8100      		.word	-32512
+ 3131 0970 0001      		.word	1
+ 3132 0972 0000      		.zero	2
+ 3133 0974 0000 0000 		.long	.LC187
+ 3134 0978 F1F8      		.word	-3592
+ 3135 097a 8108      		.word	-32504
+ 3136 097c 0001      		.word	1
+ 3137 097e 0000      		.zero	2
+ 3138 0980 0000 0000 		.long	.LC187
+ 3139 0984 F1F8      		.word	-3592
+ 3140 0986 9100      		.word	-28416
+ 3141 0988 0001      		.word	1
+ 3142 098a 0000      		.zero	2
+ 3143 098c 0000 0000 		.long	.LC188
+ 3144 0990 F1F8      		.word	-3592
+ 3145 0992 9140      		.word	-28352
+ 3146 0994 0001      		.word	1
+ 3147 0996 0000      		.zero	2
+ 3148 0998 0000 0000 		.long	.LC189
+ 3149 099c F1F8      		.word	-3592
+ 3150 099e 9180      		.word	-28288
+ 3151 09a0 0001      		.word	1
+ 3152 09a2 0000      		.zero	2
+ 3153 09a4 0000 0000 		.long	.LC190
+ 3154 09a8 F1F8      		.word	-3592
+ 3155 09aa 9108      		.word	-28408
+ 3156 09ac 0001      		.word	1
+ 3157 09ae 0000      		.zero	2
+ 3158 09b0 0000 0000 		.long	.LC188
+ 3159 09b4 F1F8      		.word	-3592
+ 3160 09b6 9148      		.word	-28344
+ 3161 09b8 0001      		.word	1
+ 3162 09ba 0000      		.zero	2
+ 3163 09bc 0000 0000 		.long	.LC189
+ 3164 09c0 F1F8      		.word	-3592
+ 3165 09c2 9188      		.word	-28280
+ 3166 09c4 0001      		.word	1
+ 3167 09c6 0000      		.zero	2
+ 3168 09c8 0000 0000 		.long	.LC190
+ 3169 09cc F1C0      		.word	-3648
+ 3170 09ce D000      		.word	-12288
+ 3171 09d0 0002      		.word	2
+ 3172 09d2 0000      		.zero	2
+ 3173 09d4 0000 0000 		.long	.LC191
+ 3174 09d8 F1C0      		.word	-3648
+ 3175 09da D040      		.word	-12224
+ 3176 09dc 0002      		.word	2
+ 3177 09de 0000      		.zero	2
+ 3178 09e0 0000 0000 		.long	.LC192
+ 3179 09e4 F1C0      		.word	-3648
+ 3180 09e6 D080      		.word	-12160
+68K GAS  disasm.s 			page 64
+
+
+ 3181 09e8 0002      		.word	2
+ 3182 09ea 0000      		.zero	2
+ 3183 09ec 0000 0000 		.long	.LC193
+ 3184 09f0 F1C0      		.word	-3648
+ 3185 09f2 D100      		.word	-12032
+ 3186 09f4 0002      		.word	2
+ 3187 09f6 0000      		.zero	2
+ 3188 09f8 0000 0000 		.long	.LC191
+ 3189 09fc F1C0      		.word	-3648
+ 3190 09fe D140      		.word	-11968
+ 3191 0a00 0002      		.word	2
+ 3192 0a02 0000      		.zero	2
+ 3193 0a04 0000 0000 		.long	.LC192
+ 3194 0a08 F1C0      		.word	-3648
+ 3195 0a0a D180      		.word	-11904
+ 3196 0a0c 0002      		.word	2
+ 3197 0a0e 0000      		.zero	2
+ 3198 0a10 0000 0000 		.long	.LC193
+ 3199 0a14 F1C0      		.word	-3648
+ 3200 0a16 D0C0      		.word	-12096
+ 3201 0a18 0002      		.word	2
+ 3202 0a1a 0000      		.zero	2
+ 3203 0a1c 0000 0000 		.long	.LC194
+ 3204 0a20 F1C0      		.word	-3648
+ 3205 0a22 D1C0      		.word	-11840
+ 3206 0a24 0002      		.word	2
+ 3207 0a26 0000      		.zero	2
+ 3208 0a28 0000 0000 		.long	.LC195
+ 3209 0a2c F1C0      		.word	-3648
+ 3210 0a2e 5000      		.word	20480
+ 3211 0a30 0004      		.word	4
+ 3212 0a32 0000      		.zero	2
+ 3213 0a34 0000 0000 		.long	.LC196
+ 3214 0a38 F1C0      		.word	-3648
+ 3215 0a3a 5040      		.word	20544
+ 3216 0a3c 0004      		.word	4
+ 3217 0a3e 0000      		.zero	2
+ 3218 0a40 0000 0000 		.long	.LC197
+ 3219 0a44 F1C0      		.word	-3648
+ 3220 0a46 5080      		.word	20608
+ 3221 0a48 0004      		.word	4
+ 3222 0a4a 0000      		.zero	2
+ 3223 0a4c 0000 0000 		.long	.LC198
+ 3224 0a50 F1C0      		.word	-3648
+ 3225 0a52 C000      		.word	-16384
+ 3226 0a54 0002      		.word	2
+ 3227 0a56 0000      		.zero	2
+ 3228 0a58 0000 0000 		.long	.LC199
+ 3229 0a5c F1C0      		.word	-3648
+ 3230 0a5e C040      		.word	-16320
+ 3231 0a60 0002      		.word	2
+ 3232 0a62 0000      		.zero	2
+ 3233 0a64 0000 0000 		.long	.LC200
+ 3234 0a68 F1C0      		.word	-3648
+ 3235 0a6a C080      		.word	-16256
+ 3236 0a6c 0002      		.word	2
+ 3237 0a6e 0000      		.zero	2
+68K GAS  disasm.s 			page 65
+
+
+ 3238 0a70 0000 0000 		.long	.LC201
+ 3239 0a74 F1C0      		.word	-3648
+ 3240 0a76 C100      		.word	-16128
+ 3241 0a78 0002      		.word	2
+ 3242 0a7a 0000      		.zero	2
+ 3243 0a7c 0000 0000 		.long	.LC199
+ 3244 0a80 F1C0      		.word	-3648
+ 3245 0a82 C140      		.word	-16064
+ 3246 0a84 0002      		.word	2
+ 3247 0a86 0000      		.zero	2
+ 3248 0a88 0000 0000 		.long	.LC200
+ 3249 0a8c F1C0      		.word	-3648
+ 3250 0a8e C180      		.word	-16000
+ 3251 0a90 0002      		.word	2
+ 3252 0a92 0000      		.zero	2
+ 3253 0a94 0000 0000 		.long	.LC201
+ 3254 0a98 F1C0      		.word	-3648
+ 3255 0a9a 0140      		.word	320
+ 3256 0a9c 000A      		.word	10
+ 3257 0a9e 0000      		.zero	2
+ 3258 0aa0 0000 0000 		.long	.LC77
+ 3259 0aa4 F1C0      		.word	-3648
+ 3260 0aa6 0180      		.word	384
+ 3261 0aa8 000A      		.word	10
+ 3262 0aaa 0000      		.zero	2
+ 3263 0aac 0000 0000 		.long	.LC78
+ 3264 0ab0 F1C0      		.word	-3648
+ 3265 0ab2 01C0      		.word	448
+ 3266 0ab4 000A      		.word	10
+ 3267 0ab6 0000      		.zero	2
+ 3268 0ab8 0000 0000 		.long	.LC79
+ 3269 0abc F1C0      		.word	-3648
+ 3270 0abe 0100      		.word	256
+ 3271 0ac0 000A      		.word	10
+ 3272 0ac2 0000      		.zero	2
+ 3273 0ac4 0000 0000 		.long	.LC80
+ 3274 0ac8 F1C0      		.word	-3648
+ 3275 0aca 4180      		.word	16768
+ 3276 0acc 0009      		.word	9
+ 3277 0ace 0000      		.zero	2
+ 3278 0ad0 0000 0000 		.long	.LC202
+ 3279 0ad4 F1C0      		.word	-3648
+ 3280 0ad6 B000      		.word	-20480
+ 3281 0ad8 0002      		.word	2
+ 3282 0ada 0000      		.zero	2
+ 3283 0adc 0000 0000 		.long	.LC203
+ 3284 0ae0 F1C0      		.word	-3648
+ 3285 0ae2 B040      		.word	-20416
+ 3286 0ae4 0002      		.word	2
+ 3287 0ae6 0000      		.zero	2
+ 3288 0ae8 0000 0000 		.long	.LC204
+ 3289 0aec F1C0      		.word	-3648
+ 3290 0aee B080      		.word	-20352
+ 3291 0af0 0002      		.word	2
+ 3292 0af2 0000      		.zero	2
+ 3293 0af4 0000 0000 		.long	.LC205
+ 3294 0af8 F1C0      		.word	-3648
+68K GAS  disasm.s 			page 66
+
+
+ 3295 0afa B0C0      		.word	-20288
+ 3296 0afc 0002      		.word	2
+ 3297 0afe 0000      		.zero	2
+ 3298 0b00 0000 0000 		.long	.LC206
+ 3299 0b04 F1C0      		.word	-3648
+ 3300 0b06 B1C0      		.word	-20032
+ 3301 0b08 0002      		.word	2
+ 3302 0b0a 0000      		.zero	2
+ 3303 0b0c 0000 0000 		.long	.LC207
+ 3304 0b10 F1C0      		.word	-3648
+ 3305 0b12 81C0      		.word	-32320
+ 3306 0b14 0009      		.word	9
+ 3307 0b16 0000      		.zero	2
+ 3308 0b18 0000 0000 		.long	.LC208
+ 3309 0b1c F1C0      		.word	-3648
+ 3310 0b1e 80C0      		.word	-32576
+ 3311 0b20 0009      		.word	9
+ 3312 0b22 0000      		.zero	2
+ 3313 0b24 0000 0000 		.long	.LC209
+ 3314 0b28 F1C0      		.word	-3648
+ 3315 0b2a B100      		.word	-20224
+ 3316 0b2c 0002      		.word	2
+ 3317 0b2e 0000      		.zero	2
+ 3318 0b30 0000 0000 		.long	.LC210
+ 3319 0b34 F1C0      		.word	-3648
+ 3320 0b36 B140      		.word	-20160
+ 3321 0b38 0002      		.word	2
+ 3322 0b3a 0000      		.zero	2
+ 3323 0b3c 0000 0000 		.long	.LC211
+ 3324 0b40 F1C0      		.word	-3648
+ 3325 0b42 B180      		.word	-20096
+ 3326 0b44 0002      		.word	2
+ 3327 0b46 0000      		.zero	2
+ 3328 0b48 0000 0000 		.long	.LC212
+ 3329 0b4c F1C0      		.word	-3648
+ 3330 0b4e 41C0      		.word	16832
+ 3331 0b50 0002      		.word	2
+ 3332 0b52 0000      		.zero	2
+ 3333 0b54 0000 0000 		.long	.LC213
+ 3334 0b58 F1C0      		.word	-3648
+ 3335 0b5a 3040      		.word	12352
+ 3336 0b5c 0010      		.word	16
+ 3337 0b5e 0000      		.zero	2
+ 3338 0b60 0000 0000 		.long	.LC214
+ 3339 0b64 F1C0      		.word	-3648
+ 3340 0b66 2040      		.word	8256
+ 3341 0b68 0010      		.word	16
+ 3342 0b6a 0000      		.zero	2
+ 3343 0b6c 0000 0000 		.long	.LC215
+ 3344 0b70 F1C0      		.word	-3648
+ 3345 0b72 C1C0      		.word	-15936
+ 3346 0b74 0009      		.word	9
+ 3347 0b76 0000      		.zero	2
+ 3348 0b78 0000 0000 		.long	.LC216
+ 3349 0b7c F1C0      		.word	-3648
+ 3350 0b7e C0C0      		.word	-16192
+ 3351 0b80 0009      		.word	9
+68K GAS  disasm.s 			page 67
+
+
+ 3352 0b82 0000      		.zero	2
+ 3353 0b84 0000 0000 		.long	.LC217
+ 3354 0b88 F1C0      		.word	-3648
+ 3355 0b8a 8000      		.word	-32768
+ 3356 0b8c 0002      		.word	2
+ 3357 0b8e 0000      		.zero	2
+ 3358 0b90 0000 0000 		.long	.LC218
+ 3359 0b94 F1C0      		.word	-3648
+ 3360 0b96 8040      		.word	-32704
+ 3361 0b98 0002      		.word	2
+ 3362 0b9a 0000      		.zero	2
+ 3363 0b9c 0000 0000 		.long	.LC219
+ 3364 0ba0 F1C0      		.word	-3648
+ 3365 0ba2 8080      		.word	-32640
+ 3366 0ba4 0002      		.word	2
+ 3367 0ba6 0000      		.zero	2
+ 3368 0ba8 0000 0000 		.long	.LC220
+ 3369 0bac F1C0      		.word	-3648
+ 3370 0bae 8100      		.word	-32512
+ 3371 0bb0 0002      		.word	2
+ 3372 0bb2 0000      		.zero	2
+ 3373 0bb4 0000 0000 		.long	.LC218
+ 3374 0bb8 F1C0      		.word	-3648
+ 3375 0bba 8140      		.word	-32448
+ 3376 0bbc 0002      		.word	2
+ 3377 0bbe 0000      		.zero	2
+ 3378 0bc0 0000 0000 		.long	.LC219
+ 3379 0bc4 F1C0      		.word	-3648
+ 3380 0bc6 8180      		.word	-32384
+ 3381 0bc8 0002      		.word	2
+ 3382 0bca 0000      		.zero	2
+ 3383 0bcc 0000 0000 		.long	.LC220
+ 3384 0bd0 F1C0      		.word	-3648
+ 3385 0bd2 9000      		.word	-28672
+ 3386 0bd4 0002      		.word	2
+ 3387 0bd6 0000      		.zero	2
+ 3388 0bd8 0000 0000 		.long	.LC221
+ 3389 0bdc F1C0      		.word	-3648
+ 3390 0bde 9040      		.word	-28608
+ 3391 0be0 0002      		.word	2
+ 3392 0be2 0000      		.zero	2
+ 3393 0be4 0000 0000 		.long	.LC222
+ 3394 0be8 F1C0      		.word	-3648
+ 3395 0bea 9080      		.word	-28544
+ 3396 0bec 0002      		.word	2
+ 3397 0bee 0000      		.zero	2
+ 3398 0bf0 0000 0000 		.long	.LC223
+ 3399 0bf4 F1C0      		.word	-3648
+ 3400 0bf6 9100      		.word	-28416
+ 3401 0bf8 0002      		.word	2
+ 3402 0bfa 0000      		.zero	2
+ 3403 0bfc 0000 0000 		.long	.LC221
+ 3404 0c00 F1C0      		.word	-3648
+ 3405 0c02 9140      		.word	-28352
+ 3406 0c04 0002      		.word	2
+ 3407 0c06 0000      		.zero	2
+ 3408 0c08 0000 0000 		.long	.LC222
+68K GAS  disasm.s 			page 68
+
+
+ 3409 0c0c F1C0      		.word	-3648
+ 3410 0c0e 9180      		.word	-28288
+ 3411 0c10 0002      		.word	2
+ 3412 0c12 0000      		.zero	2
+ 3413 0c14 0000 0000 		.long	.LC223
+ 3414 0c18 F1C0      		.word	-3648
+ 3415 0c1a 90C0      		.word	-28480
+ 3416 0c1c 0002      		.word	2
+ 3417 0c1e 0000      		.zero	2
+ 3418 0c20 0000 0000 		.long	.LC224
+ 3419 0c24 F1C0      		.word	-3648
+ 3420 0c26 91C0      		.word	-28224
+ 3421 0c28 0002      		.word	2
+ 3422 0c2a 0000      		.zero	2
+ 3423 0c2c 0000 0000 		.long	.LC225
+ 3424 0c30 F1C0      		.word	-3648
+ 3425 0c32 5100      		.word	20736
+ 3426 0c34 0004      		.word	4
+ 3427 0c36 0000      		.zero	2
+ 3428 0c38 0000 0000 		.long	.LC226
+ 3429 0c3c F1C0      		.word	-3648
+ 3430 0c3e 5140      		.word	20800
+ 3431 0c40 0004      		.word	4
+ 3432 0c42 0000      		.zero	2
+ 3433 0c44 0000 0000 		.long	.LC227
+ 3434 0c48 F1C0      		.word	-3648
+ 3435 0c4a 5180      		.word	20864
+ 3436 0c4c 0004      		.word	4
+ 3437 0c4e 0000      		.zero	2
+ 3438 0c50 0000 0000 		.long	.LC228
+ 3439 0c54 F100      		.word	-3840
+ 3440 0c56 7000      		.word	28672
+ 3441 0c58 0014      		.word	20
+ 3442 0c5a 0000      		.zero	2
+ 3443 0c5c 0000 0000 		.long	.LC229
+ 3444 0c60 F000      		.word	-4096
+ 3445 0c62 1000      		.word	4096
+ 3446 0c64 0010      		.word	16
+ 3447 0c66 0000      		.zero	2
+ 3448 0c68 0000 0000 		.long	.LC230
+ 3449 0c6c F000      		.word	-4096
+ 3450 0c6e 3000      		.word	12288
+ 3451 0c70 0010      		.word	16
+ 3452 0c72 0000      		.zero	2
+ 3453 0c74 0000 0000 		.long	.LC92
+ 3454 0c78 F000      		.word	-4096
+ 3455 0c7a 2000      		.word	8192
+ 3456 0c7c 0010      		.word	16
+ 3457 0c7e 0000      		.zero	2
+ 3458 0c80 0000 0000 		.long	.LC67
+ 3459 0c84 0000      		.word	0
+ 3460 0c86 0000      		.word	0
+ 3461 0c88 0000      		.word	0
+ 3462 0c8a 0000      		.zero	2
+ 3463 0c8c 0000 0000 		.long	.LC231
+ 3464               		.globl	regmsk0
+ 3465               		.align	2
+68K GAS  disasm.s 			page 69
+
+
+ 3466               		.type	regmsk0, @object
+ 3467               		.size	regmsk0, 32
+ 3468               	regmsk0:
+ 3469 0c90 8000      		.word	-32768
+ 3470 0c92 4000      		.word	16384
+ 3471 0c94 2000      		.word	8192
+ 3472 0c96 1000      		.word	4096
+ 3473 0c98 0800      		.word	2048
+ 3474 0c9a 0400      		.word	1024
+ 3475 0c9c 0200      		.word	512
+ 3476 0c9e 0100      		.word	256
+ 3477 0ca0 0080      		.word	128
+ 3478 0ca2 0040      		.word	64
+ 3479 0ca4 0020      		.word	32
+ 3480 0ca6 0010      		.word	16
+ 3481 0ca8 0008      		.word	8
+ 3482 0caa 0004      		.word	4
+ 3483 0cac 0002      		.word	2
+ 3484 0cae 0001      		.word	1
+ 3485               		.globl	regmsk1
+ 3486               		.align	2
+ 3487               		.type	regmsk1, @object
+ 3488               		.size	regmsk1, 32
+ 3489               	regmsk1:
+ 3490 0cb0 0001      		.word	1
+ 3491 0cb2 0002      		.word	2
+ 3492 0cb4 0004      		.word	4
+ 3493 0cb6 0008      		.word	8
+ 3494 0cb8 0010      		.word	16
+ 3495 0cba 0020      		.word	32
+ 3496 0cbc 0040      		.word	64
+ 3497 0cbe 0080      		.word	128
+ 3498 0cc0 0100      		.word	256
+ 3499 0cc2 0200      		.word	512
+ 3500 0cc4 0400      		.word	1024
+ 3501 0cc6 0800      		.word	2048
+ 3502 0cc8 1000      		.word	4096
+ 3503 0cca 2000      		.word	8192
+ 3504 0ccc 4000      		.word	16384
+ 3505 0cce 8000      		.word	-32768
+ 3506               		.local	dot
+ 3507               		.comm	dot,4,4
+ 3508               		.local	sdot
+ 3509               		.comm	sdot,4,4
+ 3510               		.local	dotinc
+ 3511               		.comm	dotinc,4,4
+ 3512               		.comm	instr,2,2
+ 3513               		.ident	"GCC: (GNU) 4.1.1"
+68K GAS  disasm.s 			page 70
+
+
+DEFINED SYMBOLS
+                            *ABS*:00000000 disasm.c
+                            *ABS*:000109a0 CPU
+                            *ABS*:00000001 RETAIL
+            disasm.s:7      .text:00000000 pdr
+            disasm.s:30     .text:00000038 pdri
+            disasm.s:52     .text:0000006c inf14
+                            *COM*:00000002 instr
+            disasm.s:72     .text:00000084 badsize
+            disasm.s:88     .text:000000a0 hexbzs
+            disasm.s:107    .text:000000c0 hexwzs
+            disasm.s:120    .text:000000dc prdisp
+            disasm.s:3509   .bss:00000004 sdot
+            disasm.s:3511   .bss:00000008 dotinc
+            disasm.s:144    .text:00000110 hexlzs
+            disasm.s:160    .text:0000012a primm
+            disasm.s:194    .text:0000018e inf21
+            disasm.s:205    .text:0000019e inf12
+            disasm.s:234    .text:000001ea par
+            disasm.s:265    .text:0000023c prtreg
+            disasm.s:293    .text:00000262 prindex
+            disasm.s:351    .text:00000310 inf22
+            disasm.s:365    .text:0000032a inf13
+            disasm.s:405    .text:0000038a inf6
+            disasm.s:449    .text:000003f6 pari
+            disasm.s:471    .text:0000042c paripi
+            disasm.s:485    .text:00000448 inf11
+            disasm.s:510    .text:00000486 paripd
+            disasm.s:531    .text:000004ac prtop
+            disasm.s:666    .text:000005ea inf25
+            disasm.s:715    .text:00000678 inf16
+            disasm.s:766    .text:000006fc inf10
+            disasm.s:798    .text:00000750 inf9
+            disasm.s:821    .text:0000078c inf7
+            disasm.s:836    .text:000007aa inf2
+            disasm.s:905    .text:00000858 inf1
+            disasm.s:939    .text:000008ac inf19
+            disasm.s:1004   .text:0000095e putrlist
+            disasm.s:1058   .text:000009e6 inf18
+            disasm.s:3489   .rodata:00000cb0 regmsk1
+            disasm.s:3468   .rodata:00000c90 regmsk0
+            disasm.s:1136   .text:00000a8e inf24
+            disasm.s:1226   .text:00000b8a inf23
+            disasm.s:1243   .text:00000bb8 inf20
+            disasm.s:1274   .text:00000c02 inf17
+            disasm.s:1309   .text:00000c58 inf15
+            disasm.s:1336   .text:00000ca0 inf8
+            disasm.s:1390   .text:00000d20 inf5
+            disasm.s:1442   .text:00000db0 inf4
+            disasm.s:1481   .text:00000e10 inf3
+            disasm.s:1538   .text:00000e96 noin
+            disasm.s:1554   .text:00000eb2 pinstr
+            disasm.s:3507   .bss:00000000 dot
+            disasm.s:2123   .rodata:00000000 optab
+
+UNDEFINED SYMBOLS
+_con_out
+68K GAS  disasm.s 			page 71
+
+
+nstring
+cprintf

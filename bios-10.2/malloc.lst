@@ -1,0 +1,46 @@
+68K GAS  malloc.s 			page 1
+
+
+   1               	#NO_APP
+   2               		.file	"malloc.c"
+   3               		.text
+   4               		.align	2
+   5               		.globl	malloc
+   6               		.type	malloc, @function
+   7               	malloc:
+   8 0000 4E56 0000 		link.w %fp,#0
+   9 0004 2F02      		move.l %d2,-(%sp)
+  10 0006 202E 0008 		move.l 8(%fp),%d0
+  11 000a 5680      		addq.l #3,%d0
+  12 000c 72FC      		moveq #-4,%d1
+  13 000e C081      		and.l %d1,%d0
+  14 0010 2439 0000 		move.l mem_chain,%d2
+  14      0000 
+  15 0016 2202      		move.l %d2,%d1
+  16 0018 D280      		add.l %d0,%d1
+  17 001a 23C1 0000 		move.l %d1,mem_chain
+  17      0000 
+  18 0020 2F00      		move.l %d0,-(%sp)
+  19 0022 42A7      		clr.l -(%sp)
+  20 0024 2F02      		move.l %d2,-(%sp)
+  21 0026 4EB9 0000 		jbsr memset
+  21      0000 
+  22 002c 2002      		move.l %d2,%d0
+  23 002e 242E FFFC 		move.l -4(%fp),%d2
+  24 0032 4E5E      		unlk %fp
+  25 0034 4E75      		rts
+  26               		.size	malloc, .-malloc
+  27               		.comm	mem_chain,4,4
+  28               		.ident	"GCC: (GNU) 4.1.1"
+68K GAS  malloc.s 			page 2
+
+
+DEFINED SYMBOLS
+                            *ABS*:00000000 malloc.c
+                            *ABS*:000109a0 CPU
+                            *ABS*:00000001 RETAIL
+            malloc.s:7      .text:00000000 malloc
+                            *COM*:00000004 mem_chain
+
+UNDEFINED SYMBOLS
+memset

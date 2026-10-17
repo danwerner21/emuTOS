@@ -1,0 +1,1662 @@
+68K GAS  dualsd.s 			page 1
+
+
+   1               	/*  dualsd.s		*/
+   2               	/*
+   3               		Copyright (C) 2015 John R. Coffman.
+   4               		Licensed for hobbyist use on the N8VEM baby M68k CPU board.
+   5               	***********************************************************************
+   6               	
+   7               	    This program is free software: you can redistribute it and/or modify
+   8               	    it under the terms of the GNU General Public License as published by
+   9               	    the Free Software Foundation, either version 3 of the License, or
+  10               	    (at your option) any later version.
+  11               	
+  12               	    This program is distributed in the hope that it will be useful,
+  13               	    but WITHOUT ANY WARRANTY; without even the implied warranty of
+  14               	    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  15               	    GNU General Public License for more details.
+  16               	
+  17               	    You should have received a copy of the GNU General Public License
+  18               	    in the file COPYING in the distribution directory along with this
+  19               	    program.  If not, see <http://www.gnu.org/licenses/>.
+  20               	
+  21               	**********************************************************************/
+  22               	#-----------------------------------------------------------------------------
+  23               	.include "allide.s"
+   1               	#  allide.s
+   2               	/*
+   3               		Copyright (C) 2011 John R. Coffman.
+   4               		Licensed for hobbyist use on the N8VEM baby M68k CPU board.
+   5               	***********************************************************************
+   6               	
+   7               	    This program is free software: you can redistribute it and/or modify
+   8               	    it under the terms of the GNU General Public License as published by
+   9               	    the Free Software Foundation, either version 3 of the License, or
+  10               	    (at your option) any later version.
+  11               	
+  12               	    This program is distributed in the hope that it will be useful,
+  13               	    but WITHOUT ANY WARRANTY; without even the implied warranty of
+  14               	    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  15               	    GNU General Public License for more details.
+  16               	
+  17               	    You should have received a copy of the GNU General Public License
+  18               	    in the file COPYING in the distribution directory along with this
+  19               	    program.  If not, see <http://www.gnu.org/licenses/>.
+  20               	
+  21               	**********************************************************************/
+  22               	.ifndef _allide_s
+  23               	_allide_s 	=	1
+  24               	
+  25               	
+  26               	
+  27               	max_disk	=  8
+  28               	max_floppy	=  2
+  29               	
+  30               		.comm	disk_table,max_disk*4
+  31               	
+  32               	/* DISK structure offsets */
+  33               	disk_ops_o	=	0		/* operations dispatch ptr */
+  34               	disk_lba_o	=	4		/* LBA number of cylinders */
+68K GAS  dualsd.s 			page 2
+
+
+  35               	disk_type_o	=	8		/* byte: disk type */
+  36               	disk_port_o	=	9		/* byte: I/O port */
+  37               	disk_slave_o	=	10		/* byte: MASTER=0, SLAVE=0x10 (IDE)
+  38               							SLAVE=0x01 (SD) */
+  39               	disk_status_o	=	11		/* byte: last h/w status */
+  40               	disk_geom_o	=	12		/* geometry longword */
+  41               	
+  42               	
+  43               	
+  44               	
+  45               	
+  46               	
+  47               	#ide control lines for use with ide_8255_ctl.  Change these 8
+  48               	#constants to reflect where each signal of the 8255 each of the
+  49               	#ide control signals is connected.  All the control signals must
+  50               	#be on the same port, but these 8 lines let you connect them to
+  51               	#whichever pins on that port.
+  52               	
+  53               	ide_a0_line	=	0x01		/* direct from 8255 to ide interface */
+  54               	ide_a1_line	=	0x02		/* direct from 8255 to ide interface */
+  55               	ide_a2_line	=	0x04		/* direct from 8255 to ide interface */
+  56               	.ifdef	rd_ide_8255
+  57               	/* for the PPIDE driver */
+  58               	ide_cs0_line	=	0x08		/* inverter between 8255 and ide interface */
+  59               	ide_cs1_line	=	0x10		/* inverter between 8255 and ide interface */
+  60               	ide_wr_line	=	0x20		/* inverter between 8255 and ide interface */
+  61               	ide_rd_line	=	0x40		/* inverter between 8255 and ide interface */
+  62               	ide_rst_line	=	0x80		/* inverter between 8255 and ide interface */
+  63               	.else
+  64               	/* for the DUALIDE driver */
+  65               	ide_cs0_line	=	0x00		/* at the base address */
+  66               	ide_cs1_line	=	0x08		/* at the base address + 8 */
+  67               	.endif
+  68               	
+  69               	#------------------------------------------------------------------
+  70               	# More symbolic constants... these should not be changed, unless of
+  71               	# course the IDE drive interface changes, perhaps when drives get
+  72               	# to 128G and the PC industry will do yet another kludge.
+  73               	
+  74               	#some symbolic constants for the ide registers, which makes the
+  75               	#code more readable than always specifying the address pins
+  76               	
+  77               	ide_data       	=	ide_cs0_line
+  78               	ide_err		=	ide_cs0_line + ide_a0_line
+  79               	ide_sec_cnt	=	ide_cs0_line + ide_a1_line
+  80               	ide_sector     	=	ide_cs0_line + ide_a1_line + ide_a0_line
+  81               	ide_cyl_lsb	=	ide_cs0_line + ide_a2_line
+  82               	ide_cyl_msb	=	ide_cs0_line + ide_a2_line + ide_a0_line
+  83               	ide_head       	=	ide_cs0_line + ide_a2_line + ide_a1_line
+  84               	ide_command	=	ide_cs0_line + ide_a2_line + ide_a1_line + ide_a0_line
+  85               	ide_status     	=	ide_cs0_line + ide_a2_line + ide_a1_line + ide_a0_line
+  86               	
+  87               	ide_control	=	ide_cs1_line + ide_a2_line + ide_a1_line
+  88               	ide_astatus	=	ide_cs1_line + ide_a2_line + ide_a1_line
+  89               	ide_address	=	ide_cs1_line + ide_a2_line + ide_a1_line + ide_a0_line
+  90               	.ifndef	rd_ide_8255
+  91               	ide_data_16	=	ide_cs1_line
+68K GAS  dualsd.s 			page 3
+
+
+  92               	ide_dma_16	=	ide_cs1_line + ide_a0_line
+  93               	.endif
+  94               	
+  95               	#IDE Command Constants.  These should never change.
+  96               	ide_cmd_recal		=	0x10
+  97               	ide_cmd_read		=	0x20
+  98               	ide_cmd_write		=	0x30
+  99               	ide_cmd_init		=	0x91
+ 100               	ide_cmd_id     		=	0xEC
+ 101               	ide_cmd_set_feature	=	0xEF
+ 102               	ide_cmd_spindown	=	0xE0
+ 103               	ide_cmd_spinup		=	0xE1
+ 104               	
+ 105               	#Feature requests
+ 106               	ide_fea_8bit		=	0x01
+ 107               	ide_fea_16bit		=	0x81
+ 108               	
+ 109               	  /* end  allide.s */
+ 110               	.endif
+ 111               	#------------------------------------------------------------------
+ 112               	
+  24               	.include "error.s"
+   1               	/* error.s				*/
+   2               	/*
+   3               		Copyright (C) 2011,2015 John R. Coffman.
+   4               		Licensed for hobbyist use only.
+   5               	***********************************************************************
+   6               	
+   7               	    This program is free software: you can redistribute it and/or modify
+   8               	    it under the terms of the GNU General Public License as published by
+   9               	    the Free Software Foundation, either version 3 of the License, or
+  10               	    (at your option) any later version.
+  11               	
+  12               	    This program is distributed in the hope that it will be useful,
+  13               	    but WITHOUT ANY WARRANTY; without even the implied warranty of
+  14               	    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  15               	    GNU General Public License for more details.
+  16               	
+  17               	    You should have received a copy of the GNU General Public License
+  18               	    in the file COPYING in the distribution directory along with this
+  19               	    program.  If not, see <http://www.gnu.org/licenses/>.
+  20               	
+  21               	**********************************************************************/
+  22               	
+  23               	/* error codes follow			*/
+  24               	NO_ERROR	=	0
+  25               	/*			*/
+  26               	/*	Mild errors 1..63			*/
+  27               	/*			*/
+  28               	ERR_NOT_YET	=	1	/* Method still being implemented			*/
+  29               	
+  30               	/*	Definite errors	64..127			*/
+  31               	/*			*/
+  32               	ERR_UNKNOWN	=	65	/* Unknown call			*/
+  33               	ERR_UNIT_NO	=	66	/* unit no. bad			*/
+  34               	ERR_METHOD	=	67	/* method number is bad			*/
+  35               	ERR_ADDRESS	=	68	/* address out of range (must be >=0x8000)			*/
+68K GAS  dualsd.s 			page 4
+
+
+  36               	ERR_DECODE	=	69	/* not an encoded value (decode.s)			*/
+  37               	ERR_CAPACITY	=	70	/* LBA address beyond disk capacity			*/
+  38               	ERR_NO_MEDIA	=	71	/* no Media in drive socket			*/
+  39               	ERR_WRONG_MEDIA =	72	/* not SDSC or SDHC			*/
+  40               	ERR_WRITE_PROT	=	73	/* media is write-protected			*/
+  41               	
+  42               	ERR_NO_PROTO	=	129	/* no Instance prototype found			*/
+  43               	ERR_NO_MEMORY	=	130	/* ran out of Heap memory			*/
+  44               	ERR_NO_UNIT	=	131	/* no new unit available			*/
+  45               	ERR_SIO_BAUD	=	132	/* serial baud rate setup not possible			*/
+  46               	ERR_DISK_IO	=	133	/* disk I/O error			*/
+  47               	ERR_TIMEOUT	=	134	/* timeout			*/
+  48               	ERR_CRC16	=	135	/* CRC16 error on data read			*/
+  49               	
+  50               	CATASTROPHE_HEAP	=	241	/* HEAP catastrophe			*/
+  51               	DRIVE_TRANSFER_NOT_SET	=	242	/* DRIVE NOT 8 & NOT 16 BIT			*/
+  52               	
+  53               	
+  54               	/* end error.s			*/
+  25               	#-----------------------------------------------------------------------------
+  26               	
+  27               	USE_CRCs	=	1		/* CRC16's or not	*/
+  28               	
+  29               	Dual_SD_port	=	0x08		/* Z80 port $08		*/
+  30               	
+  31               	arg1	=	4
+  32               	arg2	=	arg1+4
+  33               	arg3	=	arg2+4
+  34               	arg4	=	arg3+4
+  35               	
+  36               	buffer	= 	arg2
+  37               	
+  38               	SD_operation	=	0	/* kept in A5 */
+  39               	SD_select	=	1
+  40               	dual_SD_op	=	BOARD_BASE_IO + Dual_SD_port	/* Operation Reg */
+  41               	dual_SD_sel	=	dual_ide_A + SD_select		/* Selection Reg */
+  42               	
+  43               	
+  44               	/*
+  45               	    Enter general dispatch routines with:
+  46               		A0 = buffer pointer, if applicable
+  47               		A1 = disk structure pointer
+  48               		D0 = garbage
+  49               		D1 = garbage
+  50               		D2 = LBA sector number
+  51               		D3 = number of sectors (only 1, for now)
+  52               	
+  53               	    Stack:
+  54               		SP:	return address
+  55               			Saved D1 -- disk number (0..7)
+  56               			Saved A0 -- buffer pointer
+  57               			Saved A1 -- ???
+  58               			Saved A5 -- ???
+  59               	
+  60               	    May Use:
+  61               		D0, D1, A0, A1
+  62               	    Must Preserve:
+68K GAS  dualsd.s 			page 5
+
+
+  63               		D2-D7, A2-A7
+  64               	
+  65               	 */
+  66               	
+  67               	RECAL	=  1
+  68               	
+  69               		.text
+  70               	# -----------------------------------------------------------------------------	
+  71               	#  dsd_reset
+  72               	# -----------------------------------------------------------------------------	
+  73               	#	arg1	disk number  (D1)
+  74               	#	A1	disk table pointer
+  75               	#	A5	principal M68k I/O address of device
+  76               	#
+  77               	#   Returns D1 (in stack) mask of devices present (D0 == 0)
+  78               	#   Error return if no devices on unit.
+  79               	# -----------------------------------------------------------------------------	
+  80               		.even
+  81               		.globl	dsd_reset
+  82               	dsd_reset:
+  83 0000 207C 0000 		move.l	#0,%a0			/* accumulate D1 mask here */
+  83      0000 
+  84               	
+  85 0006 1B7C 000E 		move.b	#0b00001110,ide_control(%a5)	/* assert SRST, deassert IEN */
+  85      000E 
+  86 000c 203C 0000 		move.l	#1000,%d0			/* delay 10 ms = 10,000 usec */
+  86      03E8 
+  87 0012 4EB9 0000 		jsr	usec_delay
+  87      0000 
+  88 0018 1B7C 000A 		move.b	#0b00001010,ide_control(%a5)	/* deassert SRST, deassert IEN */
+  88      000E 
+  89 001e 203C 0000 		move.l	#50000,%d0
+  89      C350 
+  90 0024 4EB9 0000 		jsr	usec_delay			/* delay 500 ms */
+  90      0000 
+  91               		
+  92               	#	cmp.b	#0,ide_head(%a5)
+  93               	#	bne.s	reset1
+  94 002a 0C2D 0050 		cmp.b	#0x50,ide_status(%a5)		/* check for BUSY=0, RDY=1, SeekComplete=1 */
+  94      0007 
+  95 0030 6616      		bne.s	reset1
+  96               	/* may wish to recalibrate the drive here */
+  97               	.if RECAL
+  98 0032 0829 0004 		btst	#4,(disk_slave_o,%a1)		/* test SLAVE bit */
+  98      000A 
+  99 0038 660C      		bne.s	reset10				/* branch if SLAVE */
+ 100 003a 1B7C 0010 		move.b	#ide_cmd_recal,ide_command(%a5)	/* do a recalibrate of the drive */
+ 100      0007 
+ 101 0040 6100 013E 		bsr	ide_wait_not_busy
+ 102 0044 6602      		bne.s	reset1
+ 103               	reset10:
+ 104               	.endif
+ 105 0046 5288      		add.l	#1,%a0				/* mark drive 0 present */
+ 106               	reset1:
+ 107 0048 1B7C 00F0 	       	move.b	#0b11110000,ide_head(%a5)	/* select drive 1 */
+ 107      0006 
+ 108 004e 203C 0000 		move.l	#1000,%d0			/* delay 10 ms = 10,000 usec */
+68K GAS  dualsd.s 			page 6
+
+
+ 108      03E8 
+ 109 0054 4EB9 0000 		jsr	usec_delay
+ 109      0000 
+ 110 005a 0C2D 0050 		cmp.b	#0x50,ide_status(%a5)		/* check for BUSY=0, RDY=1, SeekComplete=1 */
+ 110      0007 
+ 111 0060 6616      		bne.s	reset2
+ 112               	/* may wish to recalibrate the drive here */
+ 113               	.if RECAL
+ 114 0062 0829 0004 		btst	#4,(disk_slave_o,%a1)		/* test SLAVE bit */
+ 114      000A 
+ 115 0068 670C      		beq.s	reset20				/* branch if MASTER */
+ 116 006a 1B7C 0010 		move.b	#ide_cmd_recal,ide_command(%a5)	/* do a recalibrate of the drive */
+ 116      0007 
+ 117 0070 6100 010E 		bsr	ide_wait_not_busy
+ 118 0074 6602      		bne.s	reset2
+ 119               	reset20:
+ 120               	.endif
+ 121 0076 5488      		add.l	#2,%a0				/* mark drive 1 present */
+ 122               	reset2:
+ 123 0078 1B7C 00E0 	       	move.b	#0b11100000,ide_head(%a5)	/* select drive 0 */
+ 123      0006 
+ 124               	
+ 125 007e 2208      		move.l	%a0,%d1				/* move to D1 */
+ 126 0080 2F41 0004 		move.l	%d1,arg1(%sp)			/* save in stack */
+ 127 0084 4280      		clr.l	%d0
+ 128 0086 4A01      		tst.b	%d1
+ 129 0088 6602      		bne.s	reset3
+ 130 008a 7001      		move.l	#1,%d0				/* error return */
+ 131               	reset3:
+ 132 008c 4E75      		rts
+ 133               	
+ 134               	
+ 135               	
+ 136               	
+ 137               	
+ 138               	
+ 139               	# -----------------------------------------------------------------------------	
+ 140               	#  dsd_read_id
+ 141               	#  dsd_info		; equivalent
+ 142               	# -----------------------------------------------------------------------------	
+ 143               	# Read the 512 byte ID information from the attached drive
+ 144               	#
+ 145               	#	arg1	disk number  (D1)
+ 146               	#	arg2	buffer or NULL	(A0)
+ 147               	#	A1	disk table pointer
+ 148               	#	A5	principal M68k I/O address of device
+ 149               	#
+ 150               	#-----------------------------------------------------------------------------
+ 151               		.even
+ 152               	dsd_read_id:
+ 153               			.globl	dsd_info
+ 154               	dsd_info:
+ 155 008e 206F 0008 		move.l	(buffer,%sp),%a0		/* get buffer address */
+ 156               	
+ 157 0092 3008      		move	%a0,%d0				/* test for NULL */
+ 158 0094 4A80      		tst.l	%d0
+ 159               	.if 0
+68K GAS  dualsd.s 			page 7
+
+
+ 160               		beq.s	short_info			/* LBA & GEOM info only */
+ 161               	
+ 162               		bsr	ide_wait_not_busy		/* uses D0, D1 */
+ 163               		bne.s	read_id_error			/* %D0 == -1 */
+ 164               	
+ 165               		move.b	(disk_slave_o,%a1),%d0		/* get slave byte */
+ 166               		or.b	#0xE0,%d0
+ 167               		move.b	%d0,ide_head(%a5)		/* set M/S */
+ 168               	
+ 169               		move.b	#ide_cmd_id,ide_command(%a5)	/* send ID command */
+ 170               	
+ 171               		bsr	ide_wait_drq			/* uses D0, D1 */
+ 172               		bne.s	read_id_error			/* %D0 == -1 */
+ 173               	
+ 174               		move.w	#511,%d1
+ 175               		add.l	#ide_data_16,%a5		/* change A5 */
+ 176               	read_id_loop:
+ 177               		move.b	(%a5),(%a0)+
+ 178               		dbra.w	%d1,read_id_loop
+ 179               		sub.l	#ide_data_16,%a5		/* restore A5 */
+ 180               	.endif
+ 181               	
+ 182               	short_info:
+ 183 0096 2429 0004 		move.l	disk_lba_o(%a1),%d2		/* LBA info return */
+ 184 009a 2F42 0004 		move.l	%d2,arg1(%sp)
+ 185 009e 2429 000C 		move.l	disk_geom_o(%a1),%d2		/* geometry return */
+ 186               	
+ 187               	get_error_status:
+ 188 00a2 6100 00DC 		bsr	ide_wait_not_busy		/* uses D0, D1 */
+ 189 00a6 6616      		bne.s	read_id_error			/* %D0 == -1 */
+ 190               	
+ 191 00a8 4280      		clr.l	%d0
+ 192 00aa 102D 0007 		move.b	ide_status(%a5),%d0
+ 193 00ae 0280 0000 		and.l	#1,%d0				/* test error flag */
+ 193      0001 
+ 194 00b4 6708      		beq.s	read_id_error			/* D0 = 0 if not set */
+ 195 00b6 102D 0001 		move.b	ide_err(%a5),%d0		/* return error */
+ 196 00ba 0040 0800 		or.w	#0x800,%d0			/* show error code */
+ 197               	read_id_error:
+ 198 00be 4E75      		rts
+ 199               	
+ 200               		
+ 201               	# -----------------------------------------------------------------------------	
+ 202               	#  dsd_read
+ 203               	# -----------------------------------------------------------------------------	
+ 204               	#	;read a sector, specified by the 4 bytes in "lba",
+ 205               	#	;Return, acc is zero on success, non-zero for an error
+ 206               	#
+ 207               	#	arg1	disk number  (D1)
+ 208               	#	arg2	buffer	(A0)
+ 209               	#	A1	disk table pointer
+ 210               	#	D2	LBA address
+ 211               	#	D3	sector count (assumed to be 1)
+ 212               	#	A5	principal M68k I/O address of device
+ 213               	#
+ 214               	#
+ 215               	#-----------------------------------------------------------------------------
+68K GAS  dualsd.s 			page 8
+
+
+ 216               		.even
+ 217               		.globl	dsd_read
+ 218               	dsd_read:
+ 219 00c0 206F 0008 		move.l	(buffer,%sp),%a0		/* get buffer address */
+ 220 00c4 7005      		move.l	#5,%d0				/* error code */
+ 221 00c6 B4A9 0004 		cmp.l	(disk_lba_o,%a1),%d2		/* check lba address */
+ 222 00ca 6432      		bcc.s	read_error
+ 223               	
+ 224 00cc 7004      		move.l	#4,%d0				/* error code */
+ 225 00ce 0C83 0000 		cmp.l	#1,%d3
+ 225      0001 
+ 226 00d4 6628      		bne.s	read_error			/* for now */
+ 227               	
+ 228 00d6 6100 00A8 		bsr	ide_wait_not_busy
+ 229 00da 6622      		bne.s	read_error			/* %D0 == -1 */
+ 230               	
+ 231 00dc 6100 00D6 		bsr	wr_lba
+ 232               	
+ 233 00e0 1B7C 0020 		move.b	#ide_cmd_read,ide_command(%a5)	/* send ID command */
+ 233      0007 
+ 234               	
+ 235 00e6 6100 00B2 		bsr	ide_wait_drq
+ 236 00ea 6612      		bne.s	read_error			/* %D0 == -1 */
+ 237               	
+ 238 00ec 323C 01FF 		move.w	#511,%d1
+ 239 00f0 508D      		add.l	#ide_data_16,%a5
+ 240               	read_loop:
+ 241 00f2 10D5      		move.b	(%a5),(%a0)+
+ 242 00f4 51C9 FFFC 		dbra.w	%d1,read_loop
+ 243 00f8 518D      		sub.l	#ide_data_16,%a5
+ 244               	
+ 245 00fa 6000 FFA6 		bra	get_error_status
+ 246               	
+ 247               	#	clr.l	%d0			/* signal no error */
+ 248               	read_error:
+ 249 00fe 4E75      		rts
+ 250               	
+ 251               	
+ 252               	# -----------------------------------------------------------------------------	
+ 253               	#  dsd_verify
+ 254               	# -----------------------------------------------------------------------------	
+ 255               	#	;read a sector, specified by the 4 bytes in "lba",
+ 256               	#	;Return, acc is zero on success, non-zero for an error
+ 257               	#
+ 258               	#	arg1	disk number  (D1)
+ 259               	#	A1	disk table pointer
+ 260               	#	D2	LBA address
+ 261               	#	D3	sector count (assumed to be 1)
+ 262               	#	A5	principal M68k I/O address of device
+ 263               	#
+ 264               	#
+ 265               	#-----------------------------------------------------------------------------
+ 266               		.even
+ 267               		.globl	dsd_verify
+ 268               	dsd_verify:
+ 269 0100 7005      		move.l	#5,%d0				/* error code */
+ 270 0102 B4A9 0004 		cmp.l	(disk_lba_o,%a1),%d2		/* check lba address */
+68K GAS  dualsd.s 			page 9
+
+
+ 271 0106 6434      		bcc.s	verify_error
+ 272               	
+ 273 0108 7004      		move.l	#4,%d0				/* error code */
+ 274 010a 0C83 0000 		cmp.l	#1,%d3
+ 274      0001 
+ 275 0110 662A      		bne.s	verify_error			/* for now */
+ 276               	
+ 277 0112 6100 006C 		bsr	ide_wait_not_busy
+ 278 0116 6624      		bne.s	verify_error			/* %D0 == -1 */
+ 279               	
+ 280 0118 6100 009A 		bsr	wr_lba
+ 281               	
+ 282 011c 1B7C 0020 		move.b	#ide_cmd_read,ide_command(%a5)	/* send READ command */
+ 282      0007 
+ 283               	
+ 284 0122 6100 0076 		bsr	ide_wait_drq
+ 285 0126 6614      		bne.s	verify_error			/* %D0 == -1 */
+ 286               	
+ 287 0128 323C 01FF 		move.w	#511,%d1
+ 288 012c 508D      		add.l	#ide_data_16,%a5
+ 289               	verify_loop:
+ 290 012e 1015      		move.b	(%a5),%d0
+ 291 0130 51C9 FFFC 		dbra.w	%d1,verify_loop
+ 292 0134 518D      		sub.l	#ide_data_16,%a5
+ 293 0136 6000 FF6A 	 	bra	get_error_status
+ 294               	
+ 295 013a 4280      		clr.l	%d0			/* signal no error */
+ 296               	verify_error:
+ 297 013c 4E75      		rts
+ 298               	
+ 299               	
+ 300               	
+ 301               	#-----------------------------------------------------------------------------
+ 302               	#  dsd_write
+ 303               	# -----------------------------------------------------------------------------	
+ 304               	#	;write a sector, specified by the 4 bytes in "lba",
+ 305               	#	;Return, acc is zero on success, non-zero for an error
+ 306               	#
+ 307               	#	arg1	disk number  (D1)
+ 308               	#	arg2	buffer	(A0)
+ 309               	#	A1	disk table pointer
+ 310               	#	D2	LBA address
+ 311               	#	D3	sector count (assumed to be 1)
+ 312               	#	A5	principal M68k I/O address of device
+ 313               	#
+ 314               	#
+ 315               	#-----------------------------------------------------------------------------
+ 316               		.even
+ 317               		.globl	dsd_write
+ 318               	dsd_write:
+ 319 013e 206F 0008 		move.l	(buffer,%sp),%a0		/* get buffer address */
+ 320 0142 7005      		move.l	#5,%d0				/* error code */
+ 321 0144 B4A9 0004 		cmp.l	(disk_lba_o,%a1),%d2		/* check lba address */
+ 322 0148 6434      		bcc.s	write_error
+ 323               	
+ 324 014a 7004      		move.l	#4,%d0				/* error code */
+ 325 014c 0C83 0000 		cmp.l	#1,%d3
+68K GAS  dualsd.s 			page 10
+
+
+ 325      0001 
+ 326 0152 662A      		bne.s	write_error			/* for now */
+ 327               	
+ 328 0154 6100 002A 		bsr	ide_wait_not_busy
+ 329 0158 6624      		bne.s	write_error			/* %D0 == -1 */
+ 330               	
+ 331 015a 6100 0058 		bsr	wr_lba
+ 332               	
+ 333 015e 1B7C 0030 		move.b	#ide_cmd_write,ide_command(%a5)	/* send WRITE command */
+ 333      0007 
+ 334               	
+ 335 0164 6100 0034 		bsr	ide_wait_drq
+ 336 0168 6614      		bne.s	write_error			/* %D0 == -1 */
+ 337               	
+ 338 016a 323C 01FF 		move.w	#511,%d1
+ 339 016e 508D      		add.l	#ide_data_16,%a5
+ 340               	write_loop:
+ 341 0170 1A98      		move.b	(%a0)+,(%a5)
+ 342 0172 51C9 FFFC 		dbra.w	%d1,write_loop
+ 343 0176 518D      		sub.l	#ide_data_16,%a5
+ 344 0178 6000 FF28 		bra	get_error_status
+ 345               	
+ 346 017c 4280      		clr.l	%d0			/* signal no error */
+ 347               	write_error:
+ 348 017e 4E75      		rts
+ 349               	
+ 350               	
+ 351               	
+ 352               	
+ 353               	
+ 354               	
+ 355               	
+ 356               	# Wait for IDE not busy and Drive Ready
+ 357               	#
+ 358               	ide_wait_not_busy:			/* make sure drive is ready */
+ 359 0180 70FF      		move.l	#-1,%d0
+ 360               	wait_not_busy:
+ 361 0182 4EB9 0000 		jsr	usec16			/* wait 16 usec */
+ 361      0000 
+ 362 0188 122D 0007 		move.b	ide_status(%a5),%d1
+ 363 018c 0A01 0040 		eor.b	#0x40,%d1		/* invert DRDY bit */
+ 364 0190 0201 00C0 		and.b	#0xC0,%d1		/* check Busy bit */
+ 365 0194 57C8 FFEC 		dbeq.w	%d0,wait_not_busy
+ 366               	# wait until Busy bit(7) is clear
+ 367               	
+ 368               	  /* EQ if okay, NE if not okay */
+ 369               	
+ 370 0198 4E75      		rts
+ 371               	
+ 372               	
+ 373               	# Wait for Data Request
+ 374               	ide_wait_drq:
+ 375 019a 70FF      		move.l	#-1,%d0
+ 376               	wait_drq:
+ 377 019c 4EB9 0000 		jsr	usec16			/* wait 16 usec */
+ 377      0000 
+ 378 01a2 122D 0007 		move.b	ide_status(%a5),%d1
+68K GAS  dualsd.s 			page 11
+
+
+ 379 01a6 0A01 0008 		eor.b	#0x08,%d1
+ 380 01aa 0201 0088 		and.b	#0x88,%d1
+ 381 01ae 57C8 FFEC 		dbeq.w	%d0,wait_drq
+ 382               	/* EQ if okay, NE if not okay */
+ 383 01b2 4E75      		rts
+ 384               	
+ 385               	
+ 386               	/* write out the LBA in D2, pick up Slave bit from D1 pointer */
+ 387               	/* sector count is in D3.b */
+ 388               	
+ 389               	wr_lba:
+ 390 01b4 1029 000A 		move.b	(disk_slave_o,%a1),%d0	/* get slave byte */
+ 391 01b8 0200 0010 		and.b	#0x10,%d0		/* for safety */
+ 392 01bc E19A      		rol.l	#8,%d2			/* hi byte of LBA to low 8 bits */
+ 393 01be 0202 000F 		and.b	#0x0F,%d2		/* 28 bit limit */
+ 394 01c2 8002      		or.b	%d2,%d0
+ 395 01c4 0000 00E0 		or.b	#0xE0,%d0		/* select LBA mode */
+ 396 01c8 5C8D      		add.l	#ide_head,%a5
+ 397 01ca 1A80      		move.b	%d0,(%a5)
+ 398 01cc E19A      		rol.l	#8,%d2
+ 399 01ce 1B02      		move.b	%d2,-(%a5)		/* cylinder high */
+ 400 01d0 E19A      		rol.l	#8,%d2
+ 401 01d2 1B02      		move.b	%d2,-(%a5)		/* cylinder low */
+ 402 01d4 E19A      		rol.l	#8,%d2
+ 403 01d6 1B02      		move.b	%d2,-(%a5)		/* sector */
+ 404 01d8 0203 007F 		and.b	#0x7F,%d3		/* limit sector count to 127 */
+ 405 01dc 1B03      		move.b	%d3,-(%a5)		/* sector count */
+ 406 01de 558D      		sub.l	#ide_sec_cnt-ide_data,%a5	/* restore A5 */
+ 407 01e0 4E75      		rts
+ 408               	
+ 409               	
+ 410               	
+ 411               	
+ 412               	/******************************************************************
+ 413               	;------------------------------------------------------------------------
+ 414               	;  internal functions below this point
+ 415               	;------------------------------------------------------------------------
+ 416               	*******************************************************************/
+ 417               	SDtypeUnknown	=	0
+ 418               	SDtypeMMC	=	1	/* unused, probably		*/
+ 419               	SDtypeSDSC	=	2	/* standard, odd addressing		*/
+ 420               	SDtypeSDHC	=	3	/* large, lba addressing		*/
+ 421               	SDtypeSDXC	=	4	/* super large capacity		*/
+ 422               	
+ 423               	
+ 424               	/* Operation Register (0x08) bits:		*/
+ 425               	SD_DATA		=	1	/* data I/O bit		*/
+ 426               	SD_CLK		=	1<<1	/* clock bit				*/
+ 427               	SD_CS		=	1<<2	/* chip select bit op. reg.		*/
+ 428               	SD_WP		=	1<<4	/* Write Protect status of selected unit		*/
+ 429               	SD_CD		=	1<<5	/* Card Detect status of selected unit		*/
+ 430               	bit_SD_CD	=	5
+ 431               	
+ 432               	
+ 433               	/* Status Register (0x09) bits:	 (flag byte)		*/
+ 434               	ST_UNIT		=	1	/* r/w unit select		*/
+ 435               	ST_WP0		=	1<<2	/* ro write protect status of slot 0		*/
+68K GAS  dualsd.s 			page 12
+
+
+ 436               	ST_WP1		=	1<<3	/* ro write protect status of slot 1		*/
+ 437               	ST_CD0		=	1<<4	/* r/w card detect status of slot 0		*/
+ 438               	ST_CD1		=	1<<5	/* r/w card detect status of slot 1		*/
+ 439               	ST_IEN		=	1<<6	/* wo Interrupt Enable		*/
+ 440               	ST_CHANGE	=	1<<7	/* wo Change Enable (bits 4, 5, 6)		*/
+ 441               	ST_IPEND0	=	1<<6	/* ro Interrupt Pending on slot 0		*/
+ 442               	ST_IPEND1	=	1<<7	/* ro Interrupt Pending on slot 1		*/
+ 443               	
+ 444               	
+ 445               	/* ResetCommand:		*/
+ 446 01e2 40        	CMD0:		.byte	0x40 | 0
+ 447 01e3 00        			.byte	0
+ 448 01e4 00        			.byte	0
+ 449 01e5 00        			.byte	0
+ 450 01e6 00        			.byte	0
+ 451 01e7 95        			.byte	0x95
+ 452 01e8 40        	CMD8:		.byte	0x40 | 8
+ 453 01e9 00        			.byte	0
+ 454 01ea 00        			.byte	0
+ 455 01eb 01        			.byte	0x01
+ 456 01ec AA        			.byte	0xAA
+ 457 01ed 87        			.byte	0x87
+ 458 01ee 40        	CMD9:		.byte	0x40 | 9
+ 459 01ef 00        			.byte	0
+ 460 01f0 00        			.byte	0
+ 461 01f1 00        			.byte	0
+ 462 01f2 00        			.byte	0
+ 463 01f3 AF        			.byte	0xAF
+ 464 01f4 40        	CMD10:		.byte	0x40 | 10
+ 465 01f5 00        			.byte	0
+ 466 01f6 00        			.byte	0
+ 467 01f7 00        			.byte	0
+ 468 01f8 00        			.byte	0
+ 469 01f9 1B        			.byte	0x1B
+ 470 01fa 40        	CMD16:		.byte	0x40 | 16
+ 471 01fb 00        			.byte	0
+ 472 01fc 00        			.byte	0
+ 473 01fd 02        			.byte	512>>8
+ 474 01fe 00        			.byte	512&0xFF
+ 475 01ff 15        			.byte	0x15
+ 476 0200 40        	CMD55:		.byte	0x40 | 55
+ 477 0201 00        			.byte	0
+ 478 0202 00        			.byte	0
+ 479 0203 00        			.byte	0
+ 480 0204 00        			.byte	0
+ 481 0205 65        			.byte	0x65
+ 482 0206 40        	ACMD41:		.byte	0x40 | 41
+ 483 0207 40        			.byte	0x40
+ 484 0208 00        			.byte	0
+ 485 0209 00        			.byte	0
+ 486 020a 00        			.byte	0
+ 487 020b 77        			.byte	0x77
+ 488 020c 40        	CMD58:		.byte	0x40 | 58
+ 489 020d 00        			.byte	0
+ 490 020e 00        			.byte	0
+ 491 020f 00        			.byte	0
+ 492 0210 00        			.byte	0
+68K GAS  dualsd.s 			page 13
+
+
+ 493 0211 FD        			.byte	0xFD
+ 494               	.if USE_CRCs
+ 495 0212 40        	CMD59:		.byte	0x40 | 59
+ 496 0213 00        			.byte	0
+ 497 0214 00        			.byte	0
+ 498 0215 00        			.byte	0
+ 499 0216 01        			.byte	1
+ 500 0217 83        			.byte	0x83
+ 501               	.endif
+ 502               	
+ 503               	CMD17_read	=	0x40 | 17
+ 504               	CMD24_write	=	0x40 | 24
+ 505               	
+ 506               	
+ 507               	/*------------------------------------------------------------------------
+ 508               	; SDunit
+ 509               	;	Selects the unit (0, or 1)
+ 510               	;
+ 511               	;  Enter with:
+ 512               	;	nothing
+ 513               	;
+ 514               	;  Exit with:
+ 515               	;	Side effect, unit 0/1 is selected
+ 516               	;
+ 517               	;	D0 is trashed
+ 518               	;------------------------------------------------------------------------*/
+ 519               		.even
+ 520               	SDunit:
+ 521 0218 1029 000A 		move.b	disk_slave_o(%a1),%d0	/* unit 0 or 1 */
+ 522 021c 1B40 0001 		move.b	%d0,SD_select(%a5)	/* select unit based on bit 0 */
+ 523 0220 4E75      		rts
+ 524               	
+ 525               	
+ 526               	
+ 527               	/*------------------------------------------------------------------------
+ 528               	; SDselect 	Select the correct unit, and assert ChipSelect
+ 529               	;
+ 530               	;  Enter with:
+ 531               	;	nothing
+ 532               	;
+ 533               	;  Exit with:
+ 534               	;	CS is asserted (to align 8-bit command/data bytes)
+ 535               	;	Z-flag is clear on success
+ 536               	;
+ 537               	;  Errors:
+ 538               	;	ERR_NO_MEDIA if no card is present
+ 539               	;
+ 540               	;------------------------------------------------------------------------*/
+ 541               		.even
+ 542               	SDselect:
+ 543 0222 61F4      		bsr.s	SDunit		/* select unit */
+ 544               	/* Check for card present			*/
+ 545 0224 7047      		move.l	#ERR_NO_MEDIA,%d0	/* possible error code
+ 546               		btst	#bit_SD_CD,(%a5)	/* check Card Detect */
+ 547 0226 6706      		beq.s	select9			/* error if Zero */
+ 548               	
+ 549 0228 1ABC 0005 		move.b	#SD_CS+SD_DATA,(%a5)	/* set ChipSelect & DataOut, no Clock */
+68K GAS  dualsd.s 			page 14
+
+
+ 550               	/*	move.l	#NO_ERROR,%d0			/* signal No Error */
+ 551 022c 4280      		clr.l	%d0			/* signal No Error	*/
+ 552               	select9:
+ 553 022e 8000      		or.b	%d0,%d0			/* set Z bit */
+ 554 0230 4E75      		rts
+ 555               	
+ 556               	/*------------------------------------------------------------------------
+ 557               	; SDget	Get a byte from DATOUT on the SD card
+ 558               	;
+ 559               	;  Assume:
+ 560               	;	Chip Select is already asserted
+ 561               	;	Clock is low
+ 562               	;
+ 563               	;  Return with:
+ 564               	;	D0.B	= the byte read
+ 565               	;	Clock is low, Chip Select is still asserted
+ 566               	;
+ 567               	;------------------------------------------------------------------------*/
+ 568               		.even
+ 569               	SDget:
+ 570 0232 2F02      		move.l	%d2,-(%sp)		/* save D2		*/
+ 571               	
+ 572 0234 7208      		move.l	#8,%d1			/* count 8 bits		*/
+ 573 0236 600A      		bra.s	SDget2
+ 574               	SDget1:
+ 575 0238 1415      		move.b	(%a5),%d2		/* get data_in on bit 0 */
+ 576 023a E20A      		lsr.b	#1,%d2			/* shift into C & X bits */
+ 577 023c 1ABC 0007 		move.b	#SD_CS+SD_CLK+SD_DATA,(%a5) /* raise the clock */
+ 578 0240 E350      		roxl	#1,%d0			/* shift into D0 */
+ 579               	SDget2:
+ 580 0242 1ABC 0005 		move.b #SD_CS+SD_DATA,(%a5)	/* clock low, chip_sel, data_out */
+ 581 0246 51C9 FFF0 		dbra	%d1,SDget1
+ 582               	
+ 583 024a 241F      		move.l	(%sp)+,%d2		/* restore D2		*/
+ 584 024c 4E75      		rts
+ 585               	
+ 586               	
+ 587               	/*------------------------------------------------------------------------
+ 588               	; SDput		Put a byte to DATIN on the SD card
+ 589               	;
+ 590               	;  Enter with:
+ 591               	;	D0.B	byte to put out
+ 592               	;
+ 593               	;  Assume:
+ 594               	;	Chip Select is already asserted (except for SDsendclks)
+ 595               	;	Clock may be high or low
+ 596               	;
+ 597               	;  Return with:
+ 598               	;	Chip Select is unchanged (still asserted)
+ 599               	;	Clock is active (high)
+ 600               	;
+ 601               	;	D0 and D1 are trashed
+ 602               	;
+ 603               	;------------------------------------------------------------------------*/
+ 604               		.even
+ 605               	SDput:
+ 606 024e 2F02      		move.l	%d2,-(%sp)		/* save D2		*/
+68K GAS  dualsd.s 			page 15
+
+
+ 607               	
+ 608 0250 7207      		move.l	#7,%d1			/* count 7..0 */
+ 609               	SDput1:
+ 610 0252 7402      		move.l	#SD_CS/2,%d2		/* Chip Select will be asserted */
+ 611 0254 E308      		lsl.b	#1,%d0			/* hi-bit to X */
+ 612 0256 E352      		roxl	#1,%d2			/* Chip Select, Clock Low, Data Out */
+ 613 0258 1A82      		move.b	%d2,(%a5)		/* put out the data bit */
+ 614 025a 0002 0002 		or.b	#SD_CLK,%d2		/* assert the clock */
+ 615 025e 1A82      		move.b	%d2,(%a5)		/* put out the data bit & clock */
+ 616 0260 51C9 FFF0 		dbra	%d1,SDput1		/* loop back */
+ 617               	
+ 618 0264 241F      		move.l	(%sp)+,%d2		/* restore D2		*/
+ 619 0266 4E75      		rts
+ 620               	
+ 621               	
+ 622               	
+ 623               	/*------------------------------------------------------------------------
+ 624               	; cmd_R1	issue command and get R1 response
+ 625               	;
+ 626               	;  Enter with:
+ 627               	;	A0	pointer to the command (5 of 6 bytes)
+ 628               	;
+ 629               	;  Uses:
+ 630               	;	B & C registers
+ 631               	;
+ 632               	;  Exit with:
+ 633               	;	Z flag set (EQ):
+ 634               	;		D0.b is the response to the command
+ 635               	;	Z flag clear (NE):
+ 636               	;		D0 is the error code
+ 637               	;	A0 is incremented by 5
+ 638               	;
+ 639               	;  Errors:
+ 640               	;	ERR_TIMEOUT	if no response within 8 byte times (NE condition)
+ 641               	;	ERR_NO_MEDIA
+ 642               	;
+ 643               	;------------------------------------------------------------------------
+ 644               	cmd_R1:
+ 645               		call	SDselect
+ 646               		ret	nz
+ 647               	
+ 648               		ld	b,#6		; all commands are 6 bytes
+ 649               	cmr1:
+ 650               		ld	c,(hl)		; get a byte of the command
+ 651               		inc	hl		; increment the pointer
+ 652               		call	SDput		; put out the byte
+ 653               		djnz	cmr1		; loop back
+ 654               	
+ 655               		ld	b,#9			; response must come within 8 chars
+ 656               	cmr2:	call	SDget
+ 657               		ld	a,c			; response in A & C (no error)
+ 658               		ld	hw_status-instance(IY),c  ; save response in Status byte
+ 659               		bit	7,c			; test high bit
+ 660               		ret	z			; return with Z set
+ 661               		djnz	cmr2			; does not touch the Flags
+ 662               				; NZ condition is guaranteed here
+ 663               		ld	a,c			; error byte in A
+68K GAS  dualsd.s 			page 16
+
+
+ 664               		ld	c,#ERR_TIMEOUT		; return error code
+ 665               		ret				; return NZ if no response
+ 666               	*/
+ 667               		.even
+ 668               	cmd_R1:
+ 669 0268 48A7 3000 		movem	%d2-%d3,-(%sp)		/* save registers */
+ 670 026c 61B4      		bsr.s	SDselect
+ 671 026e 6620      		 bne.s	cmdr19
+ 672 0270 7605      		move.l	#6-1,%d3
+ 673               	cmdr11:
+ 674 0272 1018      		move.b	(%a0)+,%d0		/* get byte to put out	*/
+ 675 0274 61D8      		bsr.s	SDput			/* put out the command byte */
+ 676 0276 51CB FFFA 		dbra	%d3,cmdr11		/* put out 5 bytes	*/
+ 677               	
+ 678               	/* the command has been sent */
+ 679               			
+ 680 027a 7608      		move.l	#8,%d3			/* response must come within 8 chars */
+ 681               	cmdr13:
+ 682 027c 61B4      		bsr.s	SDget			/* get a character */
+ 683 027e 1340 000B 		move.b	%d0,disk_status_o(%a1)	/* save disk status byte */
+ 684 0282 0800 0007 		btst	#7,%d0			/* test hi-bit (7) */
+ 685 0286 6708      		beq.s	cmdr19			/* return with Z flag set */
+ 686 0288 51CB FFF2 		dbra	%d3,cmdr13		/* loop back */
+ 687               	
+ 688 028c 303C 0086 		move.w	#ERR_TIMEOUT,%d0	/* clear Zero flag, return error */
+ 689               	cmdr19:
+ 690 0290 4C9F 000C 		movem	(%sp)+,%d2-%d3		/* restore registers */
+ 691 0294 4E75      		rts
+ 692               	
+ 693               	
+ 694               	/*------------------------------------------------------------------------
+ 695               	; SDsendclks	send clock transitions to the card
+ 696               	;
+ 697               	;  Enter with:
+ 698               	;	D0 =	initial byte to send
+ 699               	;	D1.W =	count of clock transitions - 1 (must be odd;  15 / 255)
+ 700               	;
+ 701               	;  Return with:
+ 702               	;	D1.W =	-1
+ 703               	;
+ 704               	;	The Operation register is left in the D0 state.
+ 705               	;
+ 706               	;------------------------------------------------------------------------*/
+ 707               		.even
+ 708               	SDsendclks:
+ 709 0296 1A80      		move.b	%d0,(%a5)		/* set initial clock */
+ 710 0298 0A00 0002 		eori.b	#SD_CLK,%d0		/* invert clock */
+ 711               	/*  count 15..0 or 255..0  		*/
+ 712 029c 51C9 FFF8 		dbra	%d1,SDsendclks		/* loop D1.w+1 times */
+ 713               	
+ 714 02a0 1A80      		move.b	%d0,(%a5)		/* set initial clock value */
+ 715 02a2 4E75      		rts
+ 716               	
+ 717               	
+ 718               	
+ 719               	/*------------------------------------------------------------------------
+ 720               	; SDdone	complete a transaction
+68K GAS  dualsd.s 			page 17
+
+
+ 721               	;
+ 722               	;  Enter with:
+ 723               	;	Nothing
+ 724               	;
+ 725               	;  Return with:
+ 726               	;	All registers are preserved
+ 727               	;	Flags are preserved, too
+ 728               	;
+ 729               	;	The card is deselected!!!  (Chip_Select is cleared)
+ 730               	;
+ 731               	;------------------------------------------------------------------------*/
+ 732               		.even
+ 733               	SDdone:
+ 734 02a4 48A7 E000 		movem	%d0-%d2,-(%sp)		/* save 3 registers */
+ 735 02a8 40C2      		move	%sr,%d2			/* save CCR+SR */
+ 736               	
+ 737 02aa 7001      		move.l	#SD_DATA,%d0 		/* Chip Select OFF, Clock Low, Data Idle (high) */
+ 738 02ac 720F      		move.l	#15,%d1
+ 739 02ae 61E6      		bsr.s	SDsendclks
+ 740               	
+ 741 02b0 46C2      		move	%d2,%sr			/* restore CCR */
+ 742 02b2 4C9F 0007 		movem	(%sp)+,%d0-%d2		/* restore registers */
+ 743 02b6 4E75      		rts				/* return */
+ 744               	
+ 745               	
+ 746               	
+ 747               	/*------------------------------------------------------------------------
+ 748               	; SDcmdset	Set up a command in the stack
+ 749               	;
+ 750               	;  Enter with:
+ 751               	;	D0	Command byte
+ 752               	;	D2	parameter word
+ 753               	;
+ 754               	;	C	Command byte
+ 755               	;	DE	high order parameter word
+ 756               	;	HL	low order parameter word
+ 757               	;
+ 758               	;  Return with:
+ 759               	;	A0	points to command in the stack
+ 760               	;	SP	decremented by 8 (stack alignment is maintained)
+ 761               	;
+ 762               	;	HL	points at stack top
+ 763               	;	SP	is decremented by 6 (size of the command)
+ 764               	;	BC & DE are trashed
+ 765               	;
+ 766               	;	The sixth byte of the command is the CRC7 value needed
+ 767               	;------------------------------------------------------------------------
+ 768               	SDcmdset:
+ 769               		ld	b,h
+ 770               		ex	(sp),hl		; stack has  L,X
+ 771               					; HL = return address
+ 772               		ld	a,c
+ 773               		ld	c,e
+ 774               		push	bc		; stack has  E,H,L,X
+ 775               		ld	e,a
+ 776               		push	de		; stack has  C,D,E,H,L,X
+ 777               		push	hl		; save return address
+68K GAS  dualsd.s 			page 18
+
+
+ 778               		ld	hl,#2		; address of command
+ 779               		add	hl,sp		; HL -> command
+ 780               	.if USE_CRCs
+ 781               		push	hl		; save command pointer
+ 782               		ld	b,#5		; CRC7 calculated over 5 bytes
+ 783               		call	calcCRC7
+ 784               		ld	(hl),e		; store CRC7 calculation
+ 785               		pop	hl		; restore HL
+ 786               	.endif
+ 787               		ret
+ 788               	*/
+ 789               		.even
+ 790               	SDcmdset:
+ 791 02b8 3F08      		move	%a0,-(%sp)	/* this loc. and return address will
+ 792               						become the command area of 6 bytes */
+ 793 02ba 304F      		move	%sp,%a0		/* A0 is command pointer */
+ 794 02bc 3F2F 0004 		move	4(%sp),-(%sp)	/* stack the return address */
+ 795               	
+ 796 02c0 48A7 2020 		movem	%d2/%a2,-(%sp)	/* register save */
+ 797               	
+ 798 02c4 30C0      		move.w	%d0,(%a0)+	/* SP+1 is command byte */
+ 799               	.if USE_CRCs
+ 800 02c6 0240 00FF 		and.w	#0xFF,%d0
+ 801 02ca 45F9 0000 		lea	table7,%a2	/* address table from A2 */
+ 801      0000 
+ 802 02d0 7204      		move.l	#4,%d1		/* 4 parameter bytes */
+ 803 02d2 6006      		bra.s	cms4
+ 804               	cms2:
+ 805 02d4 E19A      		rol.l	#8,%d2
+ 806 02d6 10C2      		move.b	%d2,(%a0)+	/* store command byte */
+ 807 02d8 B500      		eor.b	%d2,%d0
+ 808 02da 1032 0000 	cms4:	move.b	(%a2,%d0.w),%d0	/* update the CRC7 */
+ 809 02de 51C9 FFF4 		dbra	%d1,cms2
+ 810               	
+ 811 02e2 0000 0001 		or.b	#1,%d0
+ 812 02e6 1080      		move.b	%d0,(%a0)	/* store the CRC7 */
+ 813               	.else
+ 814               		move.l	%d2,(%a0)+	/* store the command parameter */
+ 815               		move.b	#0xFF,(%a0)	/* store the CRC7 */
+ 816               	.endif
+ 817 02e8 41E8 FFFB 		lea	-5(%a0),%a0
+ 818               	
+ 819 02ec 4C9F 0404 		movem	(%sp)+,%d2/%a2	/* register restore */
+ 820 02f0 4E75      		rts
+ 821               	
+ 822               	/*
+ 823               	;------------------------------------------------------------------------
+ 824               	; SDwaitrdy	wait for card to become ready
+ 825               	;
+ 826               	;  Enter with:
+ 827               	;	nothing
+ 828               	;
+ 829               	;  Uses:
+ 830               	;	B & C registers
+ 831               	;
+ 832               	;  Return with:
+ 833               	;	Z flag = 1	no error, character+1 in C
+68K GAS  dualsd.s 			page 19
+
+
+ 834               	;	Z flag = 0	error, timeout; B reg == 1
+ 835               	;
+ 836               	;------------------------------------------------------------------------
+ 837               	SDwaitrdy:
+ 838               		call	SDselect	; assert Chip Select
+ 839               		ret	nz
+ 840               	
+ 841               		ld	b,#0x7F		; count 0x7F7F
+ 842               		ld	timeout-instance(IY),b
+ 843               	waitrdy1:
+ 844               		call	SDget
+ 845               		inc	c		; 0xFF -> 0x00
+ 846               		ret	z		; Z flag set -- no error
+ 847               		djnz	waitrdy1
+ 848               		dec	timeout-instance(IY)
+ 849               		jr	nz,waitrdy1	; outer count loop
+ 850               		
+ 851               		or	a,c		; clear the Z flag (C != 0)
+ 852               		ld	c,#ERR_TIMEOUT	; return error code with Z flag clear
+ 853               		ret			; NZ is flagged
+ 854               	*/
+ 855               		.even
+ 856               	SDwaitrdy:
+ 857 02f2 48A7 1000 		movem	%d3,-(%sp)	/* register save */
+ 858               	
+ 859 02f6 6100 FF2A 		bsr	SDselect
+ 860 02fa 6600 001A 		bne	sdwr9
+ 861 02fe 363C 7FFF 		move.w	#0x7FFF,%d3
+ 862               	sdwr1:
+ 863 0302 6100 FF2E 		bsr	SDget		/* get a byte from the card */
+ 864 0306 0C00 00FF 		cmp.b	#0xFF,%d0	/* 0xFF returned means ready */
+ 865 030a 670A      		beq.s	sdwr9
+ 866 030c 51CB FFF4 		dbra	%d3,sdwr1
+ 867 0310 203C 0000 		move.l	#ERR_TIMEOUT,%d0	/* signal timeout error	*/
+ 867      0086 
+ 868               	/* Z flag is clear (NE condition) */
+ 869               	sdwr9:
+ 870 0316 4C9F 0008 		movem	(%sp)+,%d3	/* register restore */
+ 871 031a 4E75      		rts	
+ 872               	
+ 873               	/*------------------------------------------------------------------------
+ 874               	; SDgoidle	put card in the idle state
+ 875               	;
+ 876               	;  Enter with:
+ 877               	;	nothing
+ 878               	;
+ 879               	;  Uses:
+ 880               	;	B and C
+ 881               	;	HL
+ 882               	;
+ 883               	;  Return with:
+ 884               	;    Zero flag set:
+ 885               	;	D0	response to CMD0
+ 886               	;
+ 887               	;    Zero flag clear:
+ 888               	;	D0	error code
+ 889               	;
+68K GAS  dualsd.s 			page 20
+
+
+ 890               	;------------------------------------------------------------------------
+ 891               	SDgoidle:
+ 892               		ld	b,#200		; about 5 milliseconds or so
+ 893               	go1:	call	_delay32
+ 894               		djnz	go1
+ 895               	
+ 896               		ld	hl,#CMD0
+ 897               		call	cmd_R1		; execute command 0
+ 898               		call	SDdone		; de-selects the card
+ 899               		ld	a,c		; check the response
+ 900               		ret	nz		; error return
+ 901               		cp	#0x01		; check for '0000_0001' response
+ 902               		ret	z
+ 903               		ld	c,#ERR_DISK_IO
+ 904               		ret
+ 905               	*/
+ 906               	  	.even
+ 907               	SDgoidle:
+ 908               	/* delay stuff */
+ 909 031c 41FA FEC4 		lea	CMD0,%a0	/* command 0 	*/
+ 910 0320 6100 FF46 		bsr	cmd_R1
+ 911 0324 6100 FF7E 		bsr	SDdone		/* end command */
+ 912 0328 660C      		bne.s	sdgi9
+ 913 032a 0C00 0001 		cmp.b	#0x01,%d0	/* check for $01 response */
+ 914 032e 6706      		beq.s	sdgi9
+ 915 0330 203C 0000 		move.l	#ERR_DISK_IO,%d0	/* error return */
+ 915      0085 
+ 916               	/* NE condition is set in Flags */
+ 917               	sdgi9:
+ 918 0336 4E75      		rts
+ 919               		
+ 920               	
+ 921               	
+ 922               	/*
+ 923               	;------------------------------------------------------------------------
+ 924               	; SDinitcard	initialize a newly inserted SD card
+ 925               	;
+ 926               	;  Enter with:
+ 927               	;	nothing
+ 928               	;
+ 929               	;  Return with:
+ 930               	;	Zero flag reflects status
+ 931               	;
+ 932               	;  Errors:
+ 933               	;	ERR_TIMEOUT
+ 934               	;
+ 935               	;------------------------------------------------------------------------
+ 936               	.if nRETAIL
+ 937               	_SDinitcard::
+ 938               		push	iy
+ 939               		ld	iy,#instance
+ 940               		call	SDinitcard
+ 941               		pop	iy
+ 942               	
+ 943               		ld	l,c
+ 944               		ld	h,#0
+ 945               	.if DEBUG2
+68K GAS  dualsd.s 			page 21
+
+
+ 946               		ld	a,c
+ 947               		or	a,a
+ 948               		ret	z
+ 949               		out	(port_B),a
+ 950               	.endif
+ 951               		ret
+ 952               	.endif
+ 953               	
+ 954               	
+ 955               	SDinitcard:
+ 956               	; STRANGE SEQUENCE
+ 957               		call	SDselect		; select the unit
+ 958               		ret	nz
+ 959               		call	SDdone			; seems to help some cards
+ 960               	;---------
+ 961               	
+ 962               		ld	b,#256			; 256 clock transitions (16 bytes)
+ 963               		ld	a,#SD_CS+SD_DATA
+ 964               		call	SDsendclks		; send 16*8 = 128 clock pulses
+ 965               	
+ 966               		call	SDwaitrdy		; wait for card to go ready
+ 967               		ret	nz			; may time out
+ 968               	
+ 969               	; send the Reset (CMD0) command:
+ 970               		call	SDgoidle		; only 1 needed
+ 971               		ret	nz
+ 972               	
+ 973               		ld	hl,#CMD8
+ 974               		call	cmd_R1			; check card version
+ 975               		ret	nz
+ 976               		ld	a,c
+ 977               		and	#~0x01			; any of the error bits set?
+ 978               		jr	nz,inc8
+ 979               	.if DEBUG2
+ 980               		call	SDget			; v.2 card returns 4 more bytes
+ 981               		ld	h,c
+ 982               		call	SDget			; the R7 response
+ 983               		ld	l,c
+ 984               		push	hl
+ 985               		call	SDget			;   is R1 + 4 more bytes
+ 986               		ld	h,c
+ 987               		call	SDget			; **
+ 988               		ld	l,c
+ 989               		push	hl
+ 990               		ld	hl,#cmd8fmt
+ 991               		push	hl
+ 992               		.globl	_cprintf
+ 993               		call	_cprintf
+ 994               		pop	af
+ 995               		pop	af
+ 996               		pop	af
+ 997               		jr	cmd8end
+ 998               	cmd8fmt:	.asciz	"CMD8 v.2 response: 0x%04lx\n"
+ 999               	cmd8end:
+ 1000               	.else
+ 1001               		call	SDget			; v.2 card returns 4 more bytes
+ 1002               		call	SDget			; v.2 card returns 4 more bytes
+68K GAS  dualsd.s 			page 22
+
+
+ 1003               		call	SDget			; v.2 card returns 4 more bytes
+ 1004               		call	SDget			; v.2 card returns 4 more bytes
+ 1005               	.endif
+ 1006               	inc8:
+ 1007               		call	SDdone			; ignore any error
+ 1008               	
+ 1009               		ld	b,#0			; try 256 times to do the init
+ 1010               	inc10:
+ 1011               		push	bc			; save outer count
+ 1012               	
+ 1013               		ld	b,#200
+ 1014               	inc11:	call	_delay32		; wait awhile
+ 1015               		djnz	inc11
+ 1016               		ld	hl,#CMD55		; signal ACMD is next
+ 1017               		call	cmd_R1			; issue the command
+ 1018               		call	SDdone
+ 1019               		jr	z,inc12
+ 1020               	one_pop:
+ 1021               		pop	af
+ 1022               		ret				; NZ is set
+ 1023               	inc12:		; CMD55 is okay, so far
+ 1024               		and	a,#~01			; only 1 or 0 are okay
+ 1025               		ld	c,#ERR_DISK_IO
+ 1026               		jr	nz,one_pop		;exit with NZ ser
+ 1027               	
+ 1028               		ld	hl,#ACMD41		; set for App. command
+ 1029               		call	cmd_R1
+ 1030               		call	SDdone			; A is response to ACMD41
+ 1031               	
+ 1032               	      	pop	bc			; restore counter
+ 1033               		ld	c,#ERR_DISK_IO
+ 1034               	.if 0
+ 1035               		tst	a,#~01			; only 1 or 0 are okay
+ 1036               		ret	nz			; error
+ 1037               	
+ 1038               		tst	a,#01			; Idle, running init?
+ 1039               		jr	z,inc16			; Init is done	
+ 1040               	.else
+ 1041               		or	a,a			; test for 0
+ 1042               		jr	z,inc16			; if so, jump out of loop
+ 1043               	
+ 1044               		dec	a			; test for 1
+ 1045               		ret	nz
+ 1046               	.endif
+ 1047               	
+ 1048               		djnz	inc10			; doesn't touch any flags
+ 1049               	
+ 1050               	; NZ is known to be set from the TST a,#01 above
+ 1051               		ld	c,#ERR_TIMEOUT
+ 1052               		ret
+ 1053               	inc16:			; initialization is done
+ 1054               	
+ 1055               	; now find out SDSC or SDHC card
+ 1056               	 	ld	hl,#CMD58
+ 1057               		call	cmd_R1
+ 1058               		call	nz,SDdone
+ 1059               		ret	nz
+68K GAS  dualsd.s 			page 23
+
+
+ 1060               		call	SDget		; get hi-byte of OCR
+ 1061               		ld	a,c    		; bit 6 is HC bit
+ 1062               		ld	OCR-instance(IY),c
+ 1063               		and	#1<<6		; test bit 6
+ 1064               		ld	SDtype-instance(IY),#SDtypeSDHC
+ 1065               		jr	nz,inc17
+ 1066               		ld	SDtype-instance(IY),#SDtypeSDSC
+ 1067               	inc17:
+ 1068               		call	SDget			; byte 2
+ 1069               		ld	OCR+1-instance(IY),c
+ 1070               		call	SDget
+ 1071               		ld	OCR+2-instance(IY),c
+ 1072               		call	SDget
+ 1073               		ld	OCR+3-instance(IY),c
+ 1074               		call	SDdone
+ 1075               	
+ 1076               	.if USE_CRCs
+ 1077               		ld	hl,#CMD59		; checking ON
+ 1078               		call	cmd_R1
+ 1079               		call	SDdone
+ 1080               		ret	nz
+ 1081               	.endif
+ 1082               	
+ 1083               	; set the desired block length -- CMD16(512)
+ 1084               		ld	hl,#CMD16
+ 1085               		call	cmd_R1
+ 1086               		call	SDdone
+ 1087               		ret	nz
+ 1088               	
+ 1089               	;	mov	[SDstatus + di], al	; save SD card status
+ 1090               	;
+ 1091               	;; get the Card Specific Data (CSD) register contents
+ 1092               		ld	hl,#CMD9
+ 1093               		call	cmd_R1
+ 1094               		call	nz,SDdone
+ 1095               		ret	nz
+ 1096               	
+ 1097               		ld	hl,#CSD-instance
+ 1098               		push	iy
+ 1099               		pop	bc
+ 1100               		add	hl,bc
+ 1101               	
+ 1102               		ld	bc,#16		; get 16 bytes
+ 1103               		call	SDgetdata
+ 1104               		call	SDdone
+ 1105               		ret	nz
+ 1106               	
+ 1107               		ld	a,CSD-instance(IY)	; get CSD version no.
+ 1108               		and	#0xC0			; check hi-bits
+ 1109               		jr	z,csdv1
+ 1110               	; CSD is version 2.0
+ 1111               	csdv2:
+ 1112               		ld	de,#-9			; CSD+16 in HL
+ 1113               		add	hl,de			; CSD+7 in HL
+ 1114               		ld	d,(hl)			; C_SIZE << 8
+ 1115               		inc	hl
+ 1116               		ld	e,(hl)
+68K GAS  dualsd.s 			page 24
+
+
+ 1117               		inc	hl
+ 1118               		ld	h,(hl)
+ 1119               		inc	h
+ 1120               		jr	nz,csv2a
+ 1121               		inc	de
+ 1122               	csv2a:	ld	l,#0			; have SIZE<<8
+ 1123               		ld	b,l
+ 1124               		jr	csdv1b			; go shift by 2 more
+ 1125               	; CSD is version 1.0
+ 1126               	csdv1:
+ 1127               		dec	hl			; point at CSD[15]
+ 1128               		ld	bc,#(49<<8)+47		; bits for MULT
+ 1129               		call	xbits
+ 1130               		push	de			; save MULT
+ 1131               		ld	bc,#(73<<8)+62		; C_SIZE bits
+ 1132               		call	xbits
+ 1133               		pop	hl
+ 1134               		ld	b,l			; shift factor to B
+ 1135               		ex	de,hl
+ 1136               		ld	de,#0			; DE:HL to be shifted
+ 1137               		inc	hl			; add 1 to the C_SIZE
+ 1138               	csdv1b:
+ 1139               		inc	b
+ 1140               		inc	b			; add 2 to the shift
+ 1141               	csdv1a:
+ 1142               		sla	l
+ 1143               		rl	h			; DWORD shift
+ 1144               		rl	e
+ 1145               		rl	d			; **
+ 1146               		djnz	csdv1a
+ 1147               	gotlbamax:
+ 1148               		ld	capacity+0-instance(IY),l
+ 1149               		ld	capacity+1-instance(IY),h
+ 1150               		ld	capacity+2-instance(IY),e
+ 1151               		ld	capacity+3-instance(IY),d
+ 1152               	
+ 1153               	;; get the Card ID Data (CID) register contents
+ 1154               		ld	hl,#CMD10
+ 1155               		call	cmd_R1
+ 1156               		call	nz,SDdone
+ 1157               		ret	nz
+ 1158               	
+ 1159               		ld	hl,#CID-instance
+ 1160               		push	iy
+ 1161               		pop	bc
+ 1162               		add	hl,bc
+ 1163               	
+ 1164               		ld	bc,#16		; get 16 bytes
+ 1165               		call	SDgetdata
+ 1166               		call	SDdone
+ 1167               		ret	nz
+ 1168               	
+ 1169               		ld	c,#NO_ERROR
+ 1170               		ret
+ 1171               	*/
+ 1172               		.even
+ 1173               	.if !RETAIL
+68K GAS  dualsd.s 			page 25
+
+
+ 1174               		.globl	SD_initcard
+ 1175               	SD_initcard:
+ 1176               		rts
+ 1177               	.endif
+ 1178               	SDinitcard:
+ 1179 0338 6100 FEE8 		bsr	SDselect
+ 1180 033c 6600 004C 		bne	sdi99		/* return on non-zero */
+ 1181 0340 6100 FF62 		bsr	SDdone
+ 1182               	#------------
+ 1183 0344 323C 00FF 		move.w	#255,%d1
+ 1184 0348 7005      		move.l	#SD_CS+SD_DATA,%d0
+ 1185 034a 6100 FF4A 		bsr	SDsendclks	/* put out 128 clock transistions */
+ 1186               	
+ 1187 034e 6100 FFA2 		bsr	SDwaitrdy
+ 1188 0352 6600 0036 		 bne	sdi99
+ 1189               	
+ 1190               	/* send the Reset (CMD0) command */
+ 1191 0356 6100 FFC4 		bsr	SDgoidle
+ 1192 035a 6600 002E 		 bne	sdi99
+ 1193               	
+ 1194 035e 41FA FE88 		lea	CMD8,%a0
+ 1195 0362 6100 FF04 		bsr	cmd_R1
+ 1196 0366 6600 0022 		 bne	sdi99
+ 1197 036a 0200 FFFE 		and.b	#~01,%d0
+ 1198 036e 6600 0012 		 bne	inc8
+ 1199 0372 6100 FEBE 		bsr	SDget
+ 1200 0376 6100 FEBA 		bsr	SDget
+ 1201 037a 6100 FEB6 		bsr	SDget
+ 1202 037e 6100 FEB2 		bsr	SDget
+ 1203               	inc8:
+ 1204 0382 6100 FF20 		bsr	SDdone
+ 1205               	
+ 1206               	inc10:
+ 1207               	
+ 1208               	inc11:
+ 1209               	
+ 1210               	
+ 1211               	sdi98:
+ 1212 0386 6100 FF1C 		bsr	SDdone	
+ 1213               	sdi99:
+ 1214 038a 4E75      		rts
+ 1215               	
+ 1216               	
+ 1217               	
+ 1218               	
+ 1219               		.end
+68K GAS  dualsd.s 			page 26
+
+
+DEFINED SYMBOLS
+                            *ABS*:000109a0 CPU
+                            *ABS*:00000001 RETAIL
+            allide.s:23     *ABS*:00000001 _allide_s
+            allide.s:27     *ABS*:00000008 max_disk
+            allide.s:28     *ABS*:00000002 max_floppy
+                            *COM*:00000020 disk_table
+            allide.s:33     *ABS*:00000000 disk_ops_o
+            allide.s:34     *ABS*:00000004 disk_lba_o
+            allide.s:35     *ABS*:00000008 disk_type_o
+            allide.s:36     *ABS*:00000009 disk_port_o
+            allide.s:37     *ABS*:0000000a disk_slave_o
+            allide.s:39     *ABS*:0000000b disk_status_o
+            allide.s:40     *ABS*:0000000c disk_geom_o
+            allide.s:53     *ABS*:00000001 ide_a0_line
+            allide.s:54     *ABS*:00000002 ide_a1_line
+            allide.s:55     *ABS*:00000004 ide_a2_line
+            allide.s:65     *ABS*:00000000 ide_cs0_line
+            allide.s:66     *ABS*:00000008 ide_cs1_line
+            allide.s:77     *ABS*:00000000 ide_data
+            allide.s:78     *ABS*:00000001 ide_err
+            allide.s:79     *ABS*:00000002 ide_sec_cnt
+            allide.s:80     *ABS*:00000003 ide_sector
+            allide.s:81     *ABS*:00000004 ide_cyl_lsb
+            allide.s:82     *ABS*:00000005 ide_cyl_msb
+            allide.s:83     *ABS*:00000006 ide_head
+            allide.s:84     *ABS*:00000007 ide_command
+            allide.s:85     *ABS*:00000007 ide_status
+            allide.s:87     *ABS*:0000000e ide_control
+            allide.s:88     *ABS*:0000000e ide_astatus
+            allide.s:89     *ABS*:0000000f ide_address
+            allide.s:91     *ABS*:00000008 ide_data_16
+            allide.s:92     *ABS*:00000009 ide_dma_16
+            allide.s:96     *ABS*:00000010 ide_cmd_recal
+            allide.s:97     *ABS*:00000020 ide_cmd_read
+            allide.s:98     *ABS*:00000030 ide_cmd_write
+            allide.s:99     *ABS*:00000091 ide_cmd_init
+            allide.s:100    *ABS*:000000ec ide_cmd_id
+            allide.s:101    *ABS*:000000ef ide_cmd_set_feature
+            allide.s:102    *ABS*:000000e0 ide_cmd_spindown
+            allide.s:103    *ABS*:000000e1 ide_cmd_spinup
+            allide.s:106    *ABS*:00000001 ide_fea_8bit
+            allide.s:107    *ABS*:00000081 ide_fea_16bit
+             error.s:24     *ABS*:00000000 NO_ERROR
+             error.s:28     *ABS*:00000001 ERR_NOT_YET
+             error.s:32     *ABS*:00000041 ERR_UNKNOWN
+             error.s:33     *ABS*:00000042 ERR_UNIT_NO
+             error.s:34     *ABS*:00000043 ERR_METHOD
+             error.s:35     *ABS*:00000044 ERR_ADDRESS
+             error.s:36     *ABS*:00000045 ERR_DECODE
+             error.s:37     *ABS*:00000046 ERR_CAPACITY
+             error.s:38     *ABS*:00000047 ERR_NO_MEDIA
+             error.s:39     *ABS*:00000048 ERR_WRONG_MEDIA
+             error.s:40     *ABS*:00000049 ERR_WRITE_PROT
+             error.s:42     *ABS*:00000081 ERR_NO_PROTO
+             error.s:43     *ABS*:00000082 ERR_NO_MEMORY
+             error.s:44     *ABS*:00000083 ERR_NO_UNIT
+68K GAS  dualsd.s 			page 27
+
+
+             error.s:45     *ABS*:00000084 ERR_SIO_BAUD
+             error.s:46     *ABS*:00000085 ERR_DISK_IO
+             error.s:47     *ABS*:00000086 ERR_TIMEOUT
+             error.s:48     *ABS*:00000087 ERR_CRC16
+             error.s:50     *ABS*:000000f1 CATASTROPHE_HEAP
+             error.s:51     *ABS*:000000f2 DRIVE_TRANSFER_NOT_SET
+            dualsd.s:27     *ABS*:00000001 USE_CRCs
+            dualsd.s:29     *ABS*:00000008 Dual_SD_port
+            dualsd.s:31     *ABS*:00000004 arg1
+            dualsd.s:32     *ABS*:00000008 arg2
+            dualsd.s:33     *ABS*:0000000c arg3
+            dualsd.s:34     *ABS*:00000010 arg4
+            dualsd.s:36     *ABS*:00000008 buffer
+            dualsd.s:38     *ABS*:00000000 SD_operation
+            dualsd.s:39     *ABS*:00000001 SD_select
+            dualsd.s:67     *ABS*:00000001 RECAL
+            dualsd.s:82     .text:00000000 dsd_reset
+            dualsd.s:106    .text:00000048 reset1
+            dualsd.s:103    .text:00000046 reset10
+            dualsd.s:358    .text:00000180 ide_wait_not_busy
+            dualsd.s:122    .text:00000078 reset2
+            dualsd.s:119    .text:00000076 reset20
+            dualsd.s:131    .text:0000008c reset3
+            dualsd.s:152    .text:0000008e dsd_read_id
+            dualsd.s:154    .text:0000008e dsd_info
+            dualsd.s:182    .text:00000096 short_info
+            dualsd.s:187    .text:000000a2 get_error_status
+            dualsd.s:197    .text:000000be read_id_error
+            dualsd.s:218    .text:000000c0 dsd_read
+            dualsd.s:248    .text:000000fe read_error
+            dualsd.s:389    .text:000001b4 wr_lba
+            dualsd.s:374    .text:0000019a ide_wait_drq
+            dualsd.s:240    .text:000000f2 read_loop
+            dualsd.s:268    .text:00000100 dsd_verify
+            dualsd.s:296    .text:0000013c verify_error
+            dualsd.s:289    .text:0000012e verify_loop
+            dualsd.s:318    .text:0000013e dsd_write
+            dualsd.s:347    .text:0000017e write_error
+            dualsd.s:340    .text:00000170 write_loop
+            dualsd.s:360    .text:00000182 wait_not_busy
+            dualsd.s:376    .text:0000019c wait_drq
+            dualsd.s:417    *ABS*:00000000 SDtypeUnknown
+            dualsd.s:418    *ABS*:00000001 SDtypeMMC
+            dualsd.s:419    *ABS*:00000002 SDtypeSDSC
+            dualsd.s:420    *ABS*:00000003 SDtypeSDHC
+            dualsd.s:421    *ABS*:00000004 SDtypeSDXC
+            dualsd.s:425    *ABS*:00000001 SD_DATA
+            dualsd.s:426    *ABS*:00000002 SD_CLK
+            dualsd.s:427    *ABS*:00000004 SD_CS
+            dualsd.s:428    *ABS*:00000010 SD_WP
+            dualsd.s:429    *ABS*:00000020 SD_CD
+            dualsd.s:430    *ABS*:00000005 bit_SD_CD
+            dualsd.s:434    *ABS*:00000001 ST_UNIT
+            dualsd.s:435    *ABS*:00000004 ST_WP0
+            dualsd.s:436    *ABS*:00000008 ST_WP1
+            dualsd.s:437    *ABS*:00000010 ST_CD0
+            dualsd.s:438    *ABS*:00000020 ST_CD1
+68K GAS  dualsd.s 			page 28
+
+
+            dualsd.s:439    *ABS*:00000040 ST_IEN
+            dualsd.s:440    *ABS*:00000080 ST_CHANGE
+            dualsd.s:441    *ABS*:00000040 ST_IPEND0
+            dualsd.s:442    *ABS*:00000080 ST_IPEND1
+            dualsd.s:446    .text:000001e2 CMD0
+            dualsd.s:452    .text:000001e8 CMD8
+            dualsd.s:458    .text:000001ee CMD9
+            dualsd.s:464    .text:000001f4 CMD10
+            dualsd.s:470    .text:000001fa CMD16
+            dualsd.s:476    .text:00000200 CMD55
+            dualsd.s:482    .text:00000206 ACMD41
+            dualsd.s:488    .text:0000020c CMD58
+            dualsd.s:495    .text:00000212 CMD59
+            dualsd.s:503    *ABS*:00000040 CMD17_read
+            dualsd.s:504    *ABS*:00000040 CMD24_write
+            dualsd.s:520    .text:00000218 SDunit
+            dualsd.s:542    .text:00000222 SDselect
+            dualsd.s:552    .text:0000022e select9
+            dualsd.s:569    .text:00000232 SDget
+            dualsd.s:579    .text:00000242 SDget2
+            dualsd.s:574    .text:00000238 SDget1
+            dualsd.s:605    .text:0000024e SDput
+            dualsd.s:609    .text:00000252 SDput1
+            dualsd.s:668    .text:00000268 cmd_R1
+            dualsd.s:689    .text:00000290 cmdr19
+            dualsd.s:673    .text:00000272 cmdr11
+            dualsd.s:681    .text:0000027c cmdr13
+            dualsd.s:708    .text:00000296 SDsendclks
+            dualsd.s:733    .text:000002a4 SDdone
+            dualsd.s:790    .text:000002b8 SDcmdset
+            dualsd.s:808    .text:000002da cms4
+            dualsd.s:804    .text:000002d4 cms2
+            dualsd.s:856    .text:000002f2 SDwaitrdy
+            dualsd.s:869    .text:00000316 sdwr9
+            dualsd.s:862    .text:00000302 sdwr1
+            dualsd.s:907    .text:0000031c SDgoidle
+            dualsd.s:917    .text:00000336 sdgi9
+            dualsd.s:1178   .text:00000338 SDinitcard
+            dualsd.s:1213   .text:0000038a sdi99
+            dualsd.s:1203   .text:00000382 inc8
+            dualsd.s:1206   .text:00000386 inc10
+            dualsd.s:1208   .text:00000386 inc11
+            dualsd.s:1211   .text:00000386 sdi98
+
+UNDEFINED SYMBOLS
+BOARD_BASE_IO
+dual_ide_A
+usec_delay
+usec16
+table7

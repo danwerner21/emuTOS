@@ -1,0 +1,234 @@
+68K GAS  beetle.s 			page 1
+
+
+   1               	/* beetle.s --	assembly language interface for the debugger  */
+   2               	/*
+   3               		Copyright (C) 2011,2012 John R. Coffman.
+   4               		Licensed for hobbyist use on the N8VEM baby M68k CPU board.
+   5               	***********************************************************************
+   6               	
+   7               	    This program is free software: you can redistribute it and/or modify
+   8               	    it under the terms of the GNU General Public License as published by
+   9               	    the Free Software Foundation, either version 3 of the License, or
+  10               	    (at your option) any later version.
+  11               	
+  12               	    This program is distributed in the hope that it will be useful,
+  13               	    but WITHOUT ANY WARRANTY; without even the implied warranty of
+  14               	    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  15               	    GNU General Public License for more details.
+  16               	
+  17               	    You should have received a copy of the GNU General Public License
+  18               	    in the file COPYING in the distribution directory along with this
+  19               	    program.  If not, see <http://www.gnu.org/licenses/>.
+  20               	
+  21               	**********************************************************************/
+  22               	
+  23               		.globl	state
+  24               		.globl	breakpoint
+  25               		.globl	Trace
+  26               		.globl	Go
+  27               	
+  28               		.bss
+  29               	/* array that holds the machine state; see 'debug.h' */
+  30               	state:
+  31 0000 0000 0000 	s_d:	.ds.l	8	/* 8 data registers */
+  31      0000 0000 
+  31      0000 0000 
+  31      0000 0000 
+  31      0000 0000 
+  32 0020 0000 0000 	s_a:	.ds.l	7	/* 7 address registers */
+  32      0000 0000 
+  32      0000 0000 
+  32      0000 0000 
+  32      0000 0000 
+  33 003c 0000 0000 	s_ssp:	.ds.l	1	/* s_a[7] is the SSP (MSP) */
+  34 0040 0000 0000 	s_usp:	.ds.l	1	/* the User Stack Pointer, USP */
+  35 0044 0000 0000 	s_pc:	.ds.l	1	/* program counter (next instruction) */
+  36 0048 0000      	s_frame: .ds.w	1	/* stack frame type (should be zero) */
+  37 004a 0000      	s_sr:	.ds.w	1	/* SR -- status register (full) */
+  38               	.if CPU>68010
+  39               	s_isp:	.ds.l	1	/* ISP for the debugger */
+  40               	s_msp:	.ds.l	1	/* MSP explicitly */
+  41               	.endif
+  42               	
+  43               	
+  44               	trace_count:		/* was popped to D0 */
+  45               	trace_save:
+  46 004c 0000 0000 		.ds.l	15	/* 8 data + 7 address registers */
+  46      0000 0000 
+  46      0000 0000 
+  46      0000 0000 
+68K GAS  beetle.s 			page 2
+
+
+  46      0000 0000 
+  47 0088 0000 0000 	t_ssp:	.ds.l	1	/* SSP for debugger */
+  48               		
+  49               	
+  50               	TRACE_BIT	=	0x8000	/* T1 bit on 68020 */
+  51               	TRACE_MASK	=	0xC000	/* masks T1/T0 bits on 68020 */
+  52               	SUPV_BIT	=	0x2000
+  53               	IPL_BITS	=	0x0700
+  54               	
+  55               	X_BIT		=	0b10000
+  56               	N_BIT		=	0b01000
+  57               	Z_BIT		=	0b00100
+  58               	V_BIT		=	0b00010
+  59               	C_BIT		=	0b00001
+  60               	
+  61               		.text
+  62               	Trace:
+  63 0000 0079 8000 		or.w	#TRACE_BIT,s_sr		/* set Trace (T1) bit */
+  63      0000 0000 
+  64 0008 21FC 0000 		move.l	#trace_trap,4*9		/* set to receive trap */
+  64      0000 0024 
+  65               	Go:
+  66 0010 21FC 0000 		move.l	#breakpoint_trap,4*4	/* set to receive breakpoint trap */
+  66      0000 0010 
+  67               	
+  68 0018 4EB9 0000 		jsr	install_breaks		/* install all breakpoints */
+  68      0000 
+  69               	
+  70 001e 205F      		move.l	(%sp)+,%a0		/* save return in A0 */
+  71 0020 201F      		move.l	(%sp)+,%d0		/* get trace count in D0 */
+  72               	 /* the trace_count is in D0, and will be the function return */
+  73 0022 48F9 FFFF 		movem.l	%d0-%d7/%a0-%a7,trace_save	/* save all regs */
+  73      0000 0000 
+  74               	
+  75               	dispatch_user:
+  76 002a 3039 0000 		move.w	s_frame,%d0		/* see if the frame is valid */
+  76      0000 
+  77 0030 6B08      		bmi.s	du0
+  78               	
+  79               	/* frame is valid, restore the stack pointers */
+  80               	.if 0 /*CPU>68010*/
+  81               		move.l	s_msp,%d1		/* explicit restore of MSP */
+  82               		movec	%d1,%msp
+  83               		move.l	s_isp,%d1		/* explicit restore of ISP */
+  84               		movec	%d1,%isp
+  85               	.endif
+  86 0032 2E79 0000 		move.l	s_ssp,%sp		/* set SSP */
+  86      0000 
+  87 0038 6002      		br.s	du1
+  88               	du0:
+  89 003a 7000      		move.l	#0,%d0			/* frame was not created by trap or breakpoint */
+  90               	/* continue the state restore */
+  91               	du1:
+  92 003c 2279 0000 		move.l	s_usp,%a1		/* set User USP */
+  92      0000 
+  93 0042 4E61      		move.l	%a1,%usp		/* */
+  94               	
+68K GAS  beetle.s 			page 3
+
+
+  95               	/* create the RTE frame */
+  96               	.if CPU>=68010
+  97               		move.w	%d0,-(%sp)		/* RTE frame type */
+  98               	.endif
+  99 0044 2F39 0000 		move.l	s_pc,-(%sp)		/* push User resume PC */
+  99      0000 
+ 100 004a 3F39 0000 		move.w	s_sr,-(%sp)
+ 100      0000 
+ 101 0050 4CF9 7FFF 		movem.l	state,%d0-%d7/%a0-%a6	/* restore User register state */
+ 101      0000 0000 
+ 102 0058 4E73      		rte		  		/* resume User program */
+ 103               	
+ 104               	
+ 105               	
+ 106               	trace_trap:
+ 107 005a 53B9 0000 		sub.l	#1,trace_count		/* count the instruction */
+ 107      0000 
+ 108 0060 670C      		beq.s	trace_done
+ 109 0062 4E73      		rte				/* count not expired */
+ 110               	
+ 111               	breakpoint_trap:
+ 112 0064 13FC 0001 		move.b	#1,break_taken		/* flag breakpoint */
+ 112      0000 0000 
+ 113 006c 6006      		bra.s	common_reentry
+ 114               	
+ 115               	trace_done:
+ 116 006e 4239 0000 		clr.b	break_taken		/* flag no breakpoint */
+ 116      0000 
+ 117               	common_reentry:
+ 118 0074 48F9 7FFF 		movem.l	%d0-%d7/%a0-%a6,state	/* save all registers */
+ 118      0000 0000 
+ 119 007c 301F      		move.w	(%sp)+,%d0		/* grab the SR */
+ 120 007e 0240 3FFF 		and.w	#~TRACE_MASK,%d0	/* clear the T1/T0 bits */
+ 121 0082 33C0 0000 		move.w	%d0,s_sr		/* save the program status */
+ 121      0000 
+ 122 0088 23DF 0000 		move.l	(%sp)+,s_pc		/* save the User resume point */
+ 122      0000 
+ 123               	.if CPU>=68010
+ 124               		move.w	(%sp)+,s_frame		/* save interrupt frame word */
+ 125               	.else
+ 126 008e 4279 0000 		clr.w	s_frame			/* or mark as valid so SSP is restored */
+ 126      0000 
+ 127               	.endif
+ 128 0094 23CF 0000 		move.l	%sp,s_ssp		/* save user SSP (ISP) */
+ 128      0000 
+ 129               	.if CPU>68010
+ 130               		movec	%isp,%d0		/* save the ISP */
+ 131               		move.l	%d0,s_isp
+ 132               		movec	%msp,%d0		/* save the MSP */
+ 133               		move.l	%d0,s_msp
+ 134               	.endif
+ 135 009a 4E69      		move.l	%usp,%a1		/* save USP */
+ 136 009c 23C9 0000 		move.l	%a1,s_usp
+ 136      0000 
+ 137               	
+ 138 00a2 4CF9 FFFF 		movem.l	trace_save,%d0-%d7/%a0-%a7	/* restore Trace call state */
+ 138      0000 0000 
+68K GAS  beetle.s 			page 4
+
+
+ 139 00aa 598F      		sub.l	#4,%sp			/* push the count argument */
+ 140 00ac 2F08      		move.l	%a0,-(%sp)		/* push the return address */
+ 141               	
+ 142 00ae 4EB9 0000 		jsr	remove_breaks
+ 142      0000 
+ 143               	
+ 144 00b4 4E75      		rts
+ 145               	
+ 146               	
+ 147               		.end
+68K GAS  beetle.s 			page 5
+
+
+DEFINED SYMBOLS
+                            *ABS*:000109a0 CPU
+                            *ABS*:00000001 RETAIL
+            beetle.s:30     .bss:00000000 state
+            beetle.s:62     .text:00000000 Trace
+            beetle.s:65     .text:00000010 Go
+            beetle.s:31     .bss:00000000 s_d
+            beetle.s:32     .bss:00000020 s_a
+            beetle.s:33     .bss:0000003c s_ssp
+            beetle.s:34     .bss:00000040 s_usp
+            beetle.s:35     .bss:00000044 s_pc
+            beetle.s:36     .bss:00000048 s_frame
+            beetle.s:37     .bss:0000004a s_sr
+            beetle.s:44     .bss:0000004c trace_count
+            beetle.s:45     .bss:0000004c trace_save
+            beetle.s:47     .bss:00000088 t_ssp
+            beetle.s:50     *ABS*:00008000 TRACE_BIT
+            beetle.s:51     *ABS*:0000c000 TRACE_MASK
+            beetle.s:52     *ABS*:00002000 SUPV_BIT
+            beetle.s:53     *ABS*:00000700 IPL_BITS
+            beetle.s:55     *ABS*:00000010 X_BIT
+            beetle.s:56     *ABS*:00000008 N_BIT
+            beetle.s:57     *ABS*:00000004 Z_BIT
+            beetle.s:58     *ABS*:00000002 V_BIT
+            beetle.s:59     *ABS*:00000001 C_BIT
+            beetle.s:106    .text:0000005a trace_trap
+            beetle.s:111    .text:00000064 breakpoint_trap
+            beetle.s:75     .text:0000002a dispatch_user
+            beetle.s:88     .text:0000003a du0
+            beetle.s:91     .text:0000003c du1
+            beetle.s:115    .text:0000006e trace_done
+            beetle.s:117    .text:00000074 common_reentry
+
+UNDEFINED SYMBOLS
+breakpoint
+install_breaks
+break_taken
+remove_breaks

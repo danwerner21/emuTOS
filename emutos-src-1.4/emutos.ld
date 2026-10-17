@@ -20,7 +20,10 @@ OUTPUT_FORMAT(binary)
 #if !EMUTOS_LIVES_IN_RAM
 
 /* The ROM address depends on the target */
-#if defined(MACHINE_AMIGA)
+#if defined(MACHINE_MINI68K)
+/* Loaded into RAM by the Mini-M68k BIOS, then used as ROM */
+# define ROM_ORIGIN MINI68K_LOAD_ADDRESS
+#elif defined(MACHINE_AMIGA)
 # define ROM_ORIGIN 0x00fc0000
 #elif defined(TARGET_CART)
 # define ROM_ORIGIN 0x00fa0000
@@ -34,7 +37,11 @@ OUTPUT_FORMAT(binary)
  * Then our padding tool will eventually report an overflow, with a better
  * diagnostic message than the linker.
  */
-#define ROM_LENGTH 1M /* Maximum size before I/O area */
+#if defined(MACHINE_MINI68K)
+# define ROM_LENGTH (MINI68K_RAM_TOP - MINI68K_LOAD_ADDRESS) /* Up to top of RAM */
+#else
+# define ROM_LENGTH 1M /* Maximum size before I/O area */
+#endif
 
 #endif /* !EMUTOS_LIVES_IN_RAM */
 
@@ -43,7 +50,11 @@ OUTPUT_FORMAT(binary)
  */
 MEMORY
 {
+#if defined(MACHINE_MINI68K)
+    stram : ORIGIN = 0x00000000, LENGTH = MINI68K_LOAD_ADDRESS
+#else
     stram : ORIGIN = 0x00000000, LENGTH = 14M
+#endif
 #if !EMUTOS_LIVES_IN_RAM
     rom : ORIGIN = ROM_ORIGIN, LENGTH = ROM_LENGTH
 #endif

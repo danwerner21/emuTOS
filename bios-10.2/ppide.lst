@@ -1,0 +1,1019 @@
+68K GAS  ppide.s 			page 1
+
+
+   1               	#;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+   2               	# PPIDE.S -- Parallel Port IDE driver
+   3               	#;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+   4               	#** Updated 1-Jul-2010 Max Scane - Added PPIDE driver and conditionals
+   5               	#
+   6               	#   Copyright (C) 2010 John R. Coffman.  All rights reserved.
+   7               	#   Provided for hobbyist use on the N8VEM SBC-188 board.
+   8               	#
+   9               	#   (modified from Max Scane's driver for the Z80)
+  10               	#   (modified from the SBC-188 source for the MC68000)
+  11               	#;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  12               	.include	"mfpic.s"
+   1               	#  mfpic.s
+   2               	/*
+   3               		Copyright (C) 2011 John R. Coffman.
+   4               		Licensed for hobbyist use on the N8VEM baby M68k CPU board.
+   5               	***********************************************************************
+   6               	
+   7               	    This program is free software: you can redistribute it and/or modify
+   8               	    it under the terms of the GNU General Public License as published by
+   9               	    the Free Software Foundation, either version 3 of the License, or
+  10               	    (at your option) any later version.
+  11               	
+  12               	    This program is distributed in the hope that it will be useful,
+  13               	    but WITHOUT ANY WARRANTY; without even the implied warranty of
+  14               	    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  15               	    GNU General Public License for more details.
+  16               	
+  17               	    You should have received a copy of the GNU General Public License
+  18               	    in the file COPYING in the distribution directory along with this
+  19               	    program.  If not, see <http://www.gnu.org/licenses/>.
+  20               	
+  21               	**********************************************************************/
+  22               	.ifndef _mfpic_s
+  23               	_mfpic_s 	=	1
+  24               	
+  25               	# Z80 port address of MF/PIC board (required)
+  26               	mf_pic		=	0x40
+  27               	
+  28               	# Mini-M68k I/O address base
+  29               	BOARD_BASE_IO	=	0xFFFF8000
+  30               	
+  31               	# board base address:
+  32               	mfpic_base      =       BOARD_BASE_IO + mf_pic
+  33               	
+  34               	mf_sio          =       mfpic_base + 8
+  35               	mf_ppi          =       mfpic_base + 4
+  36               	mf_rtc          =       mfpic_base + 3
+  37               	mf_cfg          =       mfpic_base + 2
+  38               	mf_202          =       mfpic_base + 0
+  39               	
+  40               	
+  41               	.endif
+  42               	
+  43               	
+  13               	#-----------------------------------------------------------------------------
+  14               	.include	"ppi.s"
+68K GAS  ppide.s 			page 2
+
+
+   1               	#  ppi.s
+   2               	/*
+   3               		Copyright (C) 2011 John R. Coffman.
+   4               		Licensed for hobbyist use on the N8VEM baby M68k CPU board.
+   5               	***********************************************************************
+   6               	
+   7               	    This program is free software: you can redistribute it and/or modify
+   8               	    it under the terms of the GNU General Public License as published by
+   9               	    the Free Software Foundation, either version 3 of the License, or
+  10               	    (at your option) any later version.
+  11               	
+  12               	    This program is distributed in the hope that it will be useful,
+  13               	    but WITHOUT ANY WARRANTY; without even the implied warranty of
+  14               	    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  15               	    GNU General Public License for more details.
+  16               	
+  17               	    You should have received a copy of the GNU General Public License
+  18               	    in the file COPYING in the distribution directory along with this
+  19               	    program.  If not, see <http://www.gnu.org/licenses/>.
+  20               	
+  21               	**********************************************************************/
+  22               	#
+  23               	.ifndef	_ppi_s
+  24               	_ppi_s		=	1
+  25               	.include  "mfpic.s"
+  26               	############################################################
+  27               	
+  28               	# offsets from the base port address
+  29               	portA_o		=	0
+  30               	portB_o		=	1
+  31               	portC_o		=	2
+  32               	portCTRL_o	=	3
+  33               	
+  34               	# absolute port addresses
+  35               	portA		=	mf_ppi + portA_o
+  36               	portB		=	mf_ppi + portB_o
+  37               	portC		=	mf_ppi + portC_o
+  38               	portCTRL	=	mf_ppi + portCTRL_o
+  39               	
+  40               	.endif
+  41               	
+  42               	
+  15               	#-----------------------------------------------------------------------------
+  16               	
+  17               	# PPI control bytes for read and write to IDE drive
+  18               	
+  19               	rd_ide_8255	=	0b10010010	/* ide_8255_ctl out, ide_8255_lsb/msb input */
+  20               	#rd_ide_8255	=	0x92
+  21               	wr_ide_8255	=	0b10000000	/* all three ports output */
+  22               	#wr_ide_8255	=	0x80
+  23               	
+  24               	
+  25               	.include "allide.s"
+   1               	#  allide.s
+   2               	/*
+   3               		Copyright (C) 2011 John R. Coffman.
+   4               		Licensed for hobbyist use on the N8VEM baby M68k CPU board.
+68K GAS  ppide.s 			page 3
+
+
+   5               	***********************************************************************
+   6               	
+   7               	    This program is free software: you can redistribute it and/or modify
+   8               	    it under the terms of the GNU General Public License as published by
+   9               	    the Free Software Foundation, either version 3 of the License, or
+  10               	    (at your option) any later version.
+  11               	
+  12               	    This program is distributed in the hope that it will be useful,
+  13               	    but WITHOUT ANY WARRANTY; without even the implied warranty of
+  14               	    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  15               	    GNU General Public License for more details.
+  16               	
+  17               	    You should have received a copy of the GNU General Public License
+  18               	    in the file COPYING in the distribution directory along with this
+  19               	    program.  If not, see <http://www.gnu.org/licenses/>.
+  20               	
+  21               	**********************************************************************/
+  22               	.ifndef _allide_s
+  23               	_allide_s 	=	1
+  24               	
+  25               	
+  26               	
+  27               	max_disk	=  8
+  28               	max_floppy	=  2
+  29               	
+  30               		.comm	disk_table,max_disk*4
+  31               	
+  32               	/* DISK structure offsets */
+  33               	disk_ops_o	=	0		/* operations dispatch ptr */
+  34               	disk_lba_o	=	4		/* LBA number of cylinders */
+  35               	disk_type_o	=	8		/* byte: disk type */
+  36               	disk_port_o	=	9		/* byte: I/O port */
+  37               	disk_slave_o	=	10		/* byte: MASTER=0, SLAVE=0x10 (IDE)
+  38               							SLAVE=0x01 (SD) */
+  39               	disk_status_o	=	11		/* byte: last h/w status */
+  40               	disk_geom_o	=	12		/* geometry longword */
+  41               	
+  42               	
+  43               	
+  44               	
+  45               	
+  46               	
+  47               	#ide control lines for use with ide_8255_ctl.  Change these 8
+  48               	#constants to reflect where each signal of the 8255 each of the
+  49               	#ide control signals is connected.  All the control signals must
+  50               	#be on the same port, but these 8 lines let you connect them to
+  51               	#whichever pins on that port.
+  52               	
+  53               	ide_a0_line	=	0x01		/* direct from 8255 to ide interface */
+  54               	ide_a1_line	=	0x02		/* direct from 8255 to ide interface */
+  55               	ide_a2_line	=	0x04		/* direct from 8255 to ide interface */
+  56               	.ifdef	rd_ide_8255
+  57               	/* for the PPIDE driver */
+  58               	ide_cs0_line	=	0x08		/* inverter between 8255 and ide interface */
+  59               	ide_cs1_line	=	0x10		/* inverter between 8255 and ide interface */
+  60               	ide_wr_line	=	0x20		/* inverter between 8255 and ide interface */
+  61               	ide_rd_line	=	0x40		/* inverter between 8255 and ide interface */
+68K GAS  ppide.s 			page 4
+
+
+  62               	ide_rst_line	=	0x80		/* inverter between 8255 and ide interface */
+  63               	.else
+  64               	/* for the DUALIDE driver */
+  65               	ide_cs0_line	=	0x00		/* at the base address */
+  66               	ide_cs1_line	=	0x08		/* at the base address + 8 */
+  67               	.endif
+  68               	
+  69               	#------------------------------------------------------------------
+  70               	# More symbolic constants... these should not be changed, unless of
+  71               	# course the IDE drive interface changes, perhaps when drives get
+  72               	# to 128G and the PC industry will do yet another kludge.
+  73               	
+  74               	#some symbolic constants for the ide registers, which makes the
+  75               	#code more readable than always specifying the address pins
+  76               	
+  77               	ide_data       	=	ide_cs0_line
+  78               	ide_err		=	ide_cs0_line + ide_a0_line
+  79               	ide_sec_cnt	=	ide_cs0_line + ide_a1_line
+  80               	ide_sector     	=	ide_cs0_line + ide_a1_line + ide_a0_line
+  81               	ide_cyl_lsb	=	ide_cs0_line + ide_a2_line
+  82               	ide_cyl_msb	=	ide_cs0_line + ide_a2_line + ide_a0_line
+  83               	ide_head       	=	ide_cs0_line + ide_a2_line + ide_a1_line
+  84               	ide_command	=	ide_cs0_line + ide_a2_line + ide_a1_line + ide_a0_line
+  85               	ide_status     	=	ide_cs0_line + ide_a2_line + ide_a1_line + ide_a0_line
+  86               	
+  87               	ide_control	=	ide_cs1_line + ide_a2_line + ide_a1_line
+  88               	ide_astatus	=	ide_cs1_line + ide_a2_line + ide_a1_line
+  89               	ide_address	=	ide_cs1_line + ide_a2_line + ide_a1_line + ide_a0_line
+  90               	.ifndef	rd_ide_8255
+  91               	ide_data_16	=	ide_cs1_line
+  92               	ide_dma_16	=	ide_cs1_line + ide_a0_line
+  93               	.endif
+  94               	
+  95               	#IDE Command Constants.  These should never change.
+  96               	ide_cmd_recal		=	0x10
+  97               	ide_cmd_read		=	0x20
+  98               	ide_cmd_write		=	0x30
+  99               	ide_cmd_init		=	0x91
+ 100               	ide_cmd_id     		=	0xEC
+ 101               	ide_cmd_set_feature	=	0xEF
+ 102               	ide_cmd_spindown	=	0xE0
+ 103               	ide_cmd_spinup		=	0xE1
+ 104               	
+ 105               	#Feature requests
+ 106               	ide_fea_8bit		=	0x01
+ 107               	ide_fea_16bit		=	0x81
+ 108               	
+ 109               	  /* end  allide.s */
+ 110               	.endif
+ 111               	#------------------------------------------------------------------
+ 112               	
+  26               	#-----------------------------------------------------------------------------
+  27               	
+  28               	
+  29               	arg1	=	4
+  30               	arg2	=	arg1+4
+  31               	arg3	=	arg2+4
+68K GAS  ppide.s 			page 5
+
+
+  32               	arg4	=	arg3+4
+  33               	
+  34               	
+  35               	buffer	= 	arg2
+  36               	
+  37               	
+  38               			.text
+  39               	#	
+  40               	#------------------------------------------------------------------------------------		
+  41               	# Parallel port IDE driver
+  42               	#	
+  43               	#
+  44               	#	
+  45               	
+  46               	
+  47               	
+  48               		.even
+  49               	# -----------------------------------------------------------------------------	
+  50               	#  ppide_read_id
+  51               	#  ppide_info		; equivalent
+  52               	# -----------------------------------------------------------------------------	
+  53               	# Read the 512 byte ID information from the attached drive
+  54               	#
+  55               	#	arg1	disk number  (D1)
+  56               	#	arg2	buffer or NULL	(A0)
+  57               	#	A1	disk table pointer
+  58               	#	A5	principal M68k I/O address of device
+  59               	#
+  60               	#-----------------------------------------------------------------------------
+  61               			.globl	ppide_info
+  62               	ppide_read_id:
+  63               	ppide_info:
+  64 0000 206F 0008 		move.l	(buffer,%sp),%a0		/* get buffer address */
+  65               	
+  66 0004 3008      		move	%a0,%d0				/* test for NULL */
+  67 0006 4A80      		tst.l	%d0
+  68 0008 6734      		beq.s	short_info			/* LBA & GEOM info only */
+  69               	
+  70 000a 6100 01DC 		bsr	ide_wait_not_busy	/* make sure drive is ready */
+  71 000e 6600 009E 		bne	error_return
+  72               	
+  73 0012 1229 000A 		move.b	(disk_slave_o,%a1),%d1	/* get slave byte */
+  74 0016 0201 0010 		and.b	#0x10,%d1		/* for safety */
+  75 001a 0001 00E0 		or.b	#0xE0,%d1		/* select LBA mode */
+  76 001e 103C 000E 		move.b	#ide_head,%d0		/* write to head register */
+  77 0022 6100 02B4 		bsr	ide_write
+  78               	
+  79 0026 103C 000F 		move.b	#ide_command,%d0
+  80 002a 323C 00EC 		move.w	#ide_cmd_id,%d1
+  81 002e 6100 02A8 		bsr	ide_write		/* ask the drive to read the ID */
+  82               	
+  83 0032 6100 01D8 		bsr	ide_wait_drq		/* wait until it's got the data */
+  84 0036 6600 0076 		bne	error_return
+  85               	
+  86 003a 6100 01F4 		bsr	read_data		/* get the data */
+  87               	
+  88               	short_info:
+68K GAS  ppide.s 			page 6
+
+
+  89 003e 2429 0004 		move.l	disk_lba_o(%a1),%d2		/* LBA info return */
+  90 0042 2F42 0004 		move.l	%d2,arg1(%sp)
+  91 0046 2429 000C 		move.l	disk_geom_o(%a1),%d2		/* geometry return */
+  92               	
+  93 004a 6000 0038 		bra	get_error_status
+  94               	
+  95               	
+  96               	
+  97               	# -----------------------------------------------------------------------------	
+  98               	#  ppide_read
+  99               	# -----------------------------------------------------------------------------	
+ 100               	#	;read a sector, specified by the 4 bytes in "lba",
+ 101               	#	;Return, acc is zero on success, non-zero for an error
+ 102               	#
+ 103               	#	arg1	disk number  (D1)
+ 104               	#	arg2	buffer	(A0)
+ 105               	#	A1	disk table pointer
+ 106               	#	D2	LBA address
+ 107               	#	D3	sector count (assumed to be 1)
+ 108               	#	A5	principal M68k I/O address of device
+ 109               	#
+ 110               	#
+ 111               	#-----------------------------------------------------------------------------
+ 112               			.globl	ppide_read
+ 113               	ppide_read:
+ 114 004e 206F 0008 		move.l	(buffer,%sp),%a0		/* get buffer address */
+ 115 0052 7005      		move.l	#5,%d0				/* error code */
+ 116 0054 B4A9 0004 		cmp.l	(disk_lba_o,%a1),%d2		/* check lba address */
+ 117 0058 6454      		bcc.s	read_error
+ 118               	
+ 119 005a 7004      		move.l	#4,%d0				/* error code */
+ 120 005c 0C83 0000 		cmp.l	#1,%d3
+ 120      0001 
+ 121 0062 664A      		bne.s	read_error			/* for now */
+ 122               	
+ 123 0064 6100 0182 		bsr	ide_wait_not_busy	/* make sure drive is ready */
+ 124 0068 6644      		bne.s	read_error			/* %D0 == -1 */
+ 125               	
+ 126 006a 6100 020A 		bsr	wr_lba			/* select device */
+ 127               	
+ 128 006e 103C 000F 		move.b	#ide_command,%d0
+ 129 0072 323C 0020 		move.w	#ide_cmd_read,%d1
+ 130 0076 6100 0260 		bsr	ide_write
+ 131               		
+ 132 007a 6100 0190 		bsr	ide_wait_drq		/* wait until it's got the data */
+ 133 007e 662E      		bne.s	read_error			/* %D0 == -1 */
+ 134               	
+ 135 0080 6100 01AE 		bsr	read_data		/* get the data */
+ 136               	
+ 137               	get_error_status:
+ 138 0084 6100 0162 		bsr	ide_wait_not_busy	/* make sure drive is ready */
+ 139 0088 6624      		bne.s	read_error			/* %D0 == -1 */
+ 140               	
+ 141 008a 103C 000F 		move.b	#ide_status,%d0
+ 142 008e 6100 0220 		bsr	ide_read
+ 143               	
+ 144 0092 0281 0000 		and.l	#1,%d1			/* check error bit */
+68K GAS  ppide.s 			page 7
+
+
+ 144      0001 
+ 145 0098 6712      		beq.s	exg_return
+ 146               		
+ 147 009a 103C 0009 		move.b	#ide_err,%d0
+ 148 009e 6100 0210 		bsr	ide_read
+ 149               	
+ 150 00a2 0281 0000 		and.l	#0xFF,%d1		/* mask to byte */
+ 150      00FF 
+ 151 00a8 0041 0800 		or.w	#0x800,%d1
+ 152               	
+ 153               	exg_return:
+ 154 00ac C340      		exg	%d1,%d0
+ 155               	error_return:
+ 156               	read_error:
+ 157 00ae 4E75      		rts
+ 158               	
+ 159               	good_return:
+ 160 00b0 4280      		clr.l	%d0
+ 161 00b2 4E75      		rts
+ 162               	
+ 163               	
+ 164               	# -----------------------------------------------------------------------------	
+ 165               	#  ppide_verify
+ 166               	# -----------------------------------------------------------------------------	
+ 167               	#	;read a sector, specified by the 4 bytes in "lba",
+ 168               	#	;Return, acc is zero on success, non-zero for an error
+ 169               	#
+ 170               	#	arg1	disk number  (D1)
+ 171               	#	A1	disk table pointer
+ 172               	#	D2	LBA address
+ 173               	#	D3	sector count (assumed to be 1)
+ 174               	#	A5	principal M68k I/O address of device
+ 175               	#
+ 176               	#
+ 177               	#-----------------------------------------------------------------------------
+ 178               		.even
+ 179               	
+ 180 00b4 6100 0132 		bsr	ide_wait_not_busy	/* make sure drive is ready */
+ 181 00b8 6600 FFF4 		bne	error_return
+ 182               	
+ 183 00bc 262E 0008 		move.l	8(%a6),%d3		/* logical block number */
+ 184 00c0 242E 000C 		move.l	12(%a6),%d2		/* master/slave */
+ 185 00c4 6100 01B0 		bsr	wr_lba			/* select device */
+ 186               	
+ 187 00c8 103C 000F 		move.b	#ide_command,%d0
+ 188 00cc 323C 0020 		move.w	#ide_cmd_read,%d1
+ 189 00d0 6100 0206 		bsr	ide_write
+ 190               		
+ 191 00d4 6100 0136 		bsr	ide_wait_drq		/* wait until it's got the data */
+ 192 00d8 6600 FFD4 		bne	error_return
+ 193               	
+ 194 00dc 6100 016C 		bsr	verify_data		/* get the data */
+ 195               	
+ 196 00e0 6000 FFA2 		bra	get_error_status
+ 197               	
+ 198               	
+ 199               	
+68K GAS  ppide.s 			page 8
+
+
+ 200               	
+ 201               	#-----------------------------------------------------------------------------
+ 202               	#  ppide_write
+ 203               	# -----------------------------------------------------------------------------	
+ 204               	#	;write a sector, specified by the 4 bytes in "lba",
+ 205               	#	;Return, acc is zero on success, non-zero for an error
+ 206               	#
+ 207               	#	arg1	disk number  (D1)
+ 208               	#	arg2	buffer	(A0)
+ 209               	#	A1	disk table pointer
+ 210               	#	D2	LBA address
+ 211               	#	D3	sector count (assumed to be 1)
+ 212               	#	A5	principal M68k I/O address of device
+ 213               	#
+ 214               	#
+ 215               	#-----------------------------------------------------------------------------
+ 216               			.globl	ppide_write
+ 217               	ppide_write:
+ 218 00e4 206F 0008 		move.l	(buffer,%sp),%a0		/* get buffer address */
+ 219 00e8 7005      		move.l	#5,%d0				/* error code */
+ 220 00ea B4A9 0004 		cmp.l	(disk_lba_o,%a1),%d2		/* check lba address */
+ 221 00ee 64BE      		bcc.s	read_error
+ 222               	
+ 223 00f0 7004      		move.l	#4,%d0				/* error code */
+ 224 00f2 0C83 0000 		cmp.l	#1,%d3
+ 224      0001 
+ 225 00f8 66B4      		bne.s	read_error			/* for now */
+ 226               	
+ 227 00fa 6100 00EC 		bsr	ide_wait_not_busy	/* make sure drive is ready */
+ 228 00fe 66AE      		bne.s	read_error			/* %D0 == -1 */
+ 229               	
+ 230 0100 6100 0174 		bsr	wr_lba			/* select device */
+ 231               	
+ 232 0104 103C 000F 		move.b	#ide_command,%d0
+ 233 0108 323C 0030 		move.w	#ide_cmd_write,%d1
+ 234 010c 6100 01CA 		bsr	ide_write
+ 235               	
+ 236 0110 6100 00FA 		bsr	ide_wait_drq		/* wait until it's got the data */
+ 237 0114 6600 FF98 		bne	error_return
+ 238               	
+ 239 0118 6100 0140 		bsr	write_data		/* put the data */
+ 240               	
+ 241 011c 6000 FF66 		bra	get_error_status
+ 242               	
+ 243               	
+ 244               	RECAL	=  1
+ 245               	
+ 246               	#-----------------------------------------------------------------------------
+ 247               	#--------ppide_reset-------------------------------------------------------
+ 248               	#
+ 249               	#	arg1	disk number  (D1)
+ 250               	#	A1	disk table pointer
+ 251               	#	A5	principal M68k I/O address of device
+ 252               	#
+ 253               	#   Returns D1 (in stack) mask of devices present (D0 == 0)
+ 254               	#   Error return if no devices on unit.
+ 255               	# -----------------------------------------------------------------------------	
+68K GAS  ppide.s 			page 9
+
+
+ 256               		.globl	ppide_reset
+ 257               	ppide_reset:
+ 258 0120 207C 0000 		move.l	#0,%a0			/* accumulate D1 mask here */
+ 258      0000 
+ 259               	
+ 260 0126 1B7C 0092 		move.b	#rd_ide_8255,portCTRL_o(%a5)	/* bsr set_ppi_rd */
+ 260      0003 
+ 261               	##	bsr.s	set_ppi_rd		/* setup for a read cycle */
+ 262               	
+ 263 012c 4E71      		nop
+ 264 012e 4E71      		nop
+ 265 0130 1B7C 0080 		move.b	#ide_rst_line,portC_o(%a5)	/* assert the RST line on the interface */
+ 265      0002 
+ 266               	
+ 267 0136 203C 0000 		move.l	#10000,%d0		/* half a second */
+ 267      2710 
+ 268 013c 4EB9 0000 		jsr	usec_delay		/* wait 10ms */
+ 268      0000 
+ 269               	
+ 270 0142 422D 0002 		clr.b	portC_o(%a5)
+ 271               	
+ 272 0146 203C 0000 		move.l	#10000,%d0		/* half a second */
+ 272      2710 
+ 273 014c 4EB9 0000 		jsr	usec_delay		/* wait 10ms */
+ 273      0000 
+ 274               	
+ 275 0152 2F02      		move.l	%d2,-(%sp)		/* save D2 */
+ 276 0154 7404      	        moveq #4, %d2                   /* some drives take a while to reset */
+ 277               	resetwait:
+ 278 0156 6100 0090 	        bsr     ide_wait_not_busy
+ 279 015a 51CA FFFA 	        dbra    %d2, resetwait
+ 280 015e 241F      		move.l	(%sp)+,%d2		/* restore D2 */
+ 281               	
+ 282 0160 103C 000F 		move.b	#ide_status,%d0
+ 283 0164 6100 014A 		bsr	ide_read		/* read status of drive 0 */
+ 284 0168 0C01 0050 		cmp.b	#0x50,%d1		/* check exact status bits */
+ 285 016c 661C      		bne.s	reset1
+ 286               	
+ 287               	.if RECAL
+ 288 016e 0829 0004 		btst	#4,(disk_slave_o,%a1)		/* test SLAVE bit */
+ 288      000A 
+ 289 0174 6612      		bne.s	reset10				/* branch if SLAVE */
+ 290 0176 103C 000F 		move.b	#ide_command,%d0	/* do a recalibrate of drive 0 */
+ 291 017a 123C 0010 		move.b	#ide_cmd_recal,%d1	/* do a recalibrate of the drive */
+ 292 017e 6100 0158 		bsr	ide_write
+ 293               		
+ 294 0182 6100 0064 		bsr	ide_wait_not_busy
+ 295 0186 6602      		bne.s	reset1
+ 296               	reset10:
+ 297               	.endif
+ 298 0188 5288      		add.l	#1,%a0				/* mark drive 0 present */
+ 299               	reset1:
+ 300 018a 123C 00F0 	       	move.b	#0b11110000,%d1
+ 301 018e 103C 000E 		move.b	#ide_head,%d0		/* select drive 1 */
+ 302 0192 6100 0144 		bsr	ide_write
+ 303               	
+ 304 0196 203C 0000 		move.l	#1000,%d0			/* delay 10 ms = 10,000 usec */
+68K GAS  ppide.s 			page 10
+
+
+ 304      03E8 
+ 305 019c 4EB9 0000 		jsr	usec_delay
+ 305      0000 
+ 306               	
+ 307 01a2 103C 000F 		move.b	#ide_status,%d0
+ 308 01a6 6100 0108 		bsr	ide_read		/* read status of drive 0 */
+ 309 01aa 0C01 0050 		cmp.b	#0x50,%d1		/* check exact status bits */
+ 310 01ae 661C      		bne.s	reset2
+ 311               	.if RECAL
+ 312 01b0 0829 0004 		btst	#4,(disk_slave_o,%a1)		/* test SLAVE bit */
+ 312      000A 
+ 313 01b6 6712      		beq.s	reset20				/* branch if SLAVE */
+ 314 01b8 103C 000F 		move.b	#ide_command,%d0	/* do a recalibrate of drive 0 */
+ 315 01bc 123C 0010 		move.b	#ide_cmd_recal,%d1	/* do a recalibrate of the drive */
+ 316 01c0 6100 0116 		bsr	ide_write
+ 317               		
+ 318 01c4 6100 0022 		bsr	ide_wait_not_busy
+ 319 01c8 6602      		bne.s	reset2
+ 320               	reset20:
+ 321               	.endif
+ 322 01ca 5488      		add.l	#2,%a0				/* mark drive 1 present */
+ 323               	reset2:
+ 324 01cc 123C 00E0 	       	move.b	#0b11100000,%d1
+ 325 01d0 103C 000E 		move.b	#ide_head,%d0		/* select drive 0 */
+ 326 01d4 6100 0102 		bsr	ide_write
+ 327               	
+ 328 01d8 2208      		move.l	%a0,%d1				/* move to D1 */
+ 329 01da 2F41 0004 		move.l	%d1,arg1(%sp)			/* save in stack */
+ 330 01de 4280      		clr.l	%d0
+ 331 01e0 4A01      		tst.b	%d1
+ 332 01e2 6602      		bne.s	reset3
+ 333 01e4 7001      		move.l	#1,%d0				/* error return */
+ 334               	reset3:
+ 335 01e6 4E75      		rts
+ 336               	
+ 337               	
+ 338               	
+ 339               	
+ 340               	#------------------------------------------------------------------------------
+ 341               	# IDE INTERNAL SUBROUTINES 
+ 342               	#------------------------------------------------------------------------------
+ 343               	
+ 344               	
+ 345               	#	
+ 346               	#----------------------------------------------------------------------------
+ 347               	#  Get Error code
+ 348               	#
+ 349               	#	;when an error occurs, we get bit 0 of A set from a call to ide_drq
+ 350               	#	;or ide_wait_not_busy (which read the drive's status register).  If
+ 351               	#	;that error bit is set, we should jump here to read the drive's
+ 352               	#	;explaination of the error, to be returned to the user.  If for
+ 353               	#	;some reason the error code is zero (shouldn't happen), we'll
+ 354               	#	;return 255, so that the main program can always depend on a
+ 355               	#	;return of zero to indicate success.
+ 356               	#
+ 357               	#  Exit with:
+ 358               	#	D0 contains exact status byte as read
+68K GAS  ppide.s 			page 11
+
+
+ 359               	#	D1 destroyed
+ 360               	#----------------------------------------------------------------------------
+ 361               	.if 0
+ 362               	get_err:
+ 363               		move.b	#ide_err,%d0
+ 364               		bsr	ide_read
+ 365               	
+ 366               		clr.l	%d0
+ 367               		or.b	%d1,%d0
+ 368               		bne.s	gerr2
+ 369               		sub.b	#1,%d0
+ 370               	gerr2:
+ 371               		rts
+ 372               	.endif
+ 373               	
+ 374               	
+ 375               	#-----------------------------------------------------------------------------
+ 376               	#  Wait for BUSY to be reset
+ 377               	#
+ 378               	#  Exit with:
+ 379               	#	D0 contains exact status byte as read
+ 380               	#	D1 destroyed
+ 381               	#
+ 382               	#------------------------------------------------------------------------------
+ 383               	ide_wait_not_busy:
+ 384 01e8 2F04      		move.l	%d4,-(%sp)
+ 385               	
+ 386 01ea 78FF      		move.l	#-1,%d4
+ 387               	wnb1:
+ 388 01ec 103C 000F 		move.b	#ide_status,%d0
+ 389 01f0 6100 00BE 		bsr	ide_read
+ 390               	
+ 391 01f4 1001      		move.b	%d1,%d0
+ 392 01f6 0A00 0040 		eor.b	#0x40,%d0		/* want busy==0, rdy==1 */
+ 393 01fa 0200 00C0 		and.b	#0xC0,%d0		/* mask off Busy(7) & Drdy(6) */
+ 394 01fe 57CC FFEC 		dbeq.w	%d4,wnb1		/* loop */
+ 395 0202 6602      		bne.s	wnb2
+ 396               	
+ 397 0204 4280      		clr.l	%d0			/* zero extend D0, set EQ (Z-bit) */
+ 398               	wnb2:
+ 399               	   /* return EQ if no timeout, NE if timeout */
+ 400 0206 281F      		move.l	(%sp)+,%d4
+ 401 0208 4A80      		tst.l	%d0
+ 402 020a 4E75      		rts
+ 403               	
+ 404               	
+ 405               		.even
+ 406               	#------------------------------------------------------------------------------
+ 407               	#	;Wait for the drive to be ready to transfer data (DRQ = data request)
+ 408               	#	;Returns the drive's status in Acc
+ 409               	#
+ 410               	#  Exit with:
+ 411               	#	D0 contains exact status byte as read
+ 412               	#	D1 destroyed
+ 413               	#
+ 414               	#------------------------------------------------------------------------------
+ 415               	ide_wait_drq:
+68K GAS  ppide.s 			page 12
+
+
+ 416 020c 2F04      		move.l	%d4,-(%sp)
+ 417               	
+ 418 020e 78FF      		move.l	#-1,%d4
+ 419               	wdrq1:
+ 420 0210 103C 000F 		move.b	#ide_status,%d0
+ 421 0214 6100 009A 		bsr	ide_read
+ 422               	
+ 423 0218 1001      		move.b	%d1,%d0
+ 424 021a 0A00 0008 		eor.b	#0x08,%d0		/* want busy==0, drq==1 */
+ 425 021e 0200 0088 		and.b	#0x88,%d0		/* mask off Busy(7) and DRQ(3) */
+ 426 0222 57CC FFEC 		dbeq.w	%d4,wdrq1
+ 427 0226 6602      		bne.s	wdrq2
+ 428               	
+ 429 0228 4280      		clr.l	%d0			/* zero extend D0 */
+ 430               	wdrq2:
+ 431 022a 281F      		move.l	(%sp)+,%d4
+ 432 022c 4A80      		tst.l	%d0
+ 433 022e 4E75      		rts
+ 434               	
+ 435               	.if 0
+ 436               	wdrq2a:
+ 437               		move.l	%d1,-(%sp)
+ 438               		pea	fmt2
+ 439               		jsr	cprintf
+ 440               		lea.l	8(%sp),%sp
+ 441               		br	wdrq2
+ 442               	
+ 443               	fmt2:
+ 444               		.asciz	"WDRQBusy: %hx\n"
+ 445               	.endif
+ 446               		.even
+ 447               	
+ 448               	
+ 449               	#------------------------------------------------------------------------------
+ 450               	# Read a sector of 512 bytes into memory at (A1)
+ 451               	#
+ 452               	#  Call with:
+ 453               	#	A0 -- pointer to the data block
+ 454               	#
+ 455               	#  Exit with:
+ 456               	#	A0 is updated
+ 457               	#	D0,D1 are destroyed
+ 458               	#
+ 459               	#-----------------------------------------------------------------------------
+ 460               	read_data:
+ 461 0230 2F02      		move.l	%d2,-(%sp)		/* save D2 */
+ 462               	
+ 463 0232 103C 0008 		move.b	#ide_data,%d0
+ 464 0236 343C 00FF 		move.w	#256-1,%d2		/* read 512 bytes */
+ 465               	rdblk2: 
+ 466 023a 6174      		bsr.s	ide_read
+ 467               	/*    Watch Out!  The buffer is byte aligned (68000 problem) */
+ 468 023c 10C1      		move.b	%d1,(%a0)+		/* store the first byte */
+ 469 023e E159      		rol.w	#8,%d1
+ 470 0240 10C1      		move.b	%d1,(%a0)+		/* store the second byte */
+ 471               	/*********************************************************************/
+ 472               	
+68K GAS  ppide.s 			page 13
+
+
+ 473 0242 51CA FFF6 		dbra.w	%d2,rdblk2
+ 474               	
+ 475 0246 241F      		move.l	(%sp)+,%d2		/* restore D2 */
+ 476 0248 4E75      		rts
+ 477               	
+ 478               	
+ 479               	
+ 480               	#------------------------------------------------------------------------------
+ 481               	#  Verify a block of 512 bytes (one sector) from the drive
+ 482               	#
+ 483               	#  Call with:
+ 484               	#	Nothing
+ 485               	#
+ 486               	#  Exit with:
+ 487               	#	D0..D2 are destroyed
+ 488               	#
+ 489               	#-----------------------------------------------------------------------------
+ 490               	verify_data:
+ 491 024a 103C 0008 		move.b	#ide_data,%d0
+ 492 024e 343C 00FF 		move.w	#256-1,%d2
+ 493               	verblk2: 
+ 494 0252 615C      		bsr.s	ide_read
+ 495 0254 51CA FFFC 		dbra.w	%d2,verblk2
+ 496               	
+ 497 0258 4E75      		rts
+ 498               	
+ 499               	
+ 500               	#-----------------------------------------------------------------------------
+ 501               	# Write a block of 512 bytes (at ES:BX to the drive)
+ 502               	#
+ 503               	#  Call with:
+ 504               	#	A0 -- pointer to the data block
+ 505               	#
+ 506               	#  Exit with:
+ 507               	#	A1 is preserved
+ 508               	#	D0,D1 are destroyed
+ 509               	#
+ 510               	#-----------------------------------------------------------------------------
+ 511               	write_data:
+ 512 025a 2F02      		move.l	%d2,-(%sp)		/* save D2 */
+ 513               	
+ 514 025c 103C 0008 		move.b	#ide_data,%d0
+ 515 0260 343C 00FF 		move.w	#256-1,%d2
+ 516               	wrblk2: 
+ 517               	/*    Watch Out!  The buffer is byte aligned (68000 problem) */
+ 518 0264 1218      		move.b	(%a0)+,%d1
+ 519 0266 E159      		rol.w	#8,%d1
+ 520 0268 1218      		move.b	(%a0)+,%d1
+ 521               	/*************************************************************************/
+ 522 026a E059      		ror.w	#8,%d1
+ 523 026c 616A      		bsr.s	ide_write
+ 524 026e 51CA FFF4 		dbra.w	%d2,wrblk2
+ 525               	
+ 526 0272 241F      		move.l	(%sp)+,%d2		/* restore D2 */
+ 527 0274 4E75      		rts
+ 528               	
+ 529               	
+68K GAS  ppide.s 			page 14
+
+
+ 530               	
+ 531               	#-----------------------------------------------------------------------------
+ 532               	# write the logical block address to the drive's registers
+ 533               	#
+ 534               	#  Call with:
+ 535               	#	A1 = disk table pointer (use to get slave bit)
+ 536               	#	D2.l = logical block address
+ 537               	#	D3.b = sector count
+ 538               	#
+ 539               	#  Exit with:
+ 540               	#	D0, D1  are destroyed
+ 541               	#
+ 542               	#-----------------------------------------------------------------------------
+ 543               	wr_lba:
+ 544 0276 2202      		move.l	%d2,%d1			/* LBA address to D1 */
+ 545 0278 1029 000A 		move.b	(disk_slave_o,%a1),%d0	/* get slave byte */
+ 546 027c 0200 0010 		and.b	#0x10,%d0		/* for safety */
+ 547 0280 E199      		rol.l	#8,%d1			/* hi byte of LBA to low 8 bits */
+ 548 0282 0201 000F 		and.b	#0x0F,%d1		/* 28 bit limit */
+ 549 0286 8200      		or.b	%d0,%d1			/* slave bit to D1 */
+ 550 0288 0001 00E0 		or.b	#0xE0,%d1		/* select LBA mode */
+ 551               		
+ 552 028c 103C 000E 		move.b	#ide_head,%d0		/* write to head register */
+ 553 0290 6146      		bsr.s	ide_write
+ 554               	
+ 555 0292 E199      		rol.l	#8,%d1
+ 556 0294 5380      		sub.l	#1,%d0			/* cyl msb reg */
+ 557 0296 6140      		bsr.s	ide_write
+ 558               	
+ 559 0298 E199      		rol.l	#8,%d1
+ 560 029a 5380      		sub.l	#1,%d0			/* cyl lsb reg */
+ 561 029c 613A      		bsr.s	ide_write
+ 562               	
+ 563 029e E199      		rol.l	#8,%d1
+ 564 02a0 5380      		sub.l	#1,%d0			/* sector reg */
+ 565 02a2 6134      		bsr.s	ide_write
+ 566               	
+ 567 02a4 1203      		move.b	%d3,%d1			/* sector count from D3 */
+ 568 02a6 0201 007F 		and.b	#0x7f,%d1		/* for safety */
+ 569 02aa 5380      		sub.l	#1,%d0			/* sector count reg */
+ 570 02ac 612A      		bsr.s	ide_write
+ 571               	
+ 572 02ae 4E75      		rts
+ 573               	#	
+ 574               	#-------------------------------------------------------------------------------
+ 575               	
+ 576               	# Low Level I/O to the drive.  These are the routines that talk
+ 577               	# directly to the drive, via the 8255 chip.  Normally a main
+ 578               	# program would not call to these.
+ 579               	
+ 580               	# Do a read bus cycle to the drive, using the 8255.
+ 581               	#
+ 582               	#  Call With:
+ 583               	#	D0.b = ide register address
+ 584               	#
+ 585               	#  Exit With:
+ 586               	#	D0.b preserved
+68K GAS  ppide.s 			page 15
+
+
+ 587               	#	D1.w = word read from IDE drive
+ 588               	#
+ 589               	#
+ 590               	ide_read:
+ 591 02b0 1B7C 0092 		move.b	#rd_ide_8255,portCTRL_o(%a5)	/* bsr set_ppi_rd */
+ 591      0003 
+ 592               	##	bsr.s	set_ppi_rd		/* setup for a read cycle */
+ 593               	
+ 594 02b6 1B40 0002 		move.b	%d0,portC_o(%a5)	/* drive address onto control lines */
+ 595 02ba 0000 0040 		or.b	#ide_rd_line,%d0	/* assert RD pin */
+ 596 02be 1B40 0002 		move.b	%d0,portC_o(%a5)
+ 597               	
+ 598 02c2 122D 0001 		move.b	portB_o(%a5),%d1		/* read MSB */
+ 599 02c6 E149      		lsl.w	#8,%d1			/* make room for LSB */
+ 600 02c8 1215      		move.b	portA_o(%a5),%d1
+ 601               	
+ 602 02ca 0A00 0040 		eor.b	#ide_rd_line,%d0	/* clear RD signal */
+ 603 02ce 1B40 0002 		move.b	%d0,portC_o(%a5)
+ 604               	
+ 605               	#	move.b	#0,portC_o(%a5)		/* clear all control lines */
+ 606 02d2 422D 0002 		clr.b	portC_o(%a5)		/* release bus signals */
+ 607               	
+ 608 02d6 4E75      		rts
+ 609               	
+ 610               	
+ 611               	
+ 612               	
+ 613               	# Do a write bus cycle to the drive, via the 8255
+ 614               	#
+ 615               	#  Call With:
+ 616               	#	D0.b = ide register address
+ 617               	#	D1.w = word to write out
+ 618               	#
+ 619               	#  Exit with:
+ 620               	#	Nothing changed
+ 621               	#
+ 622               			.even
+ 623               	ide_write:
+ 624 02d8 1B7C 0080 		move.b	#wr_ide_8255,portCTRL_o(%a5)	/* bsr	set_ppi_wr  */
+ 624      0003 
+ 625               	
+ 626 02de 1A81      		move.b	%d1,portA_o(%a5)	/* output LSB */
+ 627 02e0 E059      		ror.w	#8,%d1
+ 628 02e2 1B41 0001 		move.b	%d1,portB_o(%a5)	/* output MSB */
+ 629 02e6 E059      		ror.w	#8,%d1
+ 630               	
+ 631 02e8 1B40 0002 		move.b	%d0,portC_o(%a5)		/* output the address */
+ 632 02ec 0000 0020 		or.b	#ide_wr_line,%d0	/* assert the WR line */
+ 633 02f0 1B40 0002 		move.b	%d0,portC_o(%a5)
+ 634               	
+ 635 02f4 0A00 0020 		eor.b	#ide_wr_line,%d0	/* clear the WR line */
+ 636 02f8 1B40 0002 		move.b	%d0,portC_o(%a5)
+ 637               	
+ 638               	#	move.b	#0,portC_o(%a5)		/* release bus signals */
+ 639 02fc 422D 0002 		clr.b	portC_o(%a5)		/* release bus signals */
+ 640 0300 4E75      		rts
+ 641               	
+68K GAS  ppide.s 			page 16
+
+
+ 642               	#-----------------------------------------------------------------------------
+ 643               	# End of PPIDE disk driver
+ 644               	#
+ 645               	
+ 646               		.end
+68K GAS  ppide.s 			page 17
+
+
+DEFINED SYMBOLS
+                            *ABS*:000109a0 CPU
+                            *ABS*:00000001 RETAIL
+             mfpic.s:23     *ABS*:00000001 _mfpic_s
+             mfpic.s:26     *ABS*:00000040 mf_pic
+             mfpic.s:29     *ABS*:ffff8000 BOARD_BASE_IO
+             mfpic.s:32     *ABS*:ffff8040 mfpic_base
+             mfpic.s:34     *ABS*:ffff8048 mf_sio
+             mfpic.s:35     *ABS*:ffff8044 mf_ppi
+             mfpic.s:36     *ABS*:ffff8043 mf_rtc
+             mfpic.s:37     *ABS*:ffff8042 mf_cfg
+             mfpic.s:38     *ABS*:ffff8040 mf_202
+               ppi.s:24     *ABS*:00000001 _ppi_s
+               ppi.s:29     *ABS*:00000000 portA_o
+               ppi.s:30     *ABS*:00000001 portB_o
+               ppi.s:31     *ABS*:00000002 portC_o
+               ppi.s:32     *ABS*:00000003 portCTRL_o
+               ppi.s:35     *ABS*:ffff8044 portA
+               ppi.s:36     *ABS*:ffff8045 portB
+               ppi.s:37     *ABS*:ffff8046 portC
+               ppi.s:38     *ABS*:ffff8047 portCTRL
+             ppide.s:19     *ABS*:00000092 rd_ide_8255
+             ppide.s:21     *ABS*:00000080 wr_ide_8255
+            allide.s:23     *ABS*:00000001 _allide_s
+            allide.s:27     *ABS*:00000008 max_disk
+            allide.s:28     *ABS*:00000002 max_floppy
+                            *COM*:00000020 disk_table
+            allide.s:33     *ABS*:00000000 disk_ops_o
+            allide.s:34     *ABS*:00000004 disk_lba_o
+            allide.s:35     *ABS*:00000008 disk_type_o
+            allide.s:36     *ABS*:00000009 disk_port_o
+            allide.s:37     *ABS*:0000000a disk_slave_o
+            allide.s:39     *ABS*:0000000b disk_status_o
+            allide.s:40     *ABS*:0000000c disk_geom_o
+            allide.s:53     *ABS*:00000001 ide_a0_line
+            allide.s:54     *ABS*:00000002 ide_a1_line
+            allide.s:55     *ABS*:00000004 ide_a2_line
+            allide.s:58     *ABS*:00000008 ide_cs0_line
+            allide.s:59     *ABS*:00000010 ide_cs1_line
+            allide.s:60     *ABS*:00000020 ide_wr_line
+            allide.s:61     *ABS*:00000040 ide_rd_line
+            allide.s:62     *ABS*:00000080 ide_rst_line
+            allide.s:77     *ABS*:00000008 ide_data
+            allide.s:78     *ABS*:00000009 ide_err
+            allide.s:79     *ABS*:0000000a ide_sec_cnt
+            allide.s:80     *ABS*:0000000b ide_sector
+            allide.s:81     *ABS*:0000000c ide_cyl_lsb
+            allide.s:82     *ABS*:0000000d ide_cyl_msb
+            allide.s:83     *ABS*:0000000e ide_head
+            allide.s:84     *ABS*:0000000f ide_command
+            allide.s:85     *ABS*:0000000f ide_status
+            allide.s:87     *ABS*:00000016 ide_control
+            allide.s:88     *ABS*:00000016 ide_astatus
+            allide.s:89     *ABS*:00000017 ide_address
+            allide.s:96     *ABS*:00000010 ide_cmd_recal
+            allide.s:97     *ABS*:00000020 ide_cmd_read
+            allide.s:98     *ABS*:00000030 ide_cmd_write
+68K GAS  ppide.s 			page 18
+
+
+            allide.s:99     *ABS*:00000091 ide_cmd_init
+            allide.s:100    *ABS*:000000ec ide_cmd_id
+            allide.s:101    *ABS*:000000ef ide_cmd_set_feature
+            allide.s:102    *ABS*:000000e0 ide_cmd_spindown
+            allide.s:103    *ABS*:000000e1 ide_cmd_spinup
+            allide.s:106    *ABS*:00000001 ide_fea_8bit
+            allide.s:107    *ABS*:00000081 ide_fea_16bit
+             ppide.s:29     *ABS*:00000004 arg1
+             ppide.s:30     *ABS*:00000008 arg2
+             ppide.s:31     *ABS*:0000000c arg3
+             ppide.s:32     *ABS*:00000010 arg4
+             ppide.s:35     *ABS*:00000008 buffer
+             ppide.s:63     .text:00000000 ppide_info
+             ppide.s:62     .text:00000000 ppide_read_id
+             ppide.s:88     .text:0000003e short_info
+             ppide.s:383    .text:000001e8 ide_wait_not_busy
+             ppide.s:155    .text:000000ae error_return
+             ppide.s:623    .text:000002d8 ide_write
+             ppide.s:415    .text:0000020c ide_wait_drq
+             ppide.s:460    .text:00000230 read_data
+             ppide.s:137    .text:00000084 get_error_status
+             ppide.s:113    .text:0000004e ppide_read
+             ppide.s:156    .text:000000ae read_error
+             ppide.s:543    .text:00000276 wr_lba
+             ppide.s:590    .text:000002b0 ide_read
+             ppide.s:153    .text:000000ac exg_return
+             ppide.s:159    .text:000000b0 good_return
+             ppide.s:490    .text:0000024a verify_data
+             ppide.s:217    .text:000000e4 ppide_write
+             ppide.s:511    .text:0000025a write_data
+             ppide.s:244    *ABS*:00000001 RECAL
+             ppide.s:257    .text:00000120 ppide_reset
+             ppide.s:277    .text:00000156 resetwait
+             ppide.s:299    .text:0000018a reset1
+             ppide.s:296    .text:00000188 reset10
+             ppide.s:323    .text:000001cc reset2
+             ppide.s:320    .text:000001ca reset20
+             ppide.s:334    .text:000001e6 reset3
+             ppide.s:387    .text:000001ec wnb1
+             ppide.s:398    .text:00000206 wnb2
+             ppide.s:419    .text:00000210 wdrq1
+             ppide.s:430    .text:0000022a wdrq2
+             ppide.s:465    .text:0000023a rdblk2
+             ppide.s:493    .text:00000252 verblk2
+             ppide.s:516    .text:00000264 wrblk2
+
+UNDEFINED SYMBOLS
+usec_delay

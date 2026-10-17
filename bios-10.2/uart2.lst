@@ -1,0 +1,242 @@
+68K GAS  uart2.s 			page 1
+
+
+   1               	#  uart2.s
+   2               	/*
+   3               		Copyright (C) 2011,2015 John R. Coffman.
+   4               		Licensed for hobbyist use only.
+   5               	***********************************************************************
+   6               	
+   7               	    This program is free software: you can redistribute it and/or modify
+   8               	    it under the terms of the GNU General Public License as published by
+   9               	    the Free Software Foundation, either version 3 of the License, or
+  10               	    (at your option) any later version.
+  11               	
+  12               	    This program is distributed in the hope that it will be useful,
+  13               	    but WITHOUT ANY WARRANTY; without even the implied warranty of
+  14               	    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  15               	    GNU General Public License for more details.
+  16               	
+  17               	    You should have received a copy of the GNU General Public License
+  18               	    in the file COPYING in the distribution directory along with this
+  19               	    program.  If not, see <http://www.gnu.org/licenses/>.
+  20               	
+  21               	**********************************************************************/
+  22               	#
+  23               	
+  24               	.include "mfpic.s"
+   1               	#  mfpic.s
+   2               	/*
+   3               		Copyright (C) 2011 John R. Coffman.
+   4               		Licensed for hobbyist use on the N8VEM baby M68k CPU board.
+   5               	***********************************************************************
+   6               	
+   7               	    This program is free software: you can redistribute it and/or modify
+   8               	    it under the terms of the GNU General Public License as published by
+   9               	    the Free Software Foundation, either version 3 of the License, or
+  10               	    (at your option) any later version.
+  11               	
+  12               	    This program is distributed in the hope that it will be useful,
+  13               	    but WITHOUT ANY WARRANTY; without even the implied warranty of
+  14               	    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  15               	    GNU General Public License for more details.
+  16               	
+  17               	    You should have received a copy of the GNU General Public License
+  18               	    in the file COPYING in the distribution directory along with this
+  19               	    program.  If not, see <http://www.gnu.org/licenses/>.
+  20               	
+  21               	**********************************************************************/
+  22               	.ifndef _mfpic_s
+  23               	_mfpic_s 	=	1
+  24               	
+  25               	# Z80 port address of MF/PIC board (required)
+  26               	mf_pic		=	0x40
+  27               	
+  28               	# Mini-M68k I/O address base
+  29               	BOARD_BASE_IO	=	0xFFFF8000
+  30               	
+  31               	# board base address:
+  32               	mfpic_base      =       BOARD_BASE_IO + mf_pic
+  33               	
+68K GAS  uart2.s 			page 2
+
+
+  34               	mf_sio          =       mfpic_base + 8
+  35               	mf_ppi          =       mfpic_base + 4
+  36               	mf_rtc          =       mfpic_base + 3
+  37               	mf_cfg          =       mfpic_base + 2
+  38               	mf_202          =       mfpic_base + 0
+  39               	
+  40               	
+  41               	.endif
+  42               	
+  43               	
+  25               	
+  26               	dev_uart	=	0x48	/* MF/PIC UART location */
+  27               	
+  28               	rbr		=	0	/* receive buffer register */
+  29               	thr		=	0	/* transmitter holding register */
+  30               	ier		=	1	/* interrupt enable register */
+  31               	iir		=	2	/* interrupt ident. register */
+  32               	fcr		=	2	/* FIFO control register */
+  33               	lcr		=	3	/* line control register */
+  34               	mcr		=	4	/* modem control register */
+  35               	lsr		=	5	/* line status register */
+  36               	msr		=	6	/* modem status register */
+  37               	scr		=	7	/* scratch register */
+  38               	
+  39               	dll		=	0	/* divisor latch LSByte */
+  40               	dlm		=	1	/* divisor latch MSByte */
+  41               	
+  42               	lcr_8n2		=	0x03	/* 8-data bits, no parity, 2 stop bits */
+  43               	lcr_dla		=	0x80	/* divisor latch access */
+  44               	divisor		=	1843200/16 / 9600		/* divisor */
+  45               	
+  46               	
+  47               	
+  48               		.globl	_uart_find
+  49               	/***********************************************************************
+  50               	*  uart_find
+  51               	***********************************************************************
+  52               	
+  53               	   Enter with:
+  54               		D0.b	device code to check
+  55               	
+  56               	   Return:
+  57               		D1 is UART type, if present
+  58               			0	none
+  59               			1	8250
+  60               			2	16450		SCR
+  61               			3	16550		SCR
+  62               			4	16550A		FIFO-16,SCR
+  63               			5	16550C		FIFO-16,AFC,SCR
+  64               			6	16750		FIFO-64,AFC,SCR
+  65               		D2 is last register examined
+  66               		D0 is last data read
+  67               	
+  68               		D0, A5, A6  are used
+  69               	
+  70               	***********************************************************************
+  71               	*/
+68K GAS  uart2.s 			page 3
+
+
+  72               	_uart_find:
+  73               	
+  74 0000 0080 FFFF 		or.l	#BOARD_BASE_IO,%d0		/* form word address */
+  74      8000 
+  75 0006 2A40      		move.l	%d0,%a5			/* reference regs from here */
+  76               	
+  77 0008 4281      		clr.l	%d1			/* no uart found */
+  78 000a 7401      		move.l	#ier,%d2
+  79 000c 102D 0001 		move.b	ier(%a5),%d0		/* IER resets to 00 */
+  80 0010 6676      		jbne	fnd9e
+  81               	
+  82 0012 7402      		move.l	#iir,%d2
+  83 0014 102D 0002 		move.b	iir(%a5),%d0		/* IIR resets to 01 */
+  84 0018 0C00 0001 		cmp.b	#01,%d0
+  85 001c 666A      		jbne	fnd9e
+  86               	
+  87 001e 7403      		move.l	#lcr,%d2
+  88 0020 102D 0003 		move.b	lcr(%a5),%d0		/* LCR resets to 00 */
+  89 0024 6662      		jbne	fnd9e
+  90               	
+  91 0026 7404      		move.l	#mcr,%d2
+  92 0028 102D 0004 		move.b	mcr(%a5),%d0		/* MCR resets to 00 */
+  93 002c 665A      		jbne	fnd9e
+  94               	
+  95 002e 7405      		move.l	#lsr,%d2
+  96 0030 102D 0005 		move.b	lsr(%a5),%d0		/* LCR resets to 0x60 */
+  97               	#	cmp.b	#0x60,%d0		/* but sometimes to 0x00 */
+  98 0034 0200 FF9F 	 	and.b	#~0x60,%d0		/* ignore 2 bits */
+  99 0038 664E      		jbne	fnd9e
+ 100               	.if 0
+ 101               	# This test is failing from time to time on the MDB -- ????
+ 102               	# getting 0A at power-on,  00 on reset 
+ 103               		move.l	#msr,%d2
+ 104               		move.b	msr(%a5),%d0		/* MSR resets to 0x?0 */
+ 105               		and.b	#0x0F,%d0
+ 106               		jbne	fnd9e
+ 107               	.endif
+ 108 003a 1600      		move.b	%d0,%d3			/* save data in D3 */
+ 109               	
+ 110 003c 1B7C 00E7 		move.b	#0xE7,fcr(%a5)		/* enable all FIFO's */
+ 110      0002 
+ 111 0042 102D 0002 		move.b	iir(%a5),%d0		/* IIR and FCR are the same */
+ 112 0046 0800 0006 		btst	#6,%d0			/* test bit 6 */
+ 113 004a 6724      		jbeq	test16450
+ 114               	/* we have at least a 16550  */
+ 115 004c 7203      		move.l	#3,%d1			/* set 16550 response */
+ 116 004e 0800 0007 		btst	#7,%d0
+ 117 0052 6732      		jbeq	fnd9		/* it is a 16550 */
+ 118               	/* we have at least a 16550A */
+ 119 0054 7206      		move.l	#6,%d1			/* set 16750 response */
+ 120 0056 0800 0005 		btst	#5,%d0			/* test bit 5 */
+ 121 005a 662A      		jbne	fnd9		/* it is a 16750 */
+ 122 005c 1B7C 0020 		move.b	#0x20,mcr(%a5)		/* set AFC */
+ 122      0004 
+ 123 0062 7204      		move.l	#4,%d1			/* say 16550A */
+ 124 0064 082D 0005 		btst	#5,mcr(%a5)		/* stuck on zero? */
+ 124      0004 
+68K GAS  uart2.s 			page 4
+
+
+ 125 006a 671A      		jbeq	fnd9		/* it is a 16550A */
+ 126 006c 7205      		move.l	#5,%d1
+ 127 006e 6016      		jbra	fnd9		/* it is a 16550C */
+ 128               	test16450:
+ 129 0070 7201      		move.l	#1,%d1			/* say 8250 */
+ 130 0072 1B7C 002A 		move.b	#0x2A,scr(%a5)
+ 130      0007 
+ 131 0078 422D 0004 		clr.b	mcr(%a5)		/* disturb the data bus */
+ 132 007c 0C2D 002A 		cmp.b	#0x2A,scr(%a5)
+ 132      0007 
+ 133 0082 6602      		jbne	fnd9		/* it is an 8250 */
+ 134 0084 7202      		move.l	#2,%d1		/* it is a 16450 */
+ 135               	fnd9:
+ 136 0086 1003      		move.b	%d3,%d0
+ 137               	fnd9e:
+ 138 0088 1B7C 0001 		move.b	#01,fcr(%a5)		/* reset */
+ 138      0002 
+ 139 008e 422D 0004 		clr.b	mcr(%a5)		/* reset */
+ 140 0092 4ED6      		jmp	(%a6)
+ 141               	
+ 142               	
+ 143               	
+68K GAS  uart2.s 			page 5
+
+
+DEFINED SYMBOLS
+                            *ABS*:000109a0 CPU
+                            *ABS*:00000001 RETAIL
+             mfpic.s:23     *ABS*:00000001 _mfpic_s
+             mfpic.s:26     *ABS*:00000040 mf_pic
+             mfpic.s:29     *ABS*:ffff8000 BOARD_BASE_IO
+             mfpic.s:32     *ABS*:ffff8040 mfpic_base
+             mfpic.s:34     *ABS*:ffff8048 mf_sio
+             mfpic.s:35     *ABS*:ffff8044 mf_ppi
+             mfpic.s:36     *ABS*:ffff8043 mf_rtc
+             mfpic.s:37     *ABS*:ffff8042 mf_cfg
+             mfpic.s:38     *ABS*:ffff8040 mf_202
+             uart2.s:26     *ABS*:00000048 dev_uart
+             uart2.s:28     *ABS*:00000000 rbr
+             uart2.s:29     *ABS*:00000000 thr
+             uart2.s:30     *ABS*:00000001 ier
+             uart2.s:31     *ABS*:00000002 iir
+             uart2.s:32     *ABS*:00000002 fcr
+             uart2.s:33     *ABS*:00000003 lcr
+             uart2.s:34     *ABS*:00000004 mcr
+             uart2.s:35     *ABS*:00000005 lsr
+             uart2.s:36     *ABS*:00000006 msr
+             uart2.s:37     *ABS*:00000007 scr
+             uart2.s:39     *ABS*:00000000 dll
+             uart2.s:40     *ABS*:00000001 dlm
+             uart2.s:42     *ABS*:00000003 lcr_8n2
+             uart2.s:43     *ABS*:00000080 lcr_dla
+             uart2.s:44     *ABS*:0000000c divisor
+             uart2.s:72     .text:00000000 _uart_find
+             uart2.s:137    .text:00000088 fnd9e
+             uart2.s:128    .text:00000070 test16450
+             uart2.s:135    .text:00000086 fnd9
+
+NO UNDEFINED SYMBOLS

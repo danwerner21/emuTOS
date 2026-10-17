@@ -42,6 +42,7 @@
 #include "nova.h"
 #include "biosext.h"
 #include "amiga.h"
+#include "mini68k.h"
 
 #if CONF_WITH_ADVANCED_CPU
 UBYTE is_bus32; /* 1 if address bus is 32-bit, 0 if it is 24-bit */
@@ -660,6 +661,10 @@ void machine_init(void)
     }
  #endif
 #endif /* CONF_WITH_RESET */
+
+#ifdef MACHINE_MINI68K
+    mini68k_machine_init();
+#endif
 }
 
 void fill_cookie_jar(void)
@@ -832,6 +837,8 @@ const char * machine_name(void)
     return amiga_machine_name();
 #elif defined(MACHINE_LISA)
     return "Apple Lisa";
+#elif defined(MACHINE_MINI68K)
+    return "RetroBrew Mini-M68k";
 #elif defined(MACHINE_M548X)
     return m548x_machine_name();
 #else

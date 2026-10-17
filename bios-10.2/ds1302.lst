@@ -1,0 +1,284 @@
+68K GAS  ds1302.s 			page 1
+
+
+   1               	/* ds1302.s */
+   2               	/*
+   3               		Copyright (C) 2011 John R. Coffman.
+   4               		Licensed for hobbyist use on the N8VEM baby M68k CPU board.
+   5               	***********************************************************************
+   6               	
+   7               	    This program is free software: you can redistribute it and/or modify
+   8               	    it under the terms of the GNU General Public License as published by
+   9               	    the Free Software Foundation, either version 3 of the License, or
+  10               	    (at your option) any later version.
+  11               	
+  12               	    This program is distributed in the hope that it will be useful,
+  13               	    but WITHOUT ANY WARRANTY; without even the implied warranty of
+  14               	    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  15               	    GNU General Public License for more details.
+  16               	
+  17               	    You should have received a copy of the GNU General Public License
+  18               	    in the file COPYING in the distribution directory along with this
+  19               	    program.  If not, see <http://www.gnu.org/licenses/>.
+  20               	
+  21               	**********************************************************************/
+  22               	.include "mfpic.s"
+   1               	#  mfpic.s
+   2               	/*
+   3               		Copyright (C) 2011 John R. Coffman.
+   4               		Licensed for hobbyist use on the N8VEM baby M68k CPU board.
+   5               	***********************************************************************
+   6               	
+   7               	    This program is free software: you can redistribute it and/or modify
+   8               	    it under the terms of the GNU General Public License as published by
+   9               	    the Free Software Foundation, either version 3 of the License, or
+  10               	    (at your option) any later version.
+  11               	
+  12               	    This program is distributed in the hope that it will be useful,
+  13               	    but WITHOUT ANY WARRANTY; without even the implied warranty of
+  14               	    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  15               	    GNU General Public License for more details.
+  16               	
+  17               	    You should have received a copy of the GNU General Public License
+  18               	    in the file COPYING in the distribution directory along with this
+  19               	    program.  If not, see <http://www.gnu.org/licenses/>.
+  20               	
+  21               	**********************************************************************/
+  22               	.ifndef _mfpic_s
+  23               	_mfpic_s 	=	1
+  24               	
+  25               	# Z80 port address of MF/PIC board (required)
+  26               	mf_pic		=	0x40
+  27               	
+  28               	# Mini-M68k I/O address base
+  29               	BOARD_BASE_IO	=	0xFFFF8000
+  30               	
+  31               	# board base address:
+  32               	mfpic_base      =       BOARD_BASE_IO + mf_pic
+  33               	
+  34               	mf_sio          =       mfpic_base + 8
+  35               	mf_ppi          =       mfpic_base + 4
+68K GAS  ds1302.s 			page 2
+
+
+  36               	mf_rtc          =       mfpic_base + 3
+  37               	mf_cfg          =       mfpic_base + 2
+  38               	mf_202          =       mfpic_base + 0
+  39               	
+  40               	
+  41               	.endif
+  42               	
+  43               	
+  23               	
+  24               		.text
+  25               	
+  26               	rtc_data        =     1               /* Data mask bit - DATA	*/
+  27               	rtc_wren        =     2               /* Write enable bit - /WE	*/
+  28               	rtc_clk         =     4               /* Clock signal - CLK	*/
+  29               	rtc_rst         =     8               /* Reset bit - /RESET	*/
+  30               	
+  31               	rtc_write_cmd	=	0x80		/* WRITE command */
+  32               	rtc_read_cmd	=	0x81		/* READ	command */
+  33               	
+  34               	
+  35               	#;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  36               	#  rtc_get_loc          RTC get location as addressed
+  37               	#	Enter with:
+  38               	#			Address to get on Stack
+  39               	#			RAM = (address) | 0x80
+  40               	#			CLOCK = (address) | 0x00
+  41               	#	Exit with 	data in D0
+  42               	#               All other registers are preserved
+  43               	#;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  44               		.globl  rtc_get_loc
+  45               	rtc_get_loc:
+  46 0000 4E56 0000 		link	%a6,#0
+  47 0004 48E7 7000 		movm.l	%d1-%d3,-(%sp)
+  48               	
+  49 0008 6100 00A2 		bsr	rtc_reset
+  50 000c 6100 00A2 		bsr	rtc_reset_off
+  51               	
+  52 0010 222E 0008 		move.l	8(%a6),%d1		/* get address to D1 bits (7..0) */
+  53 0014 D281      		add.l	%d1,%d1
+  54 0016 0081 0000 		or.l	#rtc_read_cmd,%d1	/* make into a write command */
+  54      0081 
+  55 001c 6100 0056 		bsr	rtc_write
+  56               	
+  57 0020 6100 006E 		bsr	rtc_read		/* read the data value to D1 */
+  58               	
+  59 0024 6100 008A 		bsr	rtc_reset_off
+  60 0028 6100 0082 		bsr	rtc_reset
+  61               	
+  62 002c 4280      		clr.l	%d0			/* make for a clean return */
+  63 002e 1001      		move.b	%d1,%d0	
+  64               	
+  65 0030 4CEE 000E 		movm.l	(-12,%a6),%d1-%d3
+  65      FFF4 
+  66 0036 4E5E      		unlk	%a6
+  67 0038 4E75      		rts
+  68               	
+  69               	
+68K GAS  ds1302.s 			page 3
+
+
+  70               	#;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  71               	#  rtc_set_loc          RTC set location as addressed
+  72               	#	Enter with:
+  73               	#			Address to get on Stack -- ARG1
+  74               	#				RAM = (address) | 0x20
+  75               	#				CLOCK = (address) | 0x00
+  76               	#			Data to write on Stack -- ARG2
+  77               	#;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  78               		.globl  rtc_set_loc
+  79               	rtc_set_loc:
+  80 003a 4E56 0000 		link	%a6,#0
+  81 003e 48E7 7000 		movm.l	%d1-%d3,-(%sp)
+  82               	
+  83 0042 6100 0068 		bsr	rtc_reset
+  84 0046 6100 0068 		bsr	rtc_reset_off
+  85               	
+  86 004a 222E 0008 		move.l	8(%a6),%d1		/* get address to D1 bits (7..0) */
+  87 004e D281      		add.l	%d1,%d1
+  88 0050 0081 0000 		or.l	#rtc_write_cmd,%d1	/* make into a write command */
+  88      0080 
+  89 0056 6100 001C 		bsr	rtc_write
+  90               	
+  91 005a 222E 000C 		move.l	12(%a6),%d1		/* ARG2 is data to write to address */
+  92 005e 6100 0014 		bsr	rtc_write
+  93               	
+  94 0062 6100 004C 		bsr	rtc_reset_off
+  95 0066 6100 0044 		bsr	rtc_reset
+  96               	
+  97 006a 4CEE 000E 		movm.l	(-12,%a6),%d1-%d3
+  97      FFF4 
+  98 0070 4E5E      		unlk	%a6
+  99 0072 4E75      		rts
+ 100               	
+ 101               	
+ 102               	
+ 103               	
+ 104               	
+ 105               	
+ 106               	#	.globl  rtc_write
+ 107               	#  write byte in D1 to the DS1302 chip
+ 108               	rtc_write:
+ 109 0074 7407      		move.l	#7,%d2
+ 110               	wr_loop:
+ 111 0076 7001      		move.l	#rtc_wren/2,%d0		/* write enable, shifted right */
+ 112 0078 E289      		lsr.l	#1,%d1 			/* bit 0 to X bit */
+ 113 007a E390      		roxl.l	#1,%d0			/* write enable + low data bit */
+ 114 007c 6100 0034 		bsr	rtc_out			/* put out the byte */
+ 115               	
+ 116 0080 0080 0000 		or.l	#rtc_clk,%d0		/* set the clock bit */
+ 116      0004 
+ 117 0086 6100 002A 		bsr	rtc_out
+ 118               		
+ 119 008a 51CA FFEA 		dbra	%d2,wr_loop
+ 120               	
+ 121 008e 4E75      		rts
+ 122               	
+ 123               	
+68K GAS  ds1302.s 			page 4
+
+
+ 124               	#	.globl	rtc_read
+ 125               	#  read byte from the DS1302 chip to D1
+ 126               	rtc_read:
+ 127 0090 7407      		move.l	#7,%d2
+ 128 0092 4281      		clr.l	%d1
+ 129               	rd_loop:
+ 130 0094 6100 001A 		bsr	rtc_reset_off		/* WriteEnable off, Reset Off */
+ 131               	
+ 132               	/* use a subroutine to introduce appropriate delays of 16 usec. or more */
+ 133 0098 6100 0024 		bsr	rtc_in			/* get byte to D1 */
+ 134               	
+ 135 009c 7004      		move.l	#rtc_clk,%d0		/* clock the chip */
+ 136 009e 6100 0012 		bsr	rtc_out
+ 137               	
+ 138 00a2 E259      		ror.w	#1,%d1			/* accumulate data byte in bits 15..8 */
+ 139 00a4 51CA FFEE 		dbra	%d2,rd_loop
+ 140               	
+ 141 00a8 E089      		lsr.l	#8,%d1
+ 142               	
+ 143 00aa 4E75      		rts
+ 144               	
+ 145               	
+ 146               	
+ 147               	
+ 148               	/*	rtc_reset
+ 149               		rtc_reset_off		3 functions using D0 internally
+ 150               		rtc_out			D3 is used for the time delay
+ 151               	
+ 152               	*/
+ 153               	rtc_reset:
+ 154 00ac 7008      		move.l	#rtc_rst,%d0		/* Reset, enable read */
+ 155 00ae 6002      		br.s	rtc_out
+ 156               	
+ 157               	rtc_reset_off:
+ 158 00b0 4280      		clr.l	%d0
+ 159               		/* fall into rtc_out */
+ 160               	/*
+ 161               	  rtc_out()    byte to put into latch is in D0
+ 162               	*/
+ 163               	rtc_out:
+ 164 00b2 11C0 8043 		move.b	%d0,mf_rtc		/* output D0 to the RTC latch */
+ 165 00b6 4EB9 0000 		jsr	(usec09).l
+ 165      0000 
+ 166 00bc 4E75      		rts
+ 167               	
+ 168               	/*
+ 169               	  rtc_in()	input byte to D1
+ 170               	*/
+ 171               	rtc_in:
+ 172               		.rept	4
+ 172 00be 4E71      	> nop 
+ 172               	> 
+ 172 00c0 4E71      	> nop 
+ 172               	> 
+ 172 00c2 4E71      	> nop 
+ 172               	> 
+ 172 00c4 4E71      	> nop 
+68K GAS  ds1302.s 			page 5
+
+
+ 173               		nop
+ 174               		.endr
+ 175 00c6 1238 8043 		move.b	mf_rtc,%d1
+ 176 00ca 4E75      		rts
+ 177               	
+ 178               	
+ 179               		.end
+68K GAS  ds1302.s 			page 6
+
+
+DEFINED SYMBOLS
+                            *ABS*:000109a0 CPU
+                            *ABS*:00000001 RETAIL
+             mfpic.s:23     *ABS*:00000001 _mfpic_s
+             mfpic.s:26     *ABS*:00000040 mf_pic
+             mfpic.s:29     *ABS*:ffff8000 BOARD_BASE_IO
+             mfpic.s:32     *ABS*:ffff8040 mfpic_base
+             mfpic.s:34     *ABS*:ffff8048 mf_sio
+             mfpic.s:35     *ABS*:ffff8044 mf_ppi
+             mfpic.s:36     *ABS*:ffff8043 mf_rtc
+             mfpic.s:37     *ABS*:ffff8042 mf_cfg
+             mfpic.s:38     *ABS*:ffff8040 mf_202
+            ds1302.s:26     *ABS*:00000001 rtc_data
+            ds1302.s:27     *ABS*:00000002 rtc_wren
+            ds1302.s:28     *ABS*:00000004 rtc_clk
+            ds1302.s:29     *ABS*:00000008 rtc_rst
+            ds1302.s:31     *ABS*:00000080 rtc_write_cmd
+            ds1302.s:32     *ABS*:00000081 rtc_read_cmd
+            ds1302.s:45     .text:00000000 rtc_get_loc
+            ds1302.s:153    .text:000000ac rtc_reset
+            ds1302.s:157    .text:000000b0 rtc_reset_off
+            ds1302.s:108    .text:00000074 rtc_write
+            ds1302.s:126    .text:00000090 rtc_read
+            ds1302.s:79     .text:0000003a rtc_set_loc
+            ds1302.s:110    .text:00000076 wr_loop
+            ds1302.s:163    .text:000000b2 rtc_out
+            ds1302.s:129    .text:00000094 rd_loop
+            ds1302.s:171    .text:000000be rtc_in
+
+UNDEFINED SYMBOLS
+usec09

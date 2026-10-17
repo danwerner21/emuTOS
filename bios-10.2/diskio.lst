@@ -1,0 +1,337 @@
+68K GAS  diskio.s 			page 1
+
+
+   1               	#NO_APP
+   2               		.file	"diskio.c"
+   3               		.text
+   4               		.align	2
+   5               		.globl	disk_status
+   6               		.type	disk_status, @function
+   7               	disk_status:
+   8 0000 4E56 0000 		link.w %fp,#0
+   9 0004 102E 000B 		move.b 11(%fp),%d0
+  10 0008 0C00 0003 		cmp.b #3,%d0
+  11 000c 6304      		jbls .L2
+  12 000e 7001      		moveq #1,%d0
+  13 0010 6016      		jbra .L4
+  14               	.L2:
+  15 0012 0280 0000 		and.l #255,%d0
+  15      00FF 
+  16 0018 41F9 0000 		lea drive_status,%a0
+  16      0000 
+  17 001e 1030 0800 		move.b (%a0,%d0.l),%d0
+  18 0022 0280 0000 		and.l #255,%d0
+  18      00FF 
+  19               	.L4:
+  20 0028 4E5E      		unlk %fp
+  21 002a 4E75      		rts
+  22               		.size	disk_status, .-disk_status
+  23               		.align	2
+  24               		.globl	disk_ioctl
+  25               		.type	disk_ioctl, @function
+  26               	disk_ioctl:
+  27 002c 4E56 FFC4 		link.w %fp,#-60
+  28 0030 48E7 3020 		movm.l #0x3020,-(%sp)
+  29 0034 246E 0010 		move.l 16(%fp),%a2
+  30 0038 102E 000B 		move.b 11(%fp),%d0
+  31 003c 122E 000F 		move.b 15(%fp),%d1
+  32 0040 0C00 0003 		cmp.b #3,%d0
+  33 0044 6200 0094 		jbhi .L7
+  34 0048 7400      		moveq #0,%d2
+  35 004a 1400      		move.b %d0,%d2
+  36 004c 41F9 0000 		lea drive_status,%a0
+  36      0000 
+  37 0052 1030 2800 		move.b (%a0,%d2.l),%d0
+  38 0056 7603      		moveq #3,%d3
+  39 0058 C083      		and.l %d3,%d0
+  40 005a 6706      		jbeq .L9
+  41 005c 7003      		moveq #3,%d0
+  42 005e 6000 0084 		jbra .L11
+  43               	.L9:
+  44 0062 0C01 0001 		cmp.b #1,%d1
+  45 0066 671A      		jbeq .L13
+  46 0068 6514      		jbcs .L18
+  47 006a 0C01 0002 		cmp.b #2,%d1
+  48 006e 6708      		jbeq .L14
+  49 0070 0C01 0004 		cmp.b #4,%d1
+  50 0074 6664      		jbne .L7
+  51 0076 6006      		jbra .L18
+  52               	.L14:
+  53 0078 24BC 0000 		move.l #512,(%a2)
+68K GAS  diskio.s 			page 2
+
+
+  53      0200 
+  54               	.L18:
+  55 007e 7000      		moveq #0,%d0
+  56 0080 6062      		jbra .L11
+  57               	.L13:
+  58 0082 426E FFC4 		clr.w -60(%fp)
+  59 0086 3D7C 000B 		move.w #11,-58(%fp)
+  59      FFC6 
+  60 008c 426E FFC8 		clr.w -56(%fp)
+  61 0090 5442      		addq.w #2,%d2
+  62 0092 3D42 FFCA 		move.w %d2,-54(%fp)
+  63 0096 426E FFE4 		clr.w -28(%fp)
+  64 009a 426E FFE6 		clr.w -26(%fp)
+  65 009e 41EE FFC4 		lea (-60,%fp),%a0
+  66 00a2 2F08      		move.l %a0,-(%sp)
+  67 00a4 2F08      		move.l %a0,-(%sp)
+  68 00a6 4EB9 0000 		jbsr bios_call
+  68      0000 
+  69 00ac 322E FFC4 		move.w -60(%fp),%d1
+  70 00b0 3001      		move.w %d1,%d0
+  71 00b2 4840      		swap %d0
+  72 00b4 302E FFC6 		mov.w -58(%fp),%d0
+  73 00b8 508F      		addq.l #8,%sp
+  74 00ba 4A80      		tst.l %d0
+  75 00bc 6620      		jbne .L15
+  76 00be 362E FFC8 		move.w -56(%fp),%d3
+  77 00c2 3003      		move.w %d3,%d0
+  78 00c4 4840      		swap %d0
+  79 00c6 302E FFCA 		mov.w -54(%fp),%d0
+  80 00ca 2480      		move.l %d0,(%a2)
+  81 00cc 72FF      		moveq #-1,%d1
+  82 00ce B280      		cmp.l %d0,%d1
+  83 00d0 57C0      		seq %d0
+  84 00d2 4880      		ext.w %d0
+  85 00d4 48C0      		ext.l %d0
+  86 00d6 4480      		neg.l %d0
+  87 00d8 600A      		jbra .L11
+  88               	.L7:
+  89 00da 7004      		moveq #4,%d0
+  90 00dc 6006      		jbra .L11
+  91               	.L15:
+  92 00de 76FF      		moveq #-1,%d3
+  93 00e0 2483      		move.l %d3,(%a2)
+  94 00e2 7001      		moveq #1,%d0
+  95               	.L11:
+  96 00e4 4CEE 040C 		movm.l -72(%fp),#0x40c
+  96      FFB8 
+  97 00ea 4E5E      		unlk %fp
+  98 00ec 4E75      		rts
+  99               		.size	disk_ioctl, .-disk_ioctl
+ 100               		.align	2
+ 101               		.globl	disk_read
+ 102               		.type	disk_read, @function
+ 103               	disk_read:
+ 104 00ee 4E56 FFC4 		link.w %fp,#-60
+ 105 00f2 48E7 3C00 		movm.l #0x3c00,-(%sp)
+ 106 00f6 262E 000C 		move.l 12(%fp),%d3
+68K GAS  diskio.s 			page 3
+
+
+ 107 00fa 242E 0010 		move.l 16(%fp),%d2
+ 108 00fe 282E 0014 		move.l 20(%fp),%d4
+ 109 0102 102E 000B 		move.b 11(%fp),%d0
+ 110 0106 0C00 0003 		cmp.b #3,%d0
+ 111 010a 6306      		jbls .L20
+ 112 010c 7004      		moveq #4,%d0
+ 113 010e 6000 008A 		jbra .L22
+ 114               	.L20:
+ 115 0112 7A00      		moveq #0,%d5
+ 116 0114 1A00      		move.b %d0,%d5
+ 117 0116 41F9 0000 		lea drive_status,%a0
+ 117      0000 
+ 118 011c 1030 5800 		move.b (%a0,%d5.l),%d0
+ 119 0120 7203      		moveq #3,%d1
+ 120 0122 C081      		and.l %d1,%d0
+ 121 0124 676E      		jbeq .L31
+ 122 0126 7003      		moveq #3,%d0
+ 123 0128 6070      		jbra .L22
+ 124               	.L30:
+ 125 012a 7001      		moveq #1,%d0
+ 126 012c 606C      		jbra .L22
+ 127               	.L25:
+ 128 012e 426E FFC4 		clr.w -60(%fp)
+ 129 0132 3D7C 000C 		move.w #12,-58(%fp)
+ 129      FFC6 
+ 130 0138 426E FFC8 		clr.w -56(%fp)
+ 131 013c 3005      		move.w %d5,%d0
+ 132 013e 5440      		addq.w #2,%d0
+ 133 0140 3D40 FFCA 		move.w %d0,-54(%fp)
+ 134 0144 2002      		move.l %d2,%d0
+ 135 0146 4240      		clr.w %d0
+ 136 0148 4840      		swap %d0
+ 137 014a 3D40 FFCC 		move.w %d0,-52(%fp)
+ 138 014e 3D42 FFCE 		move.w %d2,-50(%fp)
+ 139 0152 426E FFD0 		clr.w -48(%fp)
+ 140 0156 3D7C 0001 		move.w #1,-46(%fp)
+ 140      FFD2 
+ 141 015c 2003      		move.l %d3,%d0
+ 142 015e 4240      		clr.w %d0
+ 143 0160 4840      		swap %d0
+ 144 0162 3D40 FFE4 		move.w %d0,-28(%fp)
+ 145 0166 3D43 FFE6 		move.w %d3,-26(%fp)
+ 146 016a 41EE FFC4 		lea (-60,%fp),%a0
+ 147 016e 2F08      		move.l %a0,-(%sp)
+ 148 0170 2F08      		move.l %a0,-(%sp)
+ 149 0172 4EB9 0000 		jbsr bios_call
+ 149      0000 
+ 150 0178 322E FFC4 		move.w -60(%fp),%d1
+ 151 017c 3001      		move.w %d1,%d0
+ 152 017e 4840      		swap %d0
+ 153 0180 302E FFC6 		mov.w -58(%fp),%d0
+ 154 0184 508F      		addq.l #8,%sp
+ 155 0186 4A80      		tst.l %d0
+ 156 0188 66A0      		jbne .L30
+ 157 018a 5282      		addq.l #1,%d2
+ 158 018c 5384      		subq.l #1,%d4
+ 159 018e 0683 0000 		add.l #512,%d3
+68K GAS  diskio.s 			page 4
+
+
+ 159      0200 
+ 160               	.L31:
+ 161 0194 4A84      		tst.l %d4
+ 162 0196 6696      		jbne .L25
+ 163 0198 7000      		moveq #0,%d0
+ 164               	.L22:
+ 165 019a 4CEE 003C 		movm.l -76(%fp),#0x3c
+ 165      FFB4 
+ 166 01a0 4E5E      		unlk %fp
+ 167 01a2 4E75      		rts
+ 168               		.size	disk_read, .-disk_read
+ 169               		.align	2
+ 170               		.globl	disk_initialize
+ 171               		.type	disk_initialize, @function
+ 172               	disk_initialize:
+ 173 01a4 4E56 FFC4 		link.w %fp,#-60
+ 174 01a8 2F02      		move.l %d2,-(%sp)
+ 175 01aa 142E 000B 		move.b 11(%fp),%d2
+ 176 01ae 0C02 0003 		cmp.b #3,%d2
+ 177 01b2 6304      		jbls .L33
+ 178 01b4 7001      		moveq #1,%d0
+ 179 01b6 604E      		jbra .L35
+ 180               	.L33:
+ 181 01b8 426E FFC4 		clr.w -60(%fp)
+ 182 01bc 3D7C 000A 		move.w #10,-58(%fp)
+ 182      FFC6 
+ 183 01c2 0282 0000 		and.l #255,%d2
+ 183      00FF 
+ 184 01c8 426E FFC8 		clr.w -56(%fp)
+ 185 01cc 3002      		move.w %d2,%d0
+ 186 01ce 5440      		addq.w #2,%d0
+ 187 01d0 3D40 FFCA 		move.w %d0,-54(%fp)
+ 188 01d4 41EE FFC4 		lea (-60,%fp),%a0
+ 189 01d8 2F08      		move.l %a0,-(%sp)
+ 190 01da 2F08      		move.l %a0,-(%sp)
+ 191 01dc 4EB9 0000 		jbsr bios_call
+ 191      0000 
+ 192 01e2 322E FFC4 		move.w -60(%fp),%d1
+ 193 01e6 3001      		move.w %d1,%d0
+ 194 01e8 4840      		swap %d0
+ 195 01ea 302E FFC6 		mov.w -58(%fp),%d0
+ 196 01ee 508F      		addq.l #8,%sp
+ 197 01f0 41F9 0000 		lea drive_status,%a0
+ 197      0000 
+ 198 01f6 4A80      		tst.l %d0
+ 199 01f8 57C0      		seq %d0
+ 200 01fa 5200      		addq.b #1,%d0
+ 201 01fc 1180 2800 		move.b %d0,(%a0,%d2.l)
+ 202 0200 0280 0000 		and.l #255,%d0
+ 202      00FF 
+ 203               	.L35:
+ 204 0206 242E FFC0 		move.l -64(%fp),%d2
+ 205 020a 4E5E      		unlk %fp
+ 206 020c 4E75      		rts
+ 207               		.size	disk_initialize, .-disk_initialize
+ 208               		.align	2
+ 209               		.globl	disk_write
+68K GAS  diskio.s 			page 5
+
+
+ 210               		.type	disk_write, @function
+ 211               	disk_write:
+ 212 020e 4E56 FFC4 		link.w %fp,#-60
+ 213 0212 48E7 3C00 		movm.l #0x3c00,-(%sp)
+ 214 0216 262E 000C 		move.l 12(%fp),%d3
+ 215 021a 242E 0010 		move.l 16(%fp),%d2
+ 216 021e 282E 0014 		move.l 20(%fp),%d4
+ 217 0222 102E 000B 		move.b 11(%fp),%d0
+ 218 0226 0C00 0003 		cmp.b #3,%d0
+ 219 022a 6306      		jbls .L41
+ 220 022c 7004      		moveq #4,%d0
+ 221 022e 6000 008A 		jbra .L43
+ 222               	.L41:
+ 223 0232 7A00      		moveq #0,%d5
+ 224 0234 1A00      		move.b %d0,%d5
+ 225 0236 41F9 0000 		lea drive_status,%a0
+ 225      0000 
+ 226 023c 1030 5800 		move.b (%a0,%d5.l),%d0
+ 227 0240 7203      		moveq #3,%d1
+ 228 0242 C081      		and.l %d1,%d0
+ 229 0244 676E      		jbeq .L52
+ 230 0246 7003      		moveq #3,%d0
+ 231 0248 6070      		jbra .L43
+ 232               	.L51:
+ 233 024a 7001      		moveq #1,%d0
+ 234 024c 606C      		jbra .L43
+ 235               	.L46:
+ 236 024e 426E FFC4 		clr.w -60(%fp)
+ 237 0252 3D7C 000D 		move.w #13,-58(%fp)
+ 237      FFC6 
+ 238 0258 426E FFC8 		clr.w -56(%fp)
+ 239 025c 3005      		move.w %d5,%d0
+ 240 025e 5440      		addq.w #2,%d0
+ 241 0260 3D40 FFCA 		move.w %d0,-54(%fp)
+ 242 0264 2002      		move.l %d2,%d0
+ 243 0266 4240      		clr.w %d0
+ 244 0268 4840      		swap %d0
+ 245 026a 3D40 FFCC 		move.w %d0,-52(%fp)
+ 246 026e 3D42 FFCE 		move.w %d2,-50(%fp)
+ 247 0272 426E FFD0 		clr.w -48(%fp)
+ 248 0276 3D7C 0001 		move.w #1,-46(%fp)
+ 248      FFD2 
+ 249 027c 2003      		move.l %d3,%d0
+ 250 027e 4240      		clr.w %d0
+ 251 0280 4840      		swap %d0
+ 252 0282 3D40 FFE4 		move.w %d0,-28(%fp)
+ 253 0286 3D43 FFE6 		move.w %d3,-26(%fp)
+ 254 028a 41EE FFC4 		lea (-60,%fp),%a0
+ 255 028e 2F08      		move.l %a0,-(%sp)
+ 256 0290 2F08      		move.l %a0,-(%sp)
+ 257 0292 4EB9 0000 		jbsr bios_call
+ 257      0000 
+ 258 0298 322E FFC4 		move.w -60(%fp),%d1
+ 259 029c 3001      		move.w %d1,%d0
+ 260 029e 4840      		swap %d0
+ 261 02a0 302E FFC6 		mov.w -58(%fp),%d0
+ 262 02a4 508F      		addq.l #8,%sp
+68K GAS  diskio.s 			page 6
+
+
+ 263 02a6 4A80      		tst.l %d0
+ 264 02a8 66A0      		jbne .L51
+ 265 02aa 5282      		addq.l #1,%d2
+ 266 02ac 5384      		subq.l #1,%d4
+ 267 02ae 0683 0000 		add.l #512,%d3
+ 267      0200 
+ 268               	.L52:
+ 269 02b4 4A84      		tst.l %d4
+ 270 02b6 6696      		jbne .L46
+ 271 02b8 7000      		moveq #0,%d0
+ 272               	.L43:
+ 273 02ba 4CEE 003C 		movm.l -76(%fp),#0x3c
+ 273      FFB4 
+ 274 02c0 4E5E      		unlk %fp
+ 275 02c2 4E75      		rts
+ 276               		.size	disk_write, .-disk_write
+ 277               		.comm	drive_status,4,1
+ 278               		.ident	"GCC: (GNU) 4.1.1"
+68K GAS  diskio.s 			page 7
+
+
+DEFINED SYMBOLS
+                            *ABS*:00000000 diskio.c
+                            *ABS*:000109a0 CPU
+                            *ABS*:00000001 RETAIL
+            diskio.s:7      .text:00000000 disk_status
+                            *COM*:00000004 drive_status
+            diskio.s:26     .text:0000002c disk_ioctl
+            diskio.s:103    .text:000000ee disk_read
+            diskio.s:172    .text:000001a4 disk_initialize
+            diskio.s:211    .text:0000020e disk_write
+
+UNDEFINED SYMBOLS
+bios_call

@@ -1,0 +1,29 @@
+
+
+
+/*
+#--------------------------------------------------------------------------
+#  bios_daytime
+#--------------------------------------------------------------------------
+#  date & time BIOS call
+#
+#    Call with:
+#	D0 = 20	  function code
+#	D1 = return format option:
+#		0 = Julian day, tick count since midnight (binary)
+#		1 = Days since Dec. 31, 1900 (i.e., Jan. 1, 1901 = 1)
+#		    Time in binary seconds since midnight
+#		2 = Binary date:  Word:4:8:4  =  Year:Month(4):Day(8):DayOfWeek(4)  Year=2011, e.g.
+#		    Binary time:  Byte:Byte:Byte:Byte = 0:Hour:Minute:Second (24-hr format)
+#		3 = BCD date:  Byte:Byte:Byte:Byte = Century:Year:Month:Day
+#		    BCD time:  Byte:Byte:Byte:Byte = 00:hh:mm:ss
+#
+#    Return with:
+#	D0 = 	date, per format option
+#	D1 =	time, per format option
+#
+#  There is no error return.
+#
+#--------------------------------------------------------------------------
+*/
+

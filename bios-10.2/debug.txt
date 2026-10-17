@@ -1,0 +1,17 @@
+Commands for the mini-M68k CPU BIOS debugger:
+
+
+	D[B|W|L] <address> [<count>] -- memory DUMP by byte, word, or
+		long
+	DC <address> [$|<terminator>] -- dump character string, NUL
+		terminator implied; $ or other terminator must be
+		specified
+
+	S -- STEP one instruction, stepping over BSR, JSR, TRAP
+
+	T [<count>] -- TRACE <count> instructions (trace into calls)
+
+
+
+
+

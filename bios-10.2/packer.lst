@@ -1,0 +1,118 @@
+68K GAS  packer.s 			page 1
+
+
+   1               	#NO_APP
+   2               		.file	"packer.c"
+   3               		.text
+   4               		.align	2
+   5               		.globl	_uval
+   6               		.type	_uval, @function
+   7               	_uval:
+   8 0000 4E56 0000 		link.w %fp,#0
+   9 0004 122E 000F 		move.b 15(%fp),%d1
+  10 0008 7000      		moveq #0,%d0
+  11 000a 1001      		move.b %d1,%d0
+  12 000c 206E 0008 		move.l 8(%fp),%a0
+  13 0010 D1C0      		add.l %d0,%a0
+  14 0012 7000      		moveq #0,%d0
+  15 0014 6004      		jbra .L2
+  16               	.L3:
+  17 0016 E188      		lsl.l #8,%d0
+  18 0018 8020      		or.b -(%a0),%d0
+  19               	.L2:
+  20 001a 5301      		subq.b #1,%d1
+  21 001c 0C01 FFFF 		cmp.b #-1,%d1
+  22 0020 66F4      		jbne .L3
+  23 0022 4E5E      		unlk %fp
+  24 0024 4E75      		rts
+  25               		.size	_uval, .-_uval
+  26               		.align	2
+  27               		.globl	unpack
+  28               		.type	unpack, @function
+  29               	unpack:
+  30 0026 4E56 0000 		link.w %fp,#0
+  31 002a 48E7 2038 		movm.l #0x2038,-(%sp)
+  32 002e 286E 0008 		move.l 8(%fp),%a4
+  33 0032 246E 000C 		move.l 12(%fp),%a2
+  34 0036 242E 0010 		move.l 16(%fp),%d2
+  35 003a 2642      		move.l %d2,%a3
+  36 003c 6068      		jbra .L7
+  37               	.L8:
+  38 003e 0C00 0063 		cmp.b #99,%d0
+  39 0042 6718      		jbeq .L11
+  40 0044 6E08      		jbgt .L14
+  41 0046 0C00 0062 		cmp.b #98,%d0
+  42 004a 6658      		jbne .L9
+  43 004c 6012      		jbra .L10
+  44               	.L14:
+  45 004e 0C00 0064 		cmp.b #100,%d0
+  46 0052 672E      		jbeq .L12
+  47 0054 0C00 0077 		cmp.b #119,%d0
+  48 0058 664A      		jbne .L9
+  49 005a 600E      		jbra .L13
+  50               	.L11:
+  51 005c 16DA      		move.b (%a2)+,(%a3)+
+  52 005e 6044      		jbra .L9
+  53               	.L10:
+  54 0060 7000      		moveq #0,%d0
+  55 0062 101A      		move.b (%a2)+,%d0
+  56 0064 E188      		lsl.l #8,%d0
+  57 0066 36C0      		move.w %d0,(%a3)+
+68K GAS  packer.s 			page 2
+
+
+  58 0068 603A      		jbra .L9
+  59               	.L13:
+  60 006a 7000      		moveq #0,%d0
+  61 006c 101A      		move.b (%a2)+,%d0
+  62 006e 204A      		move.l %a2,%a0
+  63 0070 E188      		lsl.l #8,%d0
+  64 0072 528A      		addq.l #1,%a2
+  65 0074 8010      		or.b (%a0),%d0
+  66 0076 2F00      		move.l %d0,-(%sp)
+  67 0078 4EB9 0000 		jbsr wswap
+  67      0000 
+  68 007e 36C0      		move.w %d0,(%a3)+
+  69 0080 6020      		jbra .L17
+  70               	.L12:
+  71 0082 7000      		moveq #0,%d0
+  72 0084 101A      		move.b (%a2)+,%d0
+  73 0086 204A      		move.l %a2,%a0
+  74 0088 E188      		lsl.l #8,%d0
+  75 008a 8018      		or.b (%a0)+,%d0
+  76 008c E188      		lsl.l #8,%d0
+  77 008e 8018      		or.b (%a0)+,%d0
+  78 0090 E188      		lsl.l #8,%d0
+  79 0092 45E8 0001 		lea (1,%a0),%a2
+  80 0096 8010      		or.b (%a0),%d0
+  81 0098 2F00      		move.l %d0,-(%sp)
+  82 009a 4EB9 0000 		jbsr bswap
+  82      0000 
+  83 00a0 26C0      		move.l %d0,(%a3)+
+  84               	.L17:
+  85 00a2 588F      		addq.l #4,%sp
+  86               	.L9:
+  87 00a4 528C      		addq.l #1,%a4
+  88               	.L7:
+  89 00a6 1014      		move.b (%a4),%d0
+  90 00a8 6694      		jbne .L8
+  91 00aa 2002      		move.l %d2,%d0
+  92 00ac 4CEE 1C04 		movm.l -16(%fp),#0x1c04
+  92      FFF0 
+  93 00b2 4E5E      		unlk %fp
+  94 00b4 4E75      		rts
+  95               		.size	unpack, .-unpack
+  96               		.ident	"GCC: (GNU) 4.1.1"
+68K GAS  packer.s 			page 3
+
+
+DEFINED SYMBOLS
+                            *ABS*:00000000 packer.c
+                            *ABS*:000109a0 CPU
+                            *ABS*:00000001 RETAIL
+            packer.s:7      .text:00000000 _uval
+            packer.s:29     .text:00000026 unpack
+
+UNDEFINED SYMBOLS
+wswap
+bswap

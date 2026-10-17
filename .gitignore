@@ -32,3 +32,5 @@ local.mk
 dsm.txt
 tests/*/*.tos
 bin/
+*.elf
+mkelf68k

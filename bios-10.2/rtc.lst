@@ -1,0 +1,333 @@
+68K GAS  rtc.s 			page 1
+
+
+   1               	#NO_APP
+   2               		.file	"rtc.c"
+   3               		.globl	__mulsi3
+   4               		.globl	__udivsi3
+   5               		.text
+   6               		.align	2
+   7               		.globl	julian_date
+   8               		.type	julian_date, @function
+   9               	julian_date:
+  10 0000 4E56 0000 		link.w %fp,#0
+  11 0004 48E7 3C38 		movm.l #0x3c38,-(%sp)
+  12 0008 202E 0010 		move.l 16(%fp),%d0
+  13 000c 3A2E 000A 		move.w 10(%fp),%d5
+  14 0010 382E 000E 		move.w 14(%fp),%d4
+  15 0014 3600      		move.w %d0,%d3
+  16 0016 6E06      		jbgt .L2
+  17 0018 387C 004B 		move.w #75,%a4
+  18 001c 6002      		jbra .L4
+  19               	.L2:
+  20 001e 99CC      		sub.l %a4,%a4
+  21               	.L4:
+  22 0020 0C44 0002 		cmp.w #2,%d4
+  23 0024 6206      		jbhi .L5
+  24 0026 5343      		subq.w #1,%d3
+  25 0028 0644 000C 		add.w #12,%d4
+  26               	.L5:
+  27 002c 3203      		move.w %d3,%d1
+  28 002e C3FC 0064 		muls.w #100,%d1
+  29 0032 7000      		moveq #0,%d0
+  30 0034 3004      		move.w %d4,%d0
+  31 0036 D280      		add.l %d0,%d1
+  32 0038 2001      		move.l %d1,%d0
+  33 003a D081      		add.l %d1,%d0
+  34 003c D081      		add.l %d1,%d0
+  35 003e 2400      		move.l %d0,%d2
+  36 0040 EB8A      		lsl.l #5,%d2
+  37 0042 D082      		add.l %d2,%d0
+  38 0044 D081      		add.l %d1,%d0
+  39 0046 7200      		moveq #0,%d1
+  40 0048 3205      		move.w %d5,%d1
+  41 004a D081      		add.l %d1,%d0
+  42 004c 0C80 00F1 		cmp.l #15821014,%d0
+  42      68D6 
+  43 0052 6E04      		jbgt .L7
+  44 0054 7401      		moveq #1,%d2
+  45 0056 6016      		jbra .L9
+  46               	.L7:
+  47 0058 3203      		move.w %d3,%d1
+  48 005a 7464      		moveq #100,%d2
+  49 005c 48C1      		ext.l %d1
+  50 005e 83C2      		divs.w %d2,%d1
+  51 0060 3001      		move.w %d1,%d0
+  52 0062 6C02      		jbge .L10
+  53 0064 5640      		addq.w #3,%d0
+  54               	.L10:
+  55 0066 3400      		move.w %d0,%d2
+  56 0068 E442      		asr.w #2,%d2
+68K GAS  rtc.s 			page 2
+
+
+  57 006a 9441      		sub.w %d1,%d2
+  58 006c 5642      		addq.w #3,%d2
+  59               	.L9:
+  60 006e 47F9 0000 		lea __mulsi3,%a3
+  60      0000 
+  61 0074 2F3C 0000 		move.l #36525,-(%sp)
+  61      8EAD 
+  62 007a 3043      		move.w %d3,%a0
+  63 007c 2F08      		move.l %a0,-(%sp)
+  64 007e 4E93      		jbsr (%a3)
+  65 0080 508F      		addq.l #8,%sp
+  66 0082 45F9 0000 		lea __udivsi3,%a2
+  66      0000 
+  67 0088 4878 0064 		pea 100.w
+  68 008c 2040      		move.l %d0,%a0
+  69 008e 90CC      		sub.w %a4,%a0
+  70 0090 2F08      		move.l %a0,-(%sp)
+  71 0092 4E92      		jbsr (%a2)
+  72 0094 508F      		addq.l #8,%sp
+  73 0096 3042      		move.w %d2,%a0
+  74 0098 49F0 0800 		lea (%a0,%d0.l),%a4
+  75 009c 7400      		moveq #0,%d2
+  76 009e 3405      		move.w %d5,%d2
+  77 00a0 2F3C 0004 		move.l #306001,-(%sp)
+  77      AB51 
+  78 00a6 3F04      		move.w %d4,-(%sp)
+  79 00a8 4267      		clr.w -(%sp)
+  80 00aa 4E93      		jbsr (%a3)
+  81 00ac 584F      		addq.w #4,%sp
+  82 00ae 2EBC 0000 		move.l #10000,(%sp)
+  82      2710 
+  83 00b4 0680 0004 		add.l #306001,%d0
+  83      AB51 
+  84 00ba 2F00      		move.l %d0,-(%sp)
+  85 00bc 4E92      		jbsr (%a2)
+  86 00be 508F      		addq.l #8,%sp
+  87 00c0 D480      		add.l %d0,%d2
+  88 00c2 0682 001A 		add.l #1720994,%d2
+  88      42A2 
+  89 00c8 200C      		move.l %a4,%d0
+  90 00ca D082      		add.l %d2,%d0
+  91 00cc 4CEE 1C3C 		movm.l -28(%fp),#0x1c3c
+  91      FFE4 
+  92 00d2 4E5E      		unlk %fp
+  93 00d4 4E75      		rts
+  94               		.size	julian_date, .-julian_date
+  95               		.align	2
+  96               		.globl	get_rtc_date
+  97               		.type	get_rtc_date, @function
+  98               	get_rtc_date:
+  99 00d6 4E56 0000 		link.w %fp,#0
+ 100 00da 48E7 3830 		movm.l #0x3830,-(%sp)
+ 101 00de 246E 0008 		move.l 8(%fp),%a2
+ 102 00e2 4878 0022 		pea 34.w
+ 103 00e6 47F9 0000 		lea rtc_get_loc,%a3
+ 103      0000 
+ 104 00ec 4E93      		jbsr (%a3)
+68K GAS  rtc.s 			page 3
+
+
+ 105 00ee 1800      		move.b %d0,%d4
+ 106 00f0 720F      		moveq #15,%d1
+ 107 00f2 4601      		not.b %d1
+ 108 00f4 C284      		and.l %d4,%d1
+ 109 00f6 E881      		asr.l #4,%d1
+ 110 00f8 2001      		move.l %d1,%d0
+ 111 00fa D081      		add.l %d1,%d0
+ 112 00fc D080      		add.l %d0,%d0
+ 113 00fe D081      		add.l %d1,%d0
+ 114 0100 D080      		add.l %d0,%d0
+ 115 0102 0204 000F 		and.b #15,%d4
+ 116 0106 D800      		add.b %d0,%d4
+ 117 0108 0244 00FF 		and.w #255,%d4
+ 118 010c 1484      		move.b %d4,(%a2)
+ 119 010e 4878 0006 		pea 6.w
+ 120 0112 4E93      		jbsr (%a3)
+ 121 0114 1600      		move.b %d0,%d3
+ 122 0116 720F      		moveq #15,%d1
+ 123 0118 4601      		not.b %d1
+ 124 011a C283      		and.l %d3,%d1
+ 125 011c E881      		asr.l #4,%d1
+ 126 011e 2001      		move.l %d1,%d0
+ 127 0120 D081      		add.l %d1,%d0
+ 128 0122 D080      		add.l %d0,%d0
+ 129 0124 D081      		add.l %d1,%d0
+ 130 0126 D080      		add.l %d0,%d0
+ 131 0128 0203 000F 		and.b #15,%d3
+ 132 012c D600      		add.b %d0,%d3
+ 133 012e 1543 0001 		move.b %d3,1(%a2)
+ 134 0132 4878 0004 		pea 4.w
+ 135 0136 4E93      		jbsr (%a3)
+ 136 0138 740F      		moveq #15,%d2
+ 137 013a 4602      		not.b %d2
+ 138 013c C480      		and.l %d0,%d2
+ 139 013e E882      		asr.l #4,%d2
+ 140 0140 2202      		move.l %d2,%d1
+ 141 0142 D282      		add.l %d2,%d1
+ 142 0144 D281      		add.l %d1,%d1
+ 143 0146 D282      		add.l %d2,%d1
+ 144 0148 D281      		add.l %d1,%d1
+ 145 014a 0200 000F 		and.b #15,%d0
+ 146 014e D001      		add.b %d1,%d0
+ 147 0150 1540 0002 		move.b %d0,2(%a2)
+ 148 0154 4878 0003 		pea 3.w
+ 149 0158 4E93      		jbsr (%a3)
+ 150 015a 740F      		moveq #15,%d2
+ 151 015c 4602      		not.b %d2
+ 152 015e C480      		and.l %d0,%d2
+ 153 0160 E882      		asr.l #4,%d2
+ 154 0162 2202      		move.l %d2,%d1
+ 155 0164 D282      		add.l %d2,%d1
+ 156 0166 D281      		add.l %d1,%d1
+ 157 0168 D282      		add.l %d2,%d1
+ 158 016a D281      		add.l %d1,%d1
+ 159 016c 0200 000F 		and.b #15,%d0
+ 160 0170 D001      		add.b %d1,%d0
+ 161 0172 1540 0003 		move.b %d0,3(%a2)
+68K GAS  rtc.s 			page 4
+
+
+ 162 0176 C9FC 0064 		muls.w #100,%d4
+ 163 017a 0243 00FF 		and.w #255,%d3
+ 164 017e D644      		add.w %d4,%d3
+ 165 0180 3043      		move.w %d3,%a0
+ 166 0182 2F08      		move.l %a0,-(%sp)
+ 167 0184 7200      		moveq #0,%d1
+ 168 0186 122A 0002 		move.b 2(%a2),%d1
+ 169 018a 2F01      		move.l %d1,-(%sp)
+ 170 018c 0280 0000 		and.l #255,%d0
+ 170      00FF 
+ 171 0192 2F00      		move.l %d0,-(%sp)
+ 172 0194 6100 FE6A 		jbsr julian_date
+ 173 0198 4FEF 000C 		lea (12,%sp),%sp
+ 174 019c 2200      		move.l %d0,%d1
+ 175 019e 4241      		clr.w %d1
+ 176 01a0 4841      		swap %d1
+ 177 01a2 3541 0004 		move.w %d1,4(%a2)
+ 178 01a6 3540 0006 		move.w %d0,6(%a2)
+ 179 01aa 4CEE 0C1C 		movm.l -20(%fp),#0xc1c
+ 179      FFEC 
+ 180 01b0 4E5E      		unlk %fp
+ 181 01b2 4E75      		rts
+ 182               		.size	get_rtc_date, .-get_rtc_date
+ 183               		.align	2
+ 184               		.globl	get_rtc_time
+ 185               		.type	get_rtc_time, @function
+ 186               	get_rtc_time:
+ 187 01b4 4E56 0000 		link.w %fp,#0
+ 188 01b8 48E7 3830 		movm.l #0x3830,-(%sp)
+ 189 01bc 266E 0008 		move.l 8(%fp),%a3
+ 190 01c0 42A7      		clr.l -(%sp)
+ 191 01c2 4EB9 0000 		jbsr rtc_get_loc
+ 191      0000 
+ 192 01c8 1800      		move.b %d0,%d4
+ 193 01ca 588F      		addq.l #4,%sp
+ 194               	.L15:
+ 195 01cc 4213      		clr.b (%a3)
+ 196 01ce 4878 0002 		pea 2.w
+ 197 01d2 45F9 0000 		lea rtc_get_loc,%a2
+ 197      0000 
+ 198 01d8 4E92      		jbsr (%a2)
+ 199 01da 740F      		moveq #15,%d2
+ 200 01dc 4602      		not.b %d2
+ 201 01de C480      		and.l %d0,%d2
+ 202 01e0 E882      		asr.l #4,%d2
+ 203 01e2 2202      		move.l %d2,%d1
+ 204 01e4 D282      		add.l %d2,%d1
+ 205 01e6 D281      		add.l %d1,%d1
+ 206 01e8 D282      		add.l %d2,%d1
+ 207 01ea D281      		add.l %d1,%d1
+ 208 01ec 0200 000F 		and.b #15,%d0
+ 209 01f0 D001      		add.b %d1,%d0
+ 210 01f2 1740 0001 		move.b %d0,1(%a3)
+ 211 01f6 0280 0000 		and.l #255,%d0
+ 211      00FF 
+ 212 01fc D080      		add.l %d0,%d0
+ 213 01fe D080      		add.l %d0,%d0
+68K GAS  rtc.s 			page 5
+
+
+ 214 0200 2600      		move.l %d0,%d3
+ 215 0202 E98B      		lsl.l #4,%d3
+ 216 0204 9680      		sub.l %d0,%d3
+ 217 0206 4878 0001 		pea 1.w
+ 218 020a 4E92      		jbsr (%a2)
+ 219 020c 740F      		moveq #15,%d2
+ 220 020e 4602      		not.b %d2
+ 221 0210 C480      		and.l %d0,%d2
+ 222 0212 E882      		asr.l #4,%d2
+ 223 0214 2202      		move.l %d2,%d1
+ 224 0216 D282      		add.l %d2,%d1
+ 225 0218 D281      		add.l %d1,%d1
+ 226 021a D282      		add.l %d2,%d1
+ 227 021c D281      		add.l %d1,%d1
+ 228 021e 0200 000F 		and.b #15,%d0
+ 229 0222 D001      		add.b %d1,%d0
+ 230 0224 1740 0002 		move.b %d0,2(%a3)
+ 231 0228 0280 0000 		and.l #255,%d0
+ 231      00FF 
+ 232 022e D680      		add.l %d0,%d3
+ 233 0230 D683      		add.l %d3,%d3
+ 234 0232 D683      		add.l %d3,%d3
+ 235 0234 2403      		move.l %d3,%d2
+ 236 0236 E98A      		lsl.l #4,%d2
+ 237 0238 9483      		sub.l %d3,%d2
+ 238 023a 42A7      		clr.l -(%sp)
+ 239 023c 4E92      		jbsr (%a2)
+ 240 023e 4FEF 000C 		lea (12,%sp),%sp
+ 241 0242 B004      		cmp.b %d4,%d0
+ 242 0244 6704      		jbeq .L16
+ 243 0246 1800      		move.b %d0,%d4
+ 244 0248 6082      		jbra .L15
+ 245               	.L16:
+ 246 024a 720F      		moveq #15,%d1
+ 247 024c 4601      		not.b %d1
+ 248 024e C284      		and.l %d4,%d1
+ 249 0250 E881      		asr.l #4,%d1
+ 250 0252 2001      		move.l %d1,%d0
+ 251 0254 D081      		add.l %d1,%d0
+ 252 0256 D080      		add.l %d0,%d0
+ 253 0258 D081      		add.l %d1,%d0
+ 254 025a D080      		add.l %d0,%d0
+ 255 025c 1204      		move.b %d4,%d1
+ 256 025e 0201 000F 		and.b #15,%d1
+ 257 0262 D200      		add.b %d0,%d1
+ 258 0264 1741 0003 		move.b %d1,3(%a3)
+ 259 0268 0281 0000 		and.l #255,%d1
+ 259      00FF 
+ 260 026e D282      		add.l %d2,%d1
+ 261 0270 2001      		move.l %d1,%d0
+ 262 0272 D081      		add.l %d1,%d0
+ 263 0274 D081      		add.l %d1,%d0
+ 264 0276 E788      		lsl.l #3,%d0
+ 265 0278 D081      		add.l %d1,%d0
+ 266 027a 7209      		moveq #9,%d1
+ 267 027c E3A8      		lsl.l %d1,%d0
+ 268 027e 4878 02A3 		pea 675.w
+68K GAS  rtc.s 			page 6
+
+
+ 269 0282 2F00      		move.l %d0,-(%sp)
+ 270 0284 4EB9 0000 		jbsr __udivsi3
+ 270      0000 
+ 271 028a 508F      		addq.l #8,%sp
+ 272 028c 2200      		move.l %d0,%d1
+ 273 028e 4241      		clr.w %d1
+ 274 0290 4841      		swap %d1
+ 275 0292 3741 0004 		move.w %d1,4(%a3)
+ 276 0296 3740 0006 		move.w %d0,6(%a3)
+ 277 029a 4CEE 0C1C 		movm.l -20(%fp),#0xc1c
+ 277      FFEC 
+ 278 02a0 4E5E      		unlk %fp
+ 279 02a2 4E75      		rts
+ 280               		.size	get_rtc_time, .-get_rtc_time
+ 281               		.ident	"GCC: (GNU) 4.1.1"
+68K GAS  rtc.s 			page 7
+
+
+DEFINED SYMBOLS
+                            *ABS*:00000000 rtc.c
+                            *ABS*:000109a0 CPU
+                            *ABS*:00000001 RETAIL
+               rtc.s:9      .text:00000000 julian_date
+               rtc.s:98     .text:000000d6 get_rtc_date
+               rtc.s:186    .text:000001b4 get_rtc_time
+
+UNDEFINED SYMBOLS
+__mulsi3
+__udivsi3
+rtc_get_loc

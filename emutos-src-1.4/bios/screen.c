@@ -628,6 +628,12 @@ void screen_init_mode(void)
     lisa_screen_init();
 #endif
 
+#ifdef MACHINE_MINI68K
+    /* No video hardware yet: use an 80-column monochrome screen in RAM,
+     * the same 640x400 mode that will later be shown on the VERA card */
+    sshiftmod = ST_HIGH;
+#endif
+
     rez_was_hacked = FALSE; /* initial assumption */
 }
 

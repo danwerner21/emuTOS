@@ -1,0 +1,112 @@
+68K GAS  ns202.s 			page 1
+
+
+   1               	#NO_APP
+   2               		.file	"ns202.c"
+   3               		.text
+   4               		.align	2
+   5               		.globl	icu_inpw
+   6               		.type	icu_inpw, @function
+   7               	icu_inpw:
+   8 0000 4E56 0000 		link.w %fp,#0
+   9 0004 206E 0008 		move.l 8(%fp),%a0
+  10 0008 7000      		moveq #0,%d0
+  11 000a 1028 0100 		move.b 256(%a0),%d0
+  12 000e E188      		lsl.l #8,%d0
+  13 0010 8010      		or.b (%a0),%d0
+  14 0012 4E5E      		unlk %fp
+  15 0014 4E75      		rts
+  16               		.size	icu_inpw, .-icu_inpw
+  17               		.align	2
+  18               		.globl	icu_outpw
+  19               		.type	icu_outpw, @function
+  20               	icu_outpw:
+  21 0016 4E56 0000 		link.w %fp,#0
+  22 001a 206E 0008 		move.l 8(%fp),%a0
+  23 001e 202E 000C 		move.l 12(%fp),%d0
+  24 0022 1080      		move.b %d0,(%a0)
+  25 0024 E080      		asr.l #8,%d0
+  26 0026 1140 0100 		move.b %d0,256(%a0)
+  27 002a 4E5E      		unlk %fp
+  28 002c 4E75      		rts
+  29               		.size	icu_outpw, .-icu_outpw
+  30               		.align	2
+  31               		.globl	ns202_init2
+  32               		.type	ns202_init2, @function
+  33               	ns202_init2:
+  34 002e 4E56 0000 		link.w %fp,#0
+  35 0032 48E7 0038 		movm.l #0x38,-(%sp)
+  36 0036 387C 9040 		move.w #-28608,%a4
+  37 003a 18BC 0042 		move.b #66,(%a4)
+  38 003e 367C 9640 		move.w #-27072,%a3
+  39 0042 4213      		clr.b (%a3)
+  40 0044 4878 5EEB 		pea 24299.w
+  41 0048 4878 9840 		pea -26560.w
+  42 004c 45FA FFC8 		lea icu_outpw,%a2
+  43 0050 4E92      		jbsr (%a2)
+  44 0052 4878 5EEB 		pea 24299.w
+  45 0056 4878 9A40 		pea -26048.w
+  46 005a 4E92      		jbsr (%a2)
+  47 005c 11FC 0037 		move.b #55,-28096.w
+  47      9240 
+  48 0062 4878 5EEB 		pea 24299.w
+  49 0066 4878 9C40 		pea -25536.w
+  50 006a 4E92      		jbsr (%a2)
+  51 006c 4878 5EEB 		pea 24299.w
+  52 0070 4878 9E40 		pea -25024.w
+  53 0074 4E92      		jbsr (%a2)
+  54 0076 11FC 0031 		move.b #49,-26816.w
+  54      9740 
+  55 007c 11FC 000F 		move.b #15,-27584.w
+68K GAS  ns202.s 			page 2
+
+
+  55      9440 
+  56 0082 50F8 9540 		st -27328.w
+  57 0086 4238 9140 		clr.b -28352.w
+  58 008a 4FEF 001C 		lea (28,%sp),%sp
+  59 008e 4297      		clr.l (%sp)
+  60 0090 4878 8840 		pea -30656.w
+  61 0094 4E92      		jbsr (%a2)
+  62 0096 42A7      		clr.l -(%sp)
+  63 0098 4878 8C40 		pea -29632.w
+  64 009c 4E92      		jbsr (%a2)
+  65 009e 11FC 0010 		move.b #16,-32448.w
+  65      8140 
+  66 00a4 11FC 0010 		move.b #16,-32702.w
+  66      8042 
+  67 00aa 4238 8E40 		clr.b -29120.w
+  68 00ae 2F3C 0000 		move.l #65535,-(%sp)
+  68      FFFF 
+  69 00b4 4878 8440 		pea -31680.w
+  70 00b8 4E92      		jbsr (%a2)
+  71 00ba 2F3C 0000 		move.l #65535,-(%sp)
+  71      FFFF 
+  72 00c0 4878 8240 		pea -32192.w
+  73 00c4 4E92      		jbsr (%a2)
+  74 00c6 18BC 0002 		move.b #2,(%a4)
+  75 00ca 16BC 0008 		move.b #8,(%a3)
+  76 00ce 4FEF 001C 		lea (28,%sp),%sp
+  77 00d2 2EBC 0000 		move.l #65280,(%sp)
+  77      FF00 
+  78 00d8 4878 8A40 		pea -30144.w
+  79 00dc 4E92      		jbsr (%a2)
+  80 00de 508F      		addq.l #8,%sp
+  81 00e0 4CEE 1C00 		movm.l -12(%fp),#0x1c00
+  81      FFF4 
+  82 00e6 4E5E      		unlk %fp
+  83 00e8 4E75      		rts
+  84               		.size	ns202_init2, .-ns202_init2
+  85               		.ident	"GCC: (GNU) 4.1.1"
+68K GAS  ns202.s 			page 3
+
+
+DEFINED SYMBOLS
+                            *ABS*:00000000 ns202.c
+                            *ABS*:000109a0 CPU
+                            *ABS*:00000001 RETAIL
+             ns202.s:7      .text:00000000 icu_inpw
+             ns202.s:20     .text:00000016 icu_outpw
+             ns202.s:33     .text:0000002e ns202_init2
+
+NO UNDEFINED SYMBOLS

@@ -62,6 +62,7 @@ help:
 	@echo "amigaflopvampire $(EMUTOS_VAMPIRE_ADF), EmuTOS RAM as Amiga boot floppy optimized for Vampire V2"
 	@echo "lisaflop $(EMUTOS_DC42), EmuTOS RAM as Apple Lisa boot floppy"
 	@echo "m548x-dbug $(SREC_M548X_DBUG), EmuTOS-RAM for dBUG on ColdFire Evaluation Boards"
+	@echo "mini-68k  $(ELF_MINI68K), EmuTOS for the RetroBrew Mini-M68k, loaded by its BIOS"
 	@echo "m548x-bas  $(SREC_M548X_BAS), EmuTOS for BaS_gcc on ColdFire Evaluation Boards"
 	@echo "m548x-prg  emutos.prg, a RAM tos for ColdFire Evaluation Boards with BaS_gcc"
 	@echo "prg     emutos.prg, a RAM tos"
@@ -305,6 +306,7 @@ bios_src +=  memory.S processor.S vectors.S aciavecs.S bios.c xbios.c acsi.c \
              pmmu030.c 68040_pmmu.S \
              amiga.c amiga2.S spi_vamp.c \
              lisa.c lisa2.S \
+             mini68k.c mini68k2.S \
              delay.c delayasm.S sd.c memory2.c bootparams.c scsi.c nova.c \
              dsp.c dsp2.S \
              scsidriv.c
@@ -762,6 +764,38 @@ m548x-bas:
 	@echo "# Building M548x BaS_gcc EmuTOS in $(SREC_M548X_BAS)"
 	$(MAKE) COLDFIRE=1 CPUFLAGS='$(CPUFLAGS)' DEF='$(DEF)' UNIQUE=$(UNIQUE) LMA=0xe0100000 SRECFILE=$(SREC_M548X_BAS) $(SREC_M548X_BAS) REF_OS=TOS404
 	@printf "$(LOCALCONFINFO)"
+
+#
+# RetroBrew Mini-M68k (MC68008 + MF/PIC)
+#
+# The board BIOS loads the ELF file from a FAT volume into RAM at
+# MINI68K_LOAD, then EmuTOS runs from there as if it were a ROM.
+# Start it from the BIOS prompt in supervisor mode: s emutos
+#
+
+ELF_MINI68K = emutos.elf
+MINI68K_LOAD = 0x180000
+MINI68K_RAM_TOP = 0x200000
+TOCLEAN += *.elf mkelf68k
+
+.PHONY: mini-68k
+NODEP += mini-68k
+mini-68k: UNIQUE = $(COUNTRY)
+# No video yet: boot straight into EmuCON on the serial console.
+# Use "make mini-68k WITH_AES=1" to include the GEM desktop.
+mini-68k: WITH_AES = 0
+mini-68k: override DEF += -DMACHINE_MINI68K -DMINI68K_LOAD_ADDRESS=$(MINI68K_LOAD) -DMINI68K_RAM_TOP=$(MINI68K_RAM_TOP)
+mini-68k:
+	@echo "# Building Mini-M68k EmuTOS into $(ELF_MINI68K)"
+	$(MAKE) DEF='$(DEF)' UNIQUE=$(UNIQUE) WITH_AES=$(WITH_AES) MINI68K_LOAD=$(MINI68K_LOAD) MINI68K_RAM_TOP=$(MINI68K_RAM_TOP) $(ELF_MINI68K)
+	@printf "$(LOCALCONFINFO)"
+
+$(ELF_MINI68K): emutos.img mkelf68k
+	./mkelf68k $(MINI68K_LOAD) $(MINI68K_RAM_TOP) emutos.img $@
+
+NODEP += mkelf68k
+mkelf68k: tools/mkelf68k.c
+	$(NATIVECC) $< -o $@
 
 #
 # Special variants of EmuTOS running in RAM instead of ROM.

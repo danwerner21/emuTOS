@@ -1,0 +1,214 @@
+68K GAS  bios8.s 			page 1
+
+
+   1               	#  bios8.s
+   2               	/*
+   3               		Copyright (C) 2011 John R. Coffman.
+   4               		Licensed for hobbyist use on the N8VEM baby M68k CPU board.
+   5               	***********************************************************************
+   6               	
+   7               	    This program is free software: you can redistribute it and/or modify
+   8               	    it under the terms of the GNU General Public License as published by
+   9               	    the Free Software Foundation, either version 3 of the License, or
+  10               	    (at your option) any later version.
+  11               	
+  12               	    This program is distributed in the hope that it will be useful,
+  13               	    but WITHOUT ANY WARRANTY; without even the implied warranty of
+  14               	    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  15               	    GNU General Public License for more details.
+  16               	
+  17               	    You should have received a copy of the GNU General Public License
+  18               	    in the file COPYING in the distribution directory along with this
+  19               	    program.  If not, see <http://www.gnu.org/licenses/>.
+  20               	
+  21               	**********************************************************************/
+  22               	#
+  23               	#	Handle BIOS traps (vector 8) and dispatch
+  24               	#	to the proper Handler (BIOS call implementation)
+  25               	#
+  26               	#
+  27               	# start with some bit definitions:
+  28               	#
+  29               	ccr_carry	=	0x01		/* carry bit mask */
+  30               	ccr_overflow	=	0x02		/* overflow */
+  31               	ccr_zero	=	0x04		/* zero bit mask */
+  32               	ccr_sign	=	0x08		/* sign bit mask */
+  33               	ccr_extend	=	0x10		/* extend bit mask */
+  34               	
+  35               	sr_super	=	0x2000		/* supervisor mode bit mask */
+  36               	sr_trace	=	0x8000		/* trace mode bit mask */
+  37               	
+  38               	
+  39               	#	BIOS dispatch
+  40               	
+  41               	# 3 entry points:
+  42               		.globl	bios_trap_entry
+  43               		.globl	bios_good_return
+  44               		.globl	bios_error_return
+  45               	
+  46               	
+  47               	Flags	=	ccr_sign + ccr_overflow + ccr_carry
+  48               	
+  49               	bios_good_return:
+  50 0000 2C5F      		move.l	(%sp)+,%a6	/* restore A6 */
+  51 0002 0257 FFF4 		and.w	#~Flags,(%sp)	/* clear the Sign, Carry and Overflow */
+  52 0006 4E73      		rte			/* return from exception */
+  53               	
+  54               	
+  55               	
+  56               	# dispatch to here on any undefine BIOS call numbers
+  57               	#
+68K GAS  bios8.s 			page 2
+
+
+  58               	undefined:
+  59               	#   print error message
+  60 0008 48E7 E080 		movm.l	%d0-%d2/%a0,-(%sp)
+  61 000c 487A 0022 		pea	ufmt
+  62 0010 4EB9 0000 		jsr	cprintf
+  62      0000 
+  63 0016 588F      		add.l	#4,%sp
+  64 0018 4CD7 0107 		movm.l	(%sp),%d0-%d2/%a0
+  65 001c DFFC 0000 		add.l	#16,%sp
+  65      0010 
+  66 0022 4EF9 0000 		jmp	_exit
+  66      0000 
+  67               		
+  68               	#   print error message
+  69               	
+  70               	# undefined:	/* former */
+  71               	#	move.l	#-1,%d0		/* error code to D0 */
+  72               	bios_error_return:
+  73 0028 2C5F      		move.l	(%sp)+,%a6	/* restore A6 */
+  74 002a 0057 000B 		or.w	#Flags,(%sp)	/* set the N, V & C flags */
+  75 002e 4E73      		rte			/* return from exception */
+  76               	
+  77               	ufmt:
+  78 0030 0A55 6E64 		.ascii	"\nUndefined BIOS call\n"
+  78      6566 696E 
+  78      6564 2042 
+  78      494F 5320 
+  78      6361 6C6C 
+  79 0045 2020 4430 		.asciz	"  D0=%08x  D1=%08x  D2=%08x   A0=%08x\n"
+  79      3D25 3038 
+  79      7820 2044 
+  79      313D 2530 
+  79      3878 2020 
+  80               	
+  81               	
+  82               		.even
+  83               	bios_trap_entry:
+  84 006c 2F0E      		move.l	%a6,-(%sp)		/* save A6 */
+  85 006e 4880      		ext.w	%d0			/* extend byte to word < 128 */
+  86 0070 0C40 0020 		cmp.w	#bios_vector_lth/4,%d0	/* in range? */
+  87 0074 6492      		jbcc	undefined
+  88 0076 E588      		lsl.l	#2,%d0			/* multiply by 4 */
+  89 0078 2C7B 0006 		move.l	bios_vector_00(%d0.w,%pc),%a6
+  90 007c 4ED6      		jmp	(%a6)			/* vector to service routine */
+  91               	
+  92 007e 0000      		.align	4		/* long word boundary */
+  93               	bios_vector_00:
+  94 0080 0000 0000 		.long	undefined
+  95 0084 0000 0000 		.long	undefined
+  96 0088 0000 0000 		.long	bios_sioput	/*  2  */
+  97 008c 0000 0000 		.long	bios_siostr
+  98 0090 0000 0000 		.long	bios_sioget
+  99 0094 0000 0000 		.long	bios_siotst	/*  5  */
+ 100 0098 0000 0000 		.long	bios_cpuhma	/*  6  */
+ 101 009c 0000 0000 		.long	bios_cpustop	/*  7  */
+ 102               	#  8 - 15
+ 103 00a0 0000 0000 		.long	bios_hma_alloc  /*  8  allocate HighestMA memory */
+68K GAS  bios8.s 			page 3
+
+
+ 104 00a4 0000 0000 		.long	undefined
+ 105 00a8 0000 0000 		.long	bios_disk	/* 10  Disk Reset */	
+ 106 00ac 0000 0000 		.long	bios_disk	/* 11  Disk Status */
+ 107 00b0 0000 0000 		.long	bios_disk	/* 12  Disk Read */
+ 108 00b4 0000 0000 		.long	bios_disk	/* 13  Disk Write */
+ 109 00b8 0000 0000 		.long	bios_disk	/* 14  Disk Verify */
+ 110 00bc 0000 0000 		.long	bios_disk	/* 15  Disk Format */
+ 111               	# 16 - 23
+ 112 00c0 0000 0000 		.long	undefined
+ 113 00c4 0000 0000 		.long	undefined
+ 114 00c8 0000 0000 		.long	undefined
+ 115 00cc 0000 0000 		.long	undefined
+ 116 00d0 0000 0000 		.long	bios_daytime	/* 20  Date & Time */
+ 117 00d4 0000 0000 		.long	undefined
+ 118 00d8 0000 0000 		.long	undefined
+ 119 00dc 0000 0000 		.long	undefined
+ 120               	# 24 - 31
+ 121 00e0 0000 0000 		.long	undefined
+ 122 00e4 0000 0000 		.long	undefined
+ 123 00e8 0000 0000 		.long	undefined
+ 124 00ec 0000 0000 		.long	undefined
+ 125 00f0 0000 0000 		.long	undefined
+ 126 00f4 0000 0000 		.long	undefined
+ 127 00f8 0000 0000 		.long	undefined
+ 128 00fc 0000 0000 		.long	undefined
+ 129               	
+ 130               	bios_vector_lth		=	. - bios_vector_00
+ 131               	
+ 132               	
+ 133               	
+ 134               	
+ 135               	bios_cpustop:
+ 136 0100 2001      		move.l	%d1,%d0		/* push return code */
+ 137 0102 4EF9 0000 		jmp	_exit
+ 137      0000 
+ 138               	
+ 139               	bios_cpuhma:
+ 140 0108 2039 0000 		move.l	h_m_a,%d0		/* get HMA+1 address */
+ 140      0000 
+ 141 010e 6000 FEF0 		jbra	bios_good_return	/* good return */
+ 142               	
+ 143               	bios_hma_alloc:
+ 144 0112 2039 0000 		move.l	h_m_a,%d0
+ 144      0000 
+ 145 0118 0280 FFFF 		and.l	#-4,%d0			/* keep it aligned */
+ 145      FFFC 
+ 146 011e 9081      		sub.l	%d1,%d0
+ 147 0120 6B00 FF06 		jbmi	bios_error_return	/* negative indicates error */
+ 148 0124 0280 FFFF 		and.l	#-4,%d0			/* keep it aligned */
+ 148      FFFC 
+ 149 012a 23C0 0000 		move.l	%d0,h_m_a		/* update Highest Memory Address */
+ 149      0000 
+ 150 0130 6000 FECE 		jbra	bios_good_return	/* good return */
+ 151               	
+ 152               	
+ 153               		.end
+68K GAS  bios8.s 			page 4
+
+
+DEFINED SYMBOLS
+                            *ABS*:000109a0 CPU
+                            *ABS*:00000001 RETAIL
+             bios8.s:29     *ABS*:00000001 ccr_carry
+             bios8.s:30     *ABS*:00000002 ccr_overflow
+             bios8.s:31     *ABS*:00000004 ccr_zero
+             bios8.s:32     *ABS*:00000008 ccr_sign
+             bios8.s:33     *ABS*:00000010 ccr_extend
+             bios8.s:35     *ABS*:00002000 sr_super
+             bios8.s:36     *ABS*:00008000 sr_trace
+             bios8.s:83     .text:0000006c bios_trap_entry
+             bios8.s:49     .text:00000000 bios_good_return
+             bios8.s:72     .text:00000028 bios_error_return
+             bios8.s:47     *ABS*:0000000b Flags
+             bios8.s:58     .text:00000008 undefined
+             bios8.s:77     .text:00000030 ufmt
+                            *ABS*:00000080 bios_vector_lth
+             bios8.s:93     .text:00000080 bios_vector_00
+             bios8.s:139    .text:00000108 bios_cpuhma
+             bios8.s:135    .text:00000100 bios_cpustop
+             bios8.s:143    .text:00000112 bios_hma_alloc
+
+UNDEFINED SYMBOLS
+cprintf
+_exit
+bios_sioput
+bios_siostr
+bios_sioget
+bios_siotst
+bios_disk
+bios_daytime
+h_m_a

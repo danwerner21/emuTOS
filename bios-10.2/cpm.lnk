@@ -1,0 +1,41 @@
+OUTPUT_FORMAT(binary)
+OUTPUT_ARCH(m68k)
+ENTRY(cpm)
+SECTIONS
+{
+    /* things that live in ROM */
+    .text SEGMENT_START("text", 0x00F0000 - 0x1c) : 
+        { 
+            __text_start = . ;
+            *(.text .stub .text.* .gnu.linkonce.t.*) 
+            _etext = . ; 
+            *(.rodata .rodata.* .gnu.linkonce.r.*) 
+            *(.rodata1)
+
+			. = ( . + 3 ) & (~ 3) ;	/* align end of section */ 
+			__text_end = . ;
+			__text_size = SIZEOF (.text) ;
+        }
+
+    /* things that load to ROM, but later copied to SRAM */
+    .rwdata ADDR (.text) + SIZEOF (.text) :
+        {
+            __data_start = . ; 
+            *(.data); 
+			. = ( . + 3 ) & (~ 3) ;	/* align end of section */ 
+            __data_end = . ;
+			__data_size = SIZEOF (.rwdata) ; 
+        }
+
+    /* no init, lives in RAM */
+    .bss ADDR (.rwdata) + SIZEOF(.rwdata) :
+        { 
+            __bss_start = . ;
+            *(COMMON) *(.bss) ;
+			. = ( . + 3 ) & (~ 3) ;	/* align end of section */ 
+            __bss_end = . ;
+			__bss_size = SIZEOF (.bss) ;
+			_end = . ; 
+        }
+}
+

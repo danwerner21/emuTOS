@@ -20,7 +20,7 @@
  * usable afterwards: every device is driven directly.
  */
 
-#define ENABLE_KDEBUG   /* FIXME: remove when the port is stable */
+/* #define ENABLE_KDEBUG */
 
 #include "emutos.h"
 #include "biosdefs.h"
@@ -99,6 +99,118 @@ static void mini68k_uart_init(void)
 
     MINI68K_UART_REG(UART_IER) = 0x00;  /* no UART interrupts, see above */
     MINI68K_UART_REG(UART_FCR) = UART_FCR_ENABLE | UART_FCR_CLEAR_RX | UART_FCR_CLEAR_TX;
+}
+
+/*
+ * Rsconf() support
+ */
+
+#define UART_DLL    0   /* divisor latch, low byte (DLAB = 1) */
+#define UART_DLM    1   /* divisor latch, high byte (DLAB = 1) */
+
+/* LCR bits */
+#define UART_LCR_WLEN   0x03    /* word length - 5 */
+#define UART_LCR_STOP2  0x04    /* 2 stop bits (1.5 with 5-bit words) */
+#define UART_LCR_PEN    0x08    /* parity enable */
+#define UART_LCR_EPS    0x10    /* even parity */
+
+/* MFP-style UCR bits, as used by Rsconf() */
+#define UCR_CLK16       0x80    /* clock / 16 */
+#define UCR_WLEN_SHIFT  5       /* 0 = 8 bits ... 3 = 5 bits */
+#define UCR_STOP_MASK   0x18
+#define UCR_STOP1       0x08    /* 1 stop bit; 0x10 = 1.5, 0x18 = 2 */
+#define UCR_EVEN        0x04
+#define UCR_PARITY      0x02
+
+/*
+ * UART divisors for the Rsconf() baud rate codes 0 (19200) to 15 (50).
+ * The 16550 on the MF/PIC is clocked at 1.8432 MHz: baud = 115200 / divisor.
+ */
+static const UWORD uart_divisors[] = {
+    6, 12, 24, 32, 48, 58, 64, 96, 192, 384, 576, 768, 857, 1047, 1536, 2304
+};
+
+/* Read the divisor latch. Interrupts are masked because the timer
+ * interrupt reads the receive buffer, which shares its address with DLL. */
+static UWORD uart_get_divisor(void)
+{
+    WORD old_sr = set_sr(0x2700);
+    UBYTE lcr = MINI68K_UART_REG(UART_LCR);
+    UBYTE lo, hi;
+
+    MINI68K_UART_REG(UART_LCR) = lcr | UART_LCR_DLAB;
+    lo = MINI68K_UART_REG(UART_DLL);
+    hi = MINI68K_UART_REG(UART_DLM);
+    MINI68K_UART_REG(UART_LCR) = lcr;
+    set_sr(old_sr);
+
+    return MAKE_UWORD(hi, lo);
+}
+
+/*
+ * Return the Rsconf() code of the current baud rate. Rates set in the BIOS
+ * Setup that have no code (e.g. 38400) are reported as the nearest code,
+ * but left unchanged in the hardware.
+ */
+WORD mini68k_rs232_get_baudrate(void)
+{
+    UWORD divisor = uart_get_divisor();
+    WORD code;
+
+    for (code = 0; code < (WORD)ARRAY_SIZE(uart_divisors) - 1; code++)
+    {
+        /* nearest code: stop below the midpoint to the next divisor */
+        if (divisor < (uart_divisors[code] + uart_divisors[code + 1]) / 2)
+            break;
+    }
+
+    KDEBUG(("UART: divisor %u, baud rate code %d\n", divisor, code));
+
+    return code;
+}
+
+/*
+ * Set the baud rate (if baud is a valid code) and the line format
+ * (if ucr >= 0). Return the old line format as an MFP-style UCR value
+ * in bits 24-31, as Rsconf() does on Atari hardware.
+ */
+ULONG mini68k_rs232_config(WORD baud, WORD ucr)
+{
+    UBYTE lcr = MINI68K_UART_REG(UART_LCR) & ~UART_LCR_DLAB;
+    UBYTE old_ucr;
+    WORD old_sr;
+
+    old_ucr = UCR_CLK16
+            | ((3 - (lcr & UART_LCR_WLEN)) << UCR_WLEN_SHIFT)
+            | ((lcr & UART_LCR_STOP2) ? 0x18 : UCR_STOP1)
+            | ((lcr & UART_LCR_EPS) ? UCR_EVEN : 0)
+            | ((lcr & UART_LCR_PEN) ? UCR_PARITY : 0);
+
+    if (ucr >= 0)
+    {
+        lcr = (3 - ((ucr >> UCR_WLEN_SHIFT) & 3))
+            | (((ucr & UCR_STOP_MASK) > UCR_STOP1) ? UART_LCR_STOP2 : 0)
+            | ((ucr & UCR_EVEN) ? UART_LCR_EPS : 0)
+            | ((ucr & UCR_PARITY) ? UART_LCR_PEN : 0);
+    }
+
+    /* Let the character being sent finish before changing the format */
+    while (!(MINI68K_UART_REG(UART_LSR) & UART_LSR_TEMT))
+        ;
+
+    old_sr = set_sr(0x2700);
+    if (baud >= 0 && baud < (WORD)ARRAY_SIZE(uart_divisors))
+    {
+        UWORD divisor = uart_divisors[baud];
+
+        MINI68K_UART_REG(UART_LCR) = lcr | UART_LCR_DLAB;
+        MINI68K_UART_REG(UART_DLL) = LOBYTE(divisor);
+        MINI68K_UART_REG(UART_DLM) = HIBYTE(divisor);
+    }
+    MINI68K_UART_REG(UART_LCR) = lcr;
+    set_sr(old_sr);
+
+    return (ULONG)old_ucr << 24;
 }
 
 /******************************************************************************/
@@ -198,7 +310,7 @@ void mini68k_init_system_timer(void)
 static void rtc_out(UBYTE value)
 {
     RTC_LATCH = value;
-    delay_loop(loopcount_1_msec / 100);     /* 10 us */
+    delay_loop((loopcount_1_msec + 99) / 100);  /* at least 10 us */
 }
 
 static void rtc_start(void)

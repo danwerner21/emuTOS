@@ -38,9 +38,10 @@ void ppide_write_reg(UBYTE reg, UBYTE value);
  * Block transfers through the data register. Without byteswap, each
  * 16-bit IDE word is stored big-endian (IDE D15-D8 first), which is what
  * the EmuTOS IDE driver expects from a plain data register read.
+ * Defined in ppide2.S.
  */
-void ppide_read_data(UBYTE *buffer, ULONG bufferlen, int need_byteswap);
-void ppide_write_data(const UBYTE *buffer, ULONG bufferlen, int need_byteswap);
+void ppide_read_data(UBYTE *buffer, ULONG bufferlen, WORD need_byteswap);
+void ppide_write_data(const UBYTE *buffer, ULONG bufferlen, WORD need_byteswap);
 
 #endif /* MACHINE_MINI68K */
 

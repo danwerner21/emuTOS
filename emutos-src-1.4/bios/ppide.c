@@ -17,7 +17,8 @@
  *    output mode (all ports out) for writes. Setting a PPI mode clears
  *    all output latches, so port C starts with every strobe inactive.
  *
- * The ATA protocol itself is handled by ide.c.
+ * The ATA protocol itself is handled by ide.c. The data register block
+ * transfers are in ppide2.S.
  */
 
 /* #define ENABLE_KDEBUG */
@@ -67,68 +68,6 @@ void ppide_write_reg(UBYTE reg, UBYTE value)
     PPI_C = reg | PPIDE_WR;     /* pulse WR */
     PPI_C = reg;
     PPI_C = 0;                  /* release the bus */
-}
-
-void ppide_read_data(UBYTE *buffer, ULONG bufferlen, int need_byteswap)
-{
-    volatile UBYTE *porta = &PPI_A;
-    volatile UBYTE *portb = &PPI_B;
-    volatile UBYTE *portc = &PPI_C;
-    UBYTE *end = buffer + bufferlen;
-
-    KDEBUG(("ppide_read_data(%p, %lu, %d)\n", buffer, bufferlen, need_byteswap));
-
-    PPI_CTRL = PPI_MODE_READ;
-    *portc = PPIDE_REG_DATA;
-
-    if (need_byteswap) {
-        while (buffer < end) {
-            *portc = PPIDE_REG_DATA | PPIDE_RD;
-            *buffer++ = *porta;     /* IDE D0-D7 first */
-            *buffer++ = *portb;
-            *portc = PPIDE_REG_DATA;
-        }
-    } else {
-        while (buffer < end) {
-            *portc = PPIDE_REG_DATA | PPIDE_RD;
-            *buffer++ = *portb;     /* IDE D8-D15 first */
-            *buffer++ = *porta;
-            *portc = PPIDE_REG_DATA;
-        }
-    }
-
-    *portc = 0;
-}
-
-void ppide_write_data(const UBYTE *buffer, ULONG bufferlen, int need_byteswap)
-{
-    volatile UBYTE *porta = &PPI_A;
-    volatile UBYTE *portb = &PPI_B;
-    volatile UBYTE *portc = &PPI_C;
-    const UBYTE *end = buffer + bufferlen;
-
-    KDEBUG(("ppide_write_data(%p, %lu, %d)\n", buffer, bufferlen, need_byteswap));
-
-    PPI_CTRL = PPI_MODE_WRITE;
-    *portc = PPIDE_REG_DATA;
-
-    if (need_byteswap) {
-        while (buffer < end) {
-            *porta = *buffer++;     /* IDE D0-D7 first */
-            *portb = *buffer++;
-            *portc = PPIDE_REG_DATA | PPIDE_WR;
-            *portc = PPIDE_REG_DATA;
-        }
-    } else {
-        while (buffer < end) {
-            *portb = *buffer++;     /* IDE D8-D15 first */
-            *porta = *buffer++;
-            *portc = PPIDE_REG_DATA | PPIDE_WR;
-            *portc = PPIDE_REG_DATA;
-        }
-    }
-
-    *portc = 0;
 }
 
 #endif /* MACHINE_MINI68K */

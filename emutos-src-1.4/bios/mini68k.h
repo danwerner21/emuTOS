@@ -74,6 +74,8 @@ void mini68k_rtc_write(UBYTE address, UBYTE value);
 BOOL mini68k_uart_can_write(void);
 void mini68k_uart_write_byte(UBYTE b);
 void mini68k_rs232_poll(void);  /* Called from the timer interrupt */
+WORD mini68k_rs232_get_baudrate(void);
+ULONG mini68k_rs232_config(WORD baud, WORD ucr);
 
 #endif /* MACHINE_MINI68K */
 

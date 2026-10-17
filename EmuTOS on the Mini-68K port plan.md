@@ -1,81 +1,92 @@
 # EmuTOS on the Mini-68K: port plan
 
-Oct 11, 2026 · @Dan Werner
+Oct 11, 2026 · @Dan Werner · updated Oct 17, 2026
 
-The plan is to bring EmuTOS up on the serial console first, then run GEM on the VERA card through a RAM shadow framebuffer, and finally replace the shadow copy with a native VERA driver. Hardware and EmuTOS details here are from memory and are approximate until checked against the board, the VERA reference and the EmuTOS source.
+The plan is to bring EmuTOS up on the serial console first, then run GEM on the VERA card through a RAM shadow framebuffer, and finally replace the shadow copy with a native VERA driver. The hardware facts below were checked against `BIOS-PORTING-GUIDE.md`, the BIOS 10.2 sources in `bios-10.2/` and tests on the board. Details of the VERA card are still unchecked, because the card has not arrived yet.
 
-## Hardware assumptions
+## Status
 
-The plan assumes the board below; each row marked "confirm" changes the work if it is wrong.
+| Phase | State (Oct 17, 2026) |
+| --- | --- |
+| 0. Groundwork | Done |
+| 1. Serial EmuTOS | Done. Exit test passed: Sozobon C built and ran hello-world on the board (about 45 s) |
+| 2. Shadow framebuffer | Waiting for the VERA card (ordered, not yet arrived, assembled or tested) |
+| 3. Input | Not started; keyboard and mouse hardware not yet chosen |
+| 4. Native driver | Not started |
 
-| Item | Assumed | Why it matters |
+## Hardware
+
+Each row is confirmed. The last column says how it shaped the port.
+
+| Item | Confirmed | Effect on the port |
 | --- | --- | --- |
-| CPU | 68008, about 8 MHz (confirm clock and package) | The 48-pin part has a 1 MB address space and only interrupt levels 2, 5 and 7; the 52-pin part has 4 MB and all seven levels. |
-| RAM | About 2 MB, starting at address 0 and writable (confirm) | EmuTOS needs writable exception vectors and system variables in low memory. |
-| ROM | Flash large enough for a 256 KB image (confirm size and address) | If it is smaller, EmuTOS must be loaded from disk into RAM. |
-| MMU | None | Fine for EmuTOS; rules out trapping screen writes. |
-| Serial | 16550 UART on the MF/PIC card | Console for Phase 1; needs a new EmuTOS driver. |
-| Interrupts and timer | NS32202 on the MF/PIC card (confirm) | Source of the 200 Hz system tick and the route for VERA's vsync interrupt. |
-| Disk | IDE through an 8255 (PPIDE) on the MF/PIC card (confirm) | EmuTOS's IDE driver expects memory-mapped registers, so the low-level access must be rewritten. |
-| Clock | Battery RTC on the MF/PIC card (confirm chip) | Optional; file timestamps only. |
-| Video | VERA, port accessed, working under existing software | GEM display from Phase 2 on. |
+| CPU | MC68008FN, 52-pin PLCC, 8 MHz (as the BIOS timing code assumes), 22 address lines (4 MB, mirrored) | Plain 68000 code (`-m68000`, no VBR). Only IPL 2 (the NS32202, which supplies vectors) and IPL 7 (ECB `/NMI`) are wired, so every device interrupt, including a future VERA vsync, has to come through an NS32202 input. |
+| RAM | 2 MB SRAM at `0x000000`–`0x1FFFFF`, writable from address 0 after boot | EmuTOS uses `0x000000`–`0x17FFFF` (1.5 MB) as ST-RAM; the top 512 KB holds the EmuTOS image. |
+| ROM | BIOS 10.2 plus a ROM disk at `0xFFF80000` | EmuTOS does not go in ROM. The BIOS loads `EMUTOS.ELF` from a FAT volume into RAM. |
+| I/O | ECB port *p* at `0xFFFF8000` + *p*, supervisor mode only | Every driver runs in supervisor mode; debug output switches to supervisor mode when called from user code. |
+| MMU | None | As expected. |
+| Serial | 16550/16C750 at port `0x48`, clocked at 1.8432 MHz | Console driver. The BIOS does not route the UART interrupt to the NS32202, so input is polled from the 200 Hz tick (keeps up with pasted text). |
+| Interrupts and timer | NS32202 at port `0x40`; register *r* at `0xFFFF8040` + *r*·`0x100`; reading register 32 (`0xFFFFA040`) is End-Of-Interrupt; vector base 16 | System tick: H-counter routed to IR3 (vector 19), 1.8432 MHz / 4, count 2303 = exactly 200 Hz. Other inputs are masked. |
+| Disk | PPIDE: 82C55 at ports `0x44`–`0x47` (A = D0–D7, B = D8–D15, C = address and strobes) | Backend under EmuTOS's own IDE driver. Other disk boards can be added as further backends. |
+| Clock | DS1302 bit-banged through a latch at port `0x43`; century in BIOS NVRAM byte `0x22` | RTC driver; keeps the BIOS NVRAM checksum valid when the century changes. |
+| Video | VERA card | Ordered; not yet available. |
 | Keyboard and mouse | Not yet decided | See Phase 3. |
-| Bus errors | Unknown whether unmapped addresses raise a bus error | EmuTOS probes for hardware this way; without it the probes must be compiled out. |
+| Bus errors | No bus-error timeout: unmapped reads return garbage | All hardware probes are compiled out (`CONF_ATARI_HARDWARE 0`). |
 
-## Phases at a glance
+## How EmuTOS runs on the board
 
-Each phase ends in something you can use, and nothing above the BIOS layer changes when the display path is swapped in Phase 4.
+- **Takeover:** the BIOS keeps its vectors, data and heap in `0x000`–`0xFFF`, which overlaps the fixed TOS system variables at `0x400`–`0x800`. So EmuTOS takes over the whole machine, and the BIOS `TRAP #8` calls stop working once it starts. EmuTOS leaves locations `0`–`7` alone, so the RESET button still restarts the BIOS.
+- **Build:** `make mini-68k` produces `emutos.elf`. The image is linked as a "ROM" at `0x180000` and wrapped in a minimal ELF file by `tools/mkelf68k.c`. It is about 125 KB of the 512 KB available.
+- **Start:** `s emutos` at the BIOS prompt (supervisor mode is required). Alternatively, an `EMUTOS.CMD` file containing `s emutos.elf` lets `emutos` alone work, and `BOOT.CMD` can auto-boot it.
+- **Shell:** the default build has no GEM (`WITH_AES=0`) and boots into EmuCON. `make mini-68k WITH_AES=1` includes the desktop.
+- **Screen:** a 640×400 monochrome (ST high) screen already exists in RAM below `phystop`, which gives 80 columns for the console. A 50 Hz vertical blank is emulated from every 4th timer tick.
+- **Code:** `bios/mini68k.c`, `bios/mini68k.h`, `bios/mini68k2.S`, `bios/ppide.c`, `bios/ppide.h` and `tools/mkelf68k.c`. There are small `MACHINE_MINI68K` hooks in `include/config.h`, `emutos.ld`, `Makefile`, `bios/ide.c`, `bios/clock.c`, `bios/serport.c`, `bios/kprint.c`, `bios/machine.c`, `bios/mfp.c`, `bios/screen.c` and `bios/delay.c`.
 
-| Phase | Deliverable | Exit test | Experiments first |
-| --- | --- | --- | --- |
-| 0. Groundwork | Cross toolchain, EmuTOS fork, fast load-and-test loop | A stub image loads and prints over serial | E1, E2 |
-| 1. Serial EmuTOS | EmuTOS boots to the EmuCON shell with a FAT disk | Sozobon C compiles and runs hello-world on the board | E3, E4, E5 |
-| 2. Shadow framebuffer | GEM desktop displayed on VERA | EmuDesk opens windows and menus; full redraw under about 0.3 s | E6, E7, E8, E9 |
-| 3. Input | Keyboard and mouse driving GEM | A GEM application is usable without the serial terminal | E10 |
-| 4. Native driver | VDI and console draw to VERA directly | Shadow buffer removed in the default build; color mode works | E11, E12, E13 |
+## Phase 0: groundwork (done)
 
-## Phase 0: groundwork
+- [x] Cross toolchain: `m68k-atari-mint-gcc` on the build server.
+- [x] New machine define `MACHINE_MINI68K`, modelled on the Lisa and M548x ports.
+- [x] Memory map and I/O ports: see the hardware table.
+- [x] Where EmuTOS lives: a RAM image loaded by the BIOS from the CF card (E1). No reflashing is needed during development.
+- [x] Early output: polled UART debug output works from the first instruction, using the BIOS's UART setup.
+- [x] Interrupt levels: everything goes through the NS32202 at IPL 2; IPL 7 is ECB `/NMI`.
+- [x] Bus errors (E2): settled from the schematic and BIOS docs. There is no bus-error timeout, so probes are compiled out.
 
-The goal is a loop where a rebuilt image is running on the board within a minute or two, without reflashing.
-
-- [ ] Install the `m68k-atari-mint` GCC cross toolchain on a PC and build an unmodified EmuTOS target to prove the toolchain.
-- [ ] Fork EmuTOS and add a new machine define for the Mini-68K, modelled on how the Amiga and ColdFire board ports are separated from the Atari code.
-- [ ] Write down the board's memory map: RAM range, ROM range, I/O port addresses for the UART, interrupt controller, PPIDE, RTC and VERA.
-- [ ] Decide where EmuTOS lives. Preferred during development: a RAM-loadable image started from the existing monitor or CP/M-68K (E1). Later: flash.
-- [ ] Build a stub that sets the stack, initialises the UART and prints a banner, using the same link address and load path the real image will use.
-- [ ] Settle interrupt levels for the system tick, the UART and VERA vsync, given the levels your 68008 package provides.
-- [ ] Run the bus-error test (E2) and record the result for Phase 1.
-
-## Phase 1: EmuTOS on the serial console
-
-This phase is a conventional BIOS port: four small drivers and a configuration with all Atari hardware switched off.
+## Phase 1: EmuTOS on the serial console (done)
 
 **Configuration**
 
-- [ ] Disable every Atari-specific device in the build configuration: MFP, keyboard ACIA, sound chip, video shifter, floppy, ACSI, blitter, NVRAM.
-- [ ] Enable EmuTOS's serial-console option so the shell and text programs use the UART.
-- [ ] Compile out hardware probes if E2 shows the board does not raise bus errors.
-- [ ] Replace memory sizing with a fixed or simple test-based RAM size.
+- [x] Every Atari-specific device is disabled (`CONF_ATARI_HARDWARE 0`).
+- [x] Serial console enabled, with ANSI translation (`CONF_SERIAL_CONSOLE_ANSI`).
+- [x] Hardware probes compiled out.
+- [x] Fixed ST-RAM size: the load address, `0x180000`.
 
-**Drivers to write**
+**Drivers**
 
-- [ ] 16550 UART: character in, character out, status, and receive interrupt into EmuTOS's serial buffer.
-- [ ] System tick: a 200 Hz interrupt from the interrupt controller's counter, wired to EmuTOS's timer handler (E3).
-- [ ] Interrupt glue: vectors and acknowledge sequence for the NS32202, and an interim 50 or 60 Hz vertical-blank tick derived from the 200 Hz timer until VERA supplies a real one.
-- [ ] PPIDE block driver: sector read and write through the 8255, plugged in beneath EmuTOS's existing disk and partition layer (E4).
-- [ ] RTC read and set (optional; can wait).
+- [x] 16550 UART: polled output; input polled from the timer interrupt into the keyboard buffer; `Rsconf` sets the baud rate and line format. At start-up EmuTOS keeps the baud rate chosen in the BIOS Setup.
+- [x] System tick: 200 Hz from the NS32202 H-counter (E3).
+- [x] Interrupt glue: vectors 16–23, EOI handling, unused inputs masked and ignored, 50 Hz VBL derived from the tick.
+- [x] PPIDE block driver beneath EmuTOS's IDE, partition and FAT layers (E4). Read and write tested.
+- [x] RTC: reads the DS1302 at boot. Setting it from EmuTOS is written but untested, because EmuCON has no date or time command.
+- [x] Delay loops calibrated against the 200 Hz tick, instead of assuming a 16 MHz 68000.
 
 **Bring-up order**
 
-1. Banner and early debug output over the UART.
-2. Tick interrupt running; EmuTOS reaches the EmuCON prompt with no disk.
-3. Disk: mount a FAT16 partition, list files, run a `.TOS` program.
-4. Tools: copy Sozobon C, a make and an editor to the disk and build something on the board.
+1. [x] Banner and early debug output over the UART.
+2. [x] Tick interrupt running; EmuTOS reaches the EmuCON prompt.
+3. [x] Disk: CF card partition mounted as `C:`; `ls`, `cat`, `cp`, `mkdir` and `rm` work.
+4. [x] Tools: Sozobon C (`cc`, `hcc`, `top`, `jas`, `ld`, dLibs) built and ran hello-world on the board in about 45 seconds (the Phase 1 exit test).
 
-**Decisions**
+**Decisions made**
 
-- Terminal emulation: use a VT52 terminal, or enable the console's ANSI translation if it works well enough (E5).
-- Disk layout: a separate CompactFlash for EmuTOS is simplest. Sharing one disk with CP/M-68K needs a partition table both systems accept.
+- **Terminal:** ANSI. EmuTOS translates the VT52 sequences that TOS text programs send into ANSI, so any VT100/ANSI terminal works (E5).
+- **Disk layout:** one CF card shared with the BIOS boot files and FUZIX. EmuTOS reads FAT12 and FAT16 partitions (MBR types `01`, `04`, `06`, `0E`). FAT32 partitions get a drive letter but cannot be read. PC-formatted cards are detected as byte-swapped and handled automatically.
+
+**Known gaps**
+
+- Serial flow control is recorded by `Rsconf` but not implemented.
+- Baud rates without an Atari `Rsconf` code (such as 38400) can be set in the BIOS Setup and are kept, but cannot be selected from EmuTOS.
+- Disk speed (DISKBNCH, 256 KB, assembly transfer loop in `bios/ppide2.S`): raw sector reads 164 KB/s, GEMDOS file reads 127 KB/s, file writes 69 KB/s. With the earlier C loop the figures were 85, 73 and 50 KB/s. Reads are now close to what the 68008 can move through the 8255; writes are limited mostly by something other than the transfer loop.
 
 ## Phase 2: GEM on VERA through a shadow framebuffer
 
@@ -88,11 +99,12 @@ Start at 640×400, one bit per pixel. That is exactly Atari ST high resolution (
 **Work items**
 
 - [ ] VERA init: one layer in 640-wide 1 bpp bitmap mode, two palette entries, border set for the 400-line area, other layer and sprites off (E7).
-- [ ] Screen setup: allocate the shadow buffer, point EmuTOS's screen base at it, and report 640×400, one plane, to the VDI and Line-A variables.
+- [x] Screen setup: done in Phase 1. EmuTOS already keeps a 640×400 one-plane screen in RAM below `phystop` and reports it to the VDI and Line-A. The copy routine only needs to read it.
 - [ ] Copy routine: for each dirty row, set the VERA address once and stream 80 bytes; unrolled loop, written in assembly (E6).
-- [ ] Vsync interrupt: route VERA's vertical-blank interrupt through the interrupt controller and make it EmuTOS's vertical-blank tick (E8).
+- [ ] Vsync interrupt: wire VERA's interrupt line to a free NS32202 input (the CPU has no other usable level), unmask that input, and make it EmuTOS's vertical-blank tick in place of the one emulated from the timer in `bios/mini68k2.S` (E8).
 - [ ] VERA register discipline: the address and control registers are shared state, so any interrupt code that touches VERA must save and restore them, or all VERA access must happen at one interrupt level.
 - [ ] Console switch: move the text console from serial to the screen, keeping serial as a debug channel.
+- [ ] Build with `WITH_AES=1` to include the GEM desktop.
 
 **Dirty tracking, in three steps**
 
@@ -165,33 +177,33 @@ Programs that write straight to screen memory will show nothing under a native d
 
 ## Experiments
 
-Most of these are small standalone programs that run under the existing monitor or CP/M-68K, so they can start before any EmuTOS code is written.
+Most of these are small standalone programs that run under the existing monitor or CP/M-68K, so they can start before any EmuTOS code is written. The Result column records what is settled.
 
-| ID | Experiment | What it settles | Pass mark |
-| --- | --- | --- | --- |
-| E1 | Load a test image into RAM from the monitor or CP/M-68K and jump to it | Whether development can avoid reflashing | Image runs from its link address and prints over serial |
-| E2 | Read an unmapped address with a bus-error handler installed | Whether EmuTOS hardware probes can stay enabled | Handler is entered; if the board hangs, probes are compiled out |
-| E3 | Program the interrupt controller's counter for 200 Hz and count ticks against a stopwatch | Tick source and interrupt glue | Within 1% over 10 minutes |
-| E4 | Read sectors through PPIDE; check byte order and timing; read a FAT16 partition made on a PC | Disk driver design and disk layout | Boot sector reads correctly; note KB per second |
-| E5 | Run a VT52 test pattern through the terminal, with and without ANSI translation | Terminal setup for Phase 1 | Cursor addressing and clear-screen work |
-| E6 | Stream 32,000 bytes to VERA with several loop variants, time it, then read back and verify all of VERA's memory | Copy speed and bus-timing reliability | Full frame under 150 ms; zero verify errors over repeated passes |
-| E7 | Set the 640-wide 1 bpp bitmap mode by hand and draw a test card | Register values, bit order within a byte, border and 400 versus 480 lines | Leftmost pixel is the top bit; image stable |
-| E8 | Enable VERA's vsync interrupt through the interrupt controller and count frames | Vertical-blank source and acknowledge sequence | 60 interrupts per second, none lost with serial traffic running |
-| E9 | Under Phase 2, log rows copied per frame and CPU share while using the desktop | Whether coarse tracking is good enough | Typing and menus feel immediate; idle CPU cost under 25% |
-| E10 | Show a 16×16 sprite over the bitmap layer and move it every frame | Mouse pointer design | Pointer visible above the bitmap, no tearing |
-| E11 | Benchmark rectangle fill, a line of text, an XOR box and a full scroll: RAM plus copy versus direct port writes | Whether and where the native driver wins | Decision gate for Phase 4 scope |
-| E12 | Set 2 bpp at 640×480 and 4 bpp at 640×400 and check memory use against the sprite and palette areas | Which color modes are possible | Mode displays without corrupting sprites or palette |
-| E13 | Read the VERA firmware version and test any extended write features it has, such as multi-byte cache writes | Extra speed available to the native driver | Measured fill speed-up, if present |
+| ID | Experiment | What it settles | Pass mark | Result |
+| --- | --- | --- | --- | --- |
+| E1 | Load a test image into RAM from the monitor or CP/M-68K and jump to it | Whether development can avoid reflashing | Image runs from its link address and prints over serial | Passed: the BIOS loads `EMUTOS.ELF` from FAT into RAM and jumps to it. |
+| E2 | Read an unmapped address with a bus-error handler installed | Whether EmuTOS hardware probes can stay enabled | Handler is entered; if the board hangs, probes are compiled out | Settled from the BIOS docs: no bus-error timeout, so probes are compiled out. |
+| E3 | Program the interrupt controller's counter for 200 Hz and count ticks against a stopwatch | Tick source and interrupt glue | Within 1% over 10 minutes | Partly done: the 3-second boot countdown looks right. The 10-minute stopwatch check is still to do. |
+| E4 | Read sectors through PPIDE; check byte order and timing; read a FAT16 partition made on a PC | Disk driver design and disk layout | Boot sector reads correctly; note KB per second | Passed: MBR and FAT read and written correctly; byte swap detected automatically. Speed with the assembly loop: raw reads 164 KB/s, file reads 127 KB/s, file writes 69 KB/s (`mini68k-tests/DISKBNCH.C`). |
+| E5 | Run a VT52 test pattern through the terminal, with and without ANSI translation | Terminal setup for Phase 1 | Cursor addressing and clear-screen work | Partly done: the ANSI console works with EmuCON. A full VT52 test pattern is still to do. |
+| E6 | Stream 32,000 bytes to VERA with several loop variants, time it, then read back and verify all of VERA's memory | Copy speed and bus-timing reliability | Full frame under 150 ms; zero verify errors over repeated passes | Not yet run |
+| E7 | Set the 640-wide 1 bpp bitmap mode by hand and draw a test card | Register values, bit order within a byte, border and 400 versus 480 lines | Leftmost pixel is the top bit; image stable | Not yet run |
+| E8 | Enable VERA's vsync interrupt through the interrupt controller and count frames | Vertical-blank source and acknowledge sequence | 60 interrupts per second, none lost with serial traffic running | Not yet run |
+| E9 | Under Phase 2, log rows copied per frame and CPU share while using the desktop | Whether coarse tracking is good enough | Typing and menus feel immediate; idle CPU cost under 25% | Not yet run |
+| E10 | Show a 16×16 sprite over the bitmap layer and move it every frame | Mouse pointer design | Pointer visible above the bitmap, no tearing | Not yet run |
+| E11 | Benchmark rectangle fill, a line of text, an XOR box and a full scroll: RAM plus copy versus direct port writes | Whether and where the native driver wins | Decision gate for Phase 4 scope | Not yet run |
+| E12 | Set 2 bpp at 640×480 and 4 bpp at 640×400 and check memory use against the sprite and palette areas | Which color modes are possible | Mode displays without corrupting sprites or palette | Not yet run |
+| E13 | Read the VERA firmware version and test any extended write features it has, such as multi-byte cache writes | Extra speed available to the native driver | Measured fill speed-up, if present | Not yet run |
 
 ## Risks and open questions
 
 **Open questions**
 
-- [ ] Which 68008 package is fitted, and at what clock speed?
-- [ ] What is the full memory map, and is low memory RAM after reset?
-- [ ] How large is the flash, and can the monitor load an image from disk or serial?
+- [x] 68008 package and clock: 52-pin PLCC; 8 MHz according to the BIOS timing code (not measured).
+- [x] Memory map: see the hardware table. Low memory is RAM after boot.
+- [x] Loading: the BIOS loads ELF, COFF and CP/M-68K files from FAT; EmuTOS uses ELF.
 - [ ] Which keyboard and mouse hardware will be used?
-- [ ] Which VERA firmware version is on the card, and at which port addresses?
+- [ ] Which VERA firmware version is on the card, at which ECB ports, and on which NS32202 input is its interrupt line?
 - [ ] Should the port aim to be merged into EmuTOS, or stay a fork?
 
 **Risks**
@@ -202,4 +214,4 @@ Most of these are small standalone programs that run under the existing monitor 
 | Software written for Atari hardware | Programs that touch Atari chips or fixed screen addresses fail | Favor clean GEM and text programs; keep shadow mode for direct screen writers |
 | Shared VERA registers across interrupts | Intermittent screen corruption | One access discipline from the first line of code |
 | Native driver costs more than it returns in monochrome | Months of work for little visible gain | E11 gate; ship color as the reason for the driver |
-| Facts in this plan recalled from memory | Wrong register, option name or board detail | Check each against the board schematic, the VERA reference and the EmuTOS source before coding |
+| VERA details unverified | Wrong register, port or interrupt assumption in Phase 2 | Check against the card and the VERA reference before coding (E6–E8) |

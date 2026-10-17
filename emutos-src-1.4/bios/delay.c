@@ -22,6 +22,8 @@
 #include "processor.h"
 #include "delay.h"
 #include "coldfire.h" /* For cookie jar info. */
+#include "asm.h"
+#include "tosvars.h"
 
 /*
  * initial 1 millisecond delay loop values
@@ -32,6 +34,7 @@
 #define LOOPS_68000         760     /* 68000 timing assumes 16MHz */
 
 #define CALIBRATION_TIME    100     /* target # millisecs to run calibration */
+#define CALIBRATION_CHUNK   49      /* delay loops between timer checks (MACHINE_MINI68K) */
 
 /*
  * global variables
@@ -126,6 +129,29 @@ void calibrate_delay(void)
         loopcount_1_msec = (loopcount * 24) / (intcount * 25);
 #elif defined(__mcoldfire__)
     loopcount_1_msec = (ULONG)cookie_mcf.sysbus_frequency * 1000;
+#elif defined(MACHINE_MINI68K)
+    /*
+     * There is no spare timer, so count how many delay loops run during
+     * CALIBRATION_TIME milliseconds of the 200 Hz system timer. Interrupt
+     * overhead is included, as it is in real delays. The loop overhead
+     * makes the result slightly low, so delays err on the long side.
+     */
+    {
+        ULONG loops = 0;
+        LONG start = hz_200;
+        LONG end;
+
+        while (hz_200 == start)     /* align with a timer tick */
+            ;
+        end = hz_200 + CALIBRATION_TIME * CLOCKS_PER_SEC / 1000;
+        while (hz_200 < end) {
+            delay_loop(CALIBRATION_CHUNK);
+            loops += CALIBRATION_CHUNK + 1; /* delay_loop(n) runs n+1 loops */
+        }
+
+        if (loops >= CALIBRATION_TIME)
+            loopcount_1_msec = loops / CALIBRATION_TIME;
+    }
 #else
     KDEBUG(("Warning: loopcount_1_msec isn't calibrated.\n"));
 #endif

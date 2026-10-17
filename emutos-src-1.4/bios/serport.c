@@ -393,6 +393,21 @@ ULONG rsconf1(WORD baud, WORD ctrl, WORD ucr, WORD rsr, WORD tsr, WORD scr)
 {
 #if CONF_WITH_MFP_RS232
     return rsconf_mfp(MFP_BASE,&iorec1,baud,ctrl,ucr,rsr,tsr,scr);
+#elif defined(MACHINE_MINI68K)
+    ULONG old;
+
+    if (baud == -2)     /* wants current baud rate */
+        return iorec1.baudrate;
+
+    /* flow control is recorded, but not implemented by the 16550 driver */
+    if ((ctrl >= MIN_FLOW_CTRL) && (ctrl <= MAX_FLOW_CTRL))
+        iorec1.flowctrl = ctrl;
+
+    old = mini68k_rs232_config(baud, ucr);  /* rsr, tsr & scr have no 16550 equivalent */
+    if ((baud >= MIN_BAUDRATE_CODE) && (baud <= MAX_BAUDRATE_CODE))
+        iorec1.baudrate = baud;
+
+    return old;
 #else
     return 0UL;
 #endif  /* CONF_WITH_MFP_RS232 */
@@ -1068,7 +1083,11 @@ void init_serport(void)
     amiga_rs232_init();
 #endif
 
-#if !CONF_SERIAL_IKBD
+#ifdef MACHINE_MINI68K
+    /* Keep the baud rate chosen in the BIOS Setup, which is also
+     * the speed of the terminal attached to the console */
+    iorec1.baudrate = mini68k_rs232_get_baudrate();
+#elif !CONF_SERIAL_IKBD
     (*rsconfptr)(DEFAULT_BAUDRATE, 0, 0x88, 1, 1, 0);
 #endif
 

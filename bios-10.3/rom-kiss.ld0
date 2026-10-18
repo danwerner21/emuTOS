@@ -1,0 +1,14 @@
+/* Retrobrew ECB KISS-68030 CPU Card */
+MEMORY 
+{
+    dram   : ORIGIN = 0x00000000, LENGTH = 1M   /* potentially much larger */
+    rom    : ORIGIN = 0xFFF00000, LENGTH = 512K
+/*  ecbmem : ORIGIN = 0xFFF80000, LENGTH = 256K */
+    sram   : ORIGIN = 0xFFFE0000, LENGTH = 32K  /* mapped twice into 64K */
+    ram    : ORIGIN = 0xFFFE0000, LENGTH = 32K  /* mapped twice into 64K */
+/*  ecbio  : ORIGIN = 0xFFFF0000, LENGTH = 64K  */
+}
+
+/* REGION_ALIAS("ram", sram); */
+
+INCLUDE "rom-common.ld";

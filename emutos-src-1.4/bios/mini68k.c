@@ -380,6 +380,77 @@ void mini68k_rtc_write(UBYTE address, UBYTE value)
 }
 
 /******************************************************************************/
+/* BIOS NVRAM (DS1302 RAM)                                                    */
+/******************************************************************************/
+
+/*
+ * The BIOS Setup saves its configuration in the DS1302 RAM at 0x20-0x3e
+ * (struct NVRAM in bios-10.2/main68.h; offsets checked against the
+ * compiled setup.c, and confirmed with BIOS 10.3 on the board).
+ * The bytes are valid when they add up to 0xa2.
+ */
+#define NVRAM_START     0x20
+#define NVRAM_SIZE      31
+#define NVRAM_CHECK     0xa2
+#define NVRAM_NBOARDS   4       /* number of disk boards */
+#define NVRAM_BOARDS    5       /* then { port, type } for each board */
+
+/*
+ * Fill boards[MINI68K_MAX_BOARDS] with the disk boards configured in the
+ * BIOS Setup, in BIOS order, and return how many there are. If the NVRAM
+ * is not valid, use the BIOS default: the PPIDE on the MF/PIC.
+ */
+int mini68k_get_disk_boards(struct mini68k_board *boards)
+{
+    /* The NVRAM is read once, then remembered */
+    static struct mini68k_board known_boards[MINI68K_MAX_BOARDS];
+    static int known_count;
+    static BOOL known;
+    int i;
+
+    if (!known)
+    {
+        UBYTE nvram[NVRAM_SIZE];
+        UBYTE sum = 0;
+
+        for (i = 0; i < NVRAM_SIZE; i++)
+        {
+            nvram[i] = mini68k_rtc_read(NVRAM_START + i);
+            sum += nvram[i];
+        }
+
+        if (sum != NVRAM_CHECK)
+        {
+            KINFO(("BIOS NVRAM not valid: using the MF/PIC PPIDE only\n"));
+            known_boards[0].type = MINI68K_BOARD_PPIDE;
+            known_boards[0].port = MINI68K_MFPIC_PPIDE_PORT;
+            known_count = 1;
+        }
+        else
+        {
+            known_count = nvram[NVRAM_NBOARDS];
+            if (known_count > MINI68K_MAX_BOARDS)
+                known_count = MINI68K_MAX_BOARDS;
+
+            for (i = 0; i < known_count; i++)
+            {
+                known_boards[i].port = nvram[NVRAM_BOARDS + 2 * i];
+                known_boards[i].type = nvram[NVRAM_BOARDS + 2 * i + 1];
+                KDEBUG(("BIOS disk board %d: type %d at port 0x%02x\n",
+                        i, known_boards[i].type, known_boards[i].port));
+            }
+        }
+
+        known = TRUE;
+    }
+
+    for (i = 0; i < known_count; i++)
+        boards[i] = known_boards[i];
+
+    return known_count;
+}
+
+/******************************************************************************/
 /* Machine                                                                    */
 /******************************************************************************/
 

@@ -661,9 +661,13 @@
 # ifndef CONF_SERIAL_CONSOLE
 #  define CONF_SERIAL_CONSOLE 1
 # endif
-  /* PPIDE on the MF/PIC board, through ide.c */
+  /* PPIDE on the MF/PIC board and DiskIO boards, through ide.c */
 # ifndef CONF_WITH_IDE
 #  define CONF_WITH_IDE 1
+# endif
+  /* Dual-SD board, through sd.c and spi_mini68k.c */
+# ifndef CONF_WITH_SDMMC
+#  define CONF_WITH_SDMMC 1
 # endif
   /* Debug output goes directly to the MF/PIC 16550, not via the MFP */
 # ifndef RS232_DEBUG_PRINT

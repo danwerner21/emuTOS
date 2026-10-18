@@ -111,35 +111,40 @@ struct IDE
 
 #include "ppide.h"
 
+#include "mini68k.h"
+
 /* On the Mini-M68k, the IDE registers are not memory-mapped: they are
- * reached through the PPIDE interface on the MF/PIC board (an 82C55).
- * The interface 'i' is passed to these macros only for compatibility.
- * FIXME: dispatch on 'i' when other disk boards are supported. */
+ * reached through an 82C55 PPI, on the MF/PIC board (PPIDE) or on a
+ * DiskIO board. Each IDE interface is one such board, configured in the
+ * BIOS Setup; it records the address of its PPI. */
+
+#define NUM_IDE_INTERFACES  MINI68K_MAX_BOARDS
 
 struct IDE
 {
-    UWORD data;     /* never accessed: ide_get_data()/ide_put_data() use ppide.c */
+    volatile UBYTE *ppi;    /* 82C55 port A; B, C and control follow */
+    UWORD data;             /* never accessed: ide_get_data()/ide_put_data() use ppide2.S */
 };
 
-static struct IDE ppide_interface;
-#define ide_interface (&ppide_interface)
+static struct IDE ppide_interfaces[NUM_IDE_INTERFACES];
+#define ide_interface ppide_interfaces
 
 #define IDE_WRITE_SECTOR_NUMBER_SECTOR_COUNT(i,a,b) \
-    { ppide_write_reg(PPIDE_REG_SECTOR_NUMBER,a); ppide_write_reg(PPIDE_REG_SECTOR_COUNT,b); }
+    { ppide_write_reg((i)->ppi,PPIDE_REG_SECTOR_NUMBER,a); ppide_write_reg((i)->ppi,PPIDE_REG_SECTOR_COUNT,b); }
 #define IDE_WRITE_CYLINDER_HIGH_CYLINDER_LOW(i,a) \
-    { ppide_write_reg(PPIDE_REG_CYLINDER_HIGH,HIBYTE(a)); ppide_write_reg(PPIDE_REG_CYLINDER_LOW,LOBYTE(a)); }
+    { ppide_write_reg((i)->ppi,PPIDE_REG_CYLINDER_HIGH,HIBYTE(a)); ppide_write_reg((i)->ppi,PPIDE_REG_CYLINDER_LOW,LOBYTE(a)); }
 #define IDE_WRITE_COMMAND_HEAD(i,a,b) \
-    { ppide_write_reg(PPIDE_REG_HEAD,b); ppide_write_reg(PPIDE_REG_COMMAND,a); }
-#define IDE_WRITE_CONTROL(i,a)    ppide_write_reg(PPIDE_REG_CONTROL,a)
-#define IDE_WRITE_HEAD(i,a)       ppide_write_reg(PPIDE_REG_HEAD,a)
+    { ppide_write_reg((i)->ppi,PPIDE_REG_HEAD,b); ppide_write_reg((i)->ppi,PPIDE_REG_COMMAND,a); }
+#define IDE_WRITE_CONTROL(i,a)    ppide_write_reg((i)->ppi,PPIDE_REG_CONTROL,a)
+#define IDE_WRITE_HEAD(i,a)       ppide_write_reg((i)->ppi,PPIDE_REG_HEAD,a)
 
-#define IDE_READ_STATUS(i)        ppide_read_reg(PPIDE_REG_STATUS)
-#define IDE_READ_ALT_STATUS(i)    ppide_read_reg(PPIDE_REG_ALT_STATUS)
-#define IDE_READ_ERROR(i)         ppide_read_reg(PPIDE_REG_ERROR)
+#define IDE_READ_STATUS(i)        ppide_read_reg((i)->ppi,PPIDE_REG_STATUS)
+#define IDE_READ_ALT_STATUS(i)    ppide_read_reg((i)->ppi,PPIDE_REG_ALT_STATUS)
+#define IDE_READ_ERROR(i)         ppide_read_reg((i)->ppi,PPIDE_REG_ERROR)
 #define IDE_READ_SECTOR_NUMBER_SECTOR_COUNT(i) \
-    MAKE_UWORD(ppide_read_reg(PPIDE_REG_SECTOR_NUMBER), ppide_read_reg(PPIDE_REG_SECTOR_COUNT))
+    MAKE_UWORD(ppide_read_reg((i)->ppi,PPIDE_REG_SECTOR_NUMBER), ppide_read_reg((i)->ppi,PPIDE_REG_SECTOR_COUNT))
 #define IDE_READ_CYLINDER_HIGH_CYLINDER_LOW(i) \
-    MAKE_UWORD(ppide_read_reg(PPIDE_REG_CYLINDER_HIGH), ppide_read_reg(PPIDE_REG_CYLINDER_LOW))
+    MAKE_UWORD(ppide_read_reg((i)->ppi,PPIDE_REG_CYLINDER_HIGH), ppide_read_reg((i)->ppi,PPIDE_REG_CYLINDER_LOW))
 
 #else
 
@@ -227,7 +232,9 @@ struct IDE
 
 #else
 
+#ifndef NUM_IDE_INTERFACES
 #define NUM_IDE_INTERFACES  1
+#endif
 
 #endif /* CONF_ATARI_HARDWARE */
 
@@ -599,7 +606,33 @@ BOOL detect_ide(void)
 #elif defined(MACHINE_M548X)
     has_ide = 0x01;
 #elif defined(MACHINE_MINI68K)
-    has_ide = 0x01;     /* PPIDE on the MF/PIC, which is always present */
+    {
+        /* One IDE interface per PPIDE or DiskIO board, in BIOS Setup order */
+        struct mini68k_board boards[MINI68K_MAX_BOARDS];
+        int n = mini68k_get_disk_boards(boards);
+        int b;
+
+        has_ide = 0x00;
+        for (b = 0, i = 0; b < n && i < NUM_IDE_INTERFACES; b++)
+        {
+            switch(boards[b].type)
+            {
+            case MINI68K_BOARD_PPIDE:
+            case MINI68K_BOARD_DISKIO:
+                ppide_interfaces[i].ppi = PPIDE_PPI(boards[b].port);
+                has_ide |= 1 << i;
+                i++;
+                break;
+            case MINI68K_BOARD_NONE:
+            case MINI68K_BOARD_DUALSD:  /* handled by the SD/MMC driver */
+                break;
+            default:
+                KINFO(("Disk board type %d at port 0x%02x is not supported\n",
+                       boards[b].type, boards[b].port));
+                break;
+            }
+        }
+    }
 #elif defined(MACHINE_FIREBEE)
     has_ide = 0x03;
 #elif CONF_ATARI_HARDWARE
@@ -1035,7 +1068,7 @@ static void ide_get_data(volatile struct IDE *interface,UBYTE *buffer,ULONG buff
     KDEBUG(("ide_get_data(%p, %p, %lu, %d)\n", interface, buffer, bufferlen, need_byteswap));
 
 #ifdef MACHINE_MINI68K
-    ppide_read_data(buffer, bufferlen, need_byteswap);
+    ppide_read_data(interface->ppi, buffer, bufferlen, need_byteswap);
     return;
 #endif
 
@@ -1222,7 +1255,7 @@ static void ide_put_data(volatile struct IDE *interface,UBYTE *buffer,ULONG buff
     UWORD *end2 = (UWORD *)(buffer + bufferlen);
 
 #ifdef MACHINE_MINI68K
-    ppide_write_data(buffer, bufferlen, need_byteswap);
+    ppide_write_data(interface->ppi, buffer, bufferlen, need_byteswap);
     return;
 #endif
 

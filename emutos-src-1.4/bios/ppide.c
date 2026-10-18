@@ -9,7 +9,7 @@
 
 /*
  * Low-level access to an IDE device wired to an 82C55 PPI, as on the
- * RetroBrew MF/PIC board. The bus cycles follow the Mini-M68k BIOS
+ * RetroBrew MF/PIC and DiskIO boards. The bus cycles follow the Mini-M68k BIOS
  * driver (ppide.s):
  *  - port A carries IDE D0-D7, port B carries IDE D8-D15
  *  - port C drives the IDE address, chip selects and strobes
@@ -29,13 +29,11 @@
 
 #ifdef MACHINE_MINI68K
 
-/* 82C55 on the MF/PIC, ports 0x44-0x47 */
-#define PPIDE_PPI_PORT  0x44
-#define PPI_REG(r)      (*(volatile UBYTE *)(MINI68K_ECB_IO(PPIDE_PPI_PORT) + (r)))
-#define PPI_A           PPI_REG(0)
-#define PPI_B           PPI_REG(1)
-#define PPI_C           PPI_REG(2)
-#define PPI_CTRL        PPI_REG(3)
+/* 82C55 registers, relative to the PPI base address */
+#define PPI_A           0
+#define PPI_B           1
+#define PPI_C           2
+#define PPI_CTRL        3
 
 /* PPI mode words */
 #define PPI_MODE_READ   0x92    /* mode 0, A and B in, C out */
@@ -45,29 +43,29 @@
 #define PPIDE_WR        0x20
 #define PPIDE_RD        0x40
 
-UBYTE ppide_read_reg(UBYTE reg)
+UBYTE ppide_read_reg(volatile UBYTE *ppi, UBYTE reg)
 {
     UBYTE value;
 
-    PPI_CTRL = PPI_MODE_READ;
-    PPI_C = reg;                /* address and chip select first */
-    PPI_C = reg | PPIDE_RD;     /* then assert RD */
-    value = PPI_A;
-    PPI_C = reg;                /* release RD */
-    PPI_C = 0;                  /* release the bus */
+    ppi[PPI_CTRL] = PPI_MODE_READ;
+    ppi[PPI_C] = reg;               /* address and chip select first */
+    ppi[PPI_C] = reg | PPIDE_RD;    /* then assert RD */
+    value = ppi[PPI_A];
+    ppi[PPI_C] = reg;               /* release RD */
+    ppi[PPI_C] = 0;                 /* release the bus */
 
     return value;
 }
 
-void ppide_write_reg(UBYTE reg, UBYTE value)
+void ppide_write_reg(volatile UBYTE *ppi, UBYTE reg, UBYTE value)
 {
-    PPI_CTRL = PPI_MODE_WRITE;
-    PPI_A = value;
-    PPI_B = 0;
-    PPI_C = reg;                /* address and chip select first */
-    PPI_C = reg | PPIDE_WR;     /* pulse WR */
-    PPI_C = reg;
-    PPI_C = 0;                  /* release the bus */
+    ppi[PPI_CTRL] = PPI_MODE_WRITE;
+    ppi[PPI_A] = value;
+    ppi[PPI_B] = 0;
+    ppi[PPI_C] = reg;               /* address and chip select first */
+    ppi[PPI_C] = reg | PPIDE_WR;    /* pulse WR */
+    ppi[PPI_C] = reg;
+    ppi[PPI_C] = 0;                 /* release the bus */
 }
 
 #endif /* MACHINE_MINI68K */

@@ -18,8 +18,7 @@
 
 #ifdef MACHINE_MINI68K
 
-/* 82C55 on the MF/PIC: port A, then B (+1), C (+2) and control (+3) */
-#define PPI_BASE        0xffff8044
+/* 82C55 registers, relative to port A: B (+1), C (+2) and control (+3) */
 #define PPI_B           1
 #define PPI_C           2
 #define PPI_CTRL        3
@@ -32,16 +31,17 @@
 #define PPIDE_RD        0x40
 
 /******************************************************************************/
-/* void ppide_read_data(UBYTE *buffer, ULONG bufferlen, WORD need_byteswap);  */
+/* void ppide_read_data(volatile UBYTE *ppi, UBYTE *buffer, ULONG bufferlen,  */
+/*                      WORD need_byteswap);                                  */
 /******************************************************************************/
 
         .globl  _ppide_read_data
 _ppide_read_data:
         movem.l d2-d4,-(sp)
-        move.l  4*3+4(sp),a0            // buffer
-        move.l  4*3+8(sp),d3            // bufferlen
-        move.w  4*3+12(sp),d4           // need_byteswap
-        lea     PPI_BASE,a1
+        move.l  4*3+4(sp),a1            // ppi: port A; B, C and control follow
+        move.l  4*3+8(sp),a0            // buffer
+        move.l  4*3+12(sp),d3           // bufferlen
+        move.w  4*3+16(sp),d4           // need_byteswap
         moveq   #PPIDE_REG_DATA+PPIDE_RD,d1 // RD asserted
         moveq   #PPIDE_REG_DATA,d2      // RD released
 
@@ -107,16 +107,17 @@ rd_done:
         rts
 
 /******************************************************************************/
-/* void ppide_write_data(const UBYTE *buffer, ULONG bufferlen, WORD need_byteswap); */
+/* void ppide_write_data(volatile UBYTE *ppi, const UBYTE *buffer,            */
+/*                       ULONG bufferlen, WORD need_byteswap);                */
 /******************************************************************************/
 
         .globl  _ppide_write_data
 _ppide_write_data:
         movem.l d2-d4,-(sp)
-        move.l  4*3+4(sp),a0            // buffer
-        move.l  4*3+8(sp),d3            // bufferlen
-        move.w  4*3+12(sp),d4           // need_byteswap
-        lea     PPI_BASE,a1
+        move.l  4*3+4(sp),a1            // ppi: port A; B, C and control follow
+        move.l  4*3+8(sp),a0            // buffer
+        move.l  4*3+12(sp),d3           // bufferlen
+        move.w  4*3+16(sp),d4           // need_byteswap
         moveq   #PPIDE_REG_DATA+PPIDE_WR,d1 // WR asserted
         moveq   #PPIDE_REG_DATA,d2      // WR released
 

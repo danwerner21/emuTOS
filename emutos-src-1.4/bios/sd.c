@@ -23,6 +23,7 @@
 #include "string.h"
 #include "tosvars.h"
 #include "coldfire.h"
+#include "mini68k.h"
 
 #if CONF_WITH_SDMMC
 
@@ -76,7 +77,12 @@
 #define SD_CSD_TIMEOUT          8       /* between sending SEND_CSD cmd & receiving data */
                             /* these are millisecond timeout values (see SD specifications v4.10) */
 #define SD_POWERUP_DELAY_MSEC   1       /* minimum power-up time */
+#ifdef MACHINE_MINI68K
+/* some cards take longer than the specified 1 second after power-up */
+#define SD_INIT_TIMEOUT_MSEC    3000    /* waiting for card to become ready */
+#else
 #define SD_INIT_TIMEOUT_MSEC    1000    /* waiting for card to become ready */
+#endif
 #define SD_READ_TIMEOUT_MSEC    100     /* waiting for start bit of data block */
 #define SD_WRITE_TIMEOUT_MSEC   500     /* waiting for end of busy */
                             /* these are derived timeout values in TOS ticks */
@@ -117,8 +123,42 @@ struct cardinfo {
 /*
  *  globals
  */
-static struct cardinfo card;
+/*
+ *  number of cards: the Mini-M68k Dual-SD board has 2 sockets
+ */
+#ifdef MACHINE_MINI68K
+#define SD_UNITS    2
+#else
+#define SD_UNITS    1
+#endif
+
+static struct cardinfo card;            /* the current card */
+#if SD_UNITS > 1
+static struct cardinfo saved_card[SD_UNITS]; /* the other cards */
+static UWORD cur_unit;
+#endif
 static UBYTE response[5];
+
+#if SD_UNITS > 1
+/*
+ *  make 'drv' the current card: save the state of the previous one
+ *  and switch the hardware to the new one
+ */
+static void sd_select_unit(UWORD drv)
+{
+    if (drv == cur_unit)
+        return;
+
+    saved_card[cur_unit] = card;
+    card = saved_card[drv];
+    cur_unit = drv;
+#ifdef MACHINE_MINI68K
+    mini68k_dualsd_select(drv);
+#endif
+}
+#else
+#define sd_select_unit(drv)
+#endif
 
 /*
  *  function prototypes
@@ -157,8 +197,9 @@ LONG ret;
 UBYTE *p = buf;
 int i;
 
-    if (dev)
+    if ((UWORD)dev >= SD_UNITS)
         return EUNDEV;
+    sd_select_unit(dev);
 
     if (count == 0)
         return 0;
@@ -221,9 +262,14 @@ UBYTE cardreg[16];
     if (cf_spi_chip_select == MCF_VALUE_UNKNOWN)
         return EUNDEV;
 #endif
-
-    if (drv)
+#ifdef MACHINE_MINI68K
+    if (!mini68k_dualsd_present(drv))
         return EUNDEV;
+#endif
+
+    if (drv >= SD_UNITS)
+        return EUNDEV;
+    sd_select_unit(drv);
 
     switch(ctrl) {
     case GET_DISKINFO:
@@ -243,7 +289,13 @@ UBYTE cardreg[16];
             sd_check(drv);                      /* so try to reset & retry */
             if (sd_special_read(CMD10,cardreg)) {
                 card.type = CARDTYPE_UNKNOWN;
+#ifdef MACHINE_MINI68K
+                /* no card (the card detect switch is not used): report
+                 * no device, so that an empty socket gets no drive letter */
+                rc = EUNDEV;
+#else
                 rc = E_CHNG;
+#endif
                 break;
             }
         }
@@ -302,9 +354,14 @@ int i, rc;
     if (cf_spi_chip_select == MCF_VALUE_UNKNOWN)
         return EUNDEV;
 #endif
-
-    if (drv)
+#ifdef MACHINE_MINI68K
+    if (!mini68k_dualsd_present(drv))
         return EUNDEV;
+#endif
+
+    if (drv >= SD_UNITS)
+        return EUNDEV;
+    sd_select_unit(drv);
 
     spi_initialise();
     spi_clock_ident();
@@ -838,14 +895,19 @@ ULONG end = hz_200 + SD_INIT_TIMEOUT_TICKS;
 
     while(hz_200 < end) {
         if (cmd == ACMD41)
-            if (sd_command(CMD55,0L,0,R1,response) < 0)
-                break;
-        if (sd_command(cmd,arg,0,R1,response) < 0)
-            break;
+            if (sd_command(CMD55,0L,0,R1,response) < 0) {
+                KDEBUG(("sd_wait_for_not_idle(%d): no response to CMD55\n",cmd));
+                return -1;
+            }
+        if (sd_command(cmd,arg,0,R1,response) < 0) {
+            KDEBUG(("sd_wait_for_not_idle(%d): no response\n",cmd));
+            return -1;
+        }
         if ((response[0] & SD_ERR_IDLE_STATE) == 0)
             return 0;
     }
 
+    KDEBUG(("sd_wait_for_not_idle(%d): timeout, response=0x%02x\n",cmd,response[0]));
     return -1;
 }
 

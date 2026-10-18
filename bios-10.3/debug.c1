@@ -1,0 +1,651 @@
+/* debug.c -- main control program for mini-M68k debugger */
+/*
+	Copyright (C) 2011,2012 John R. Coffman.
+	Licensed for hobbyist use on the N8VEM baby M68k CPU board.
+***********************************************************************
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    in the file COPYING in the distribution directory along with this
+    program.  If not, see <http://www.gnu.org/licenses/>.
+
+**********************************************************************/
+#include <stdlib.h>
+#include <string.h>
+#include "mytypes.h"
+#include "ctype.h"
+#include "string.h"
+#include "main68.h"
+#include "debug.h"
+#include "disasm.h"
+#include "io.h"
+#include "errno.h"
+
+byte	break_taken;			/* 0=trace trap, 1=breakpoint trap */
+/*extern int errno; */
+int radix;
+byte charsave;
+#define PRIVATE	static	/* not global */
+/*#define unblank(p) while(*p==' '||*p==011)++p*/
+#define unblank(p) while(isspace((int)(*p)))++p
+
+T_break  breakpoint[MAXBREAKS+1];
+
+
+char cmd_buffer[LINELEN+FUDGE];		/* used in main68.c also */
+
+#define xSP	0xFF
+static const T_symbol builtin[] = {
+	{  0, "D0", 2 },
+	{  1, "D1", 2 },
+	{  2, "D2", 2 },
+	{  3, "D3", 2 },
+	{  4, "D4", 2 },
+	{  5, "D5", 2 },
+	{  6, "D6", 2 },
+	{  7, "D7", 2 },
+	{  8, "A0", 2 },
+	{  9, "A1", 2 },
+	{ 10, "A2", 2 },
+	{ 11, "A3", 2 },
+	{ 12, "A4", 2 },
+	{ 13, "A5", 2 },
+	{ 14, "A6", 2 },
+	{ xSP, "A7", 2 },		/* special */
+	{ 16, "SSP", 3 },
+	{ 17, "USP", 3 },
+	{ 18, "PC", 2 },
+/*        19, frame -- high order part of "SR"	*/
+	{ 19, "SR", 2 },
+	{ xSP, "SP", 2 },		/* special */
+	{  0, NULL, 0 }
+									 };
+long lookup_value;
+/*  Linear lookup, case sensitive if nocase = 0, case insensitive if nocase = 1 */
+word lookup(const T_symbol *table, char *name, char **nameout, byte nocase)
+{
+	word lth, index;
+	const T_symbol *p = table;
+	char csave;
+	char *np = name;
+
+	my_errno = 0;
+	lth = 0;
+	while (isalnum(*np)) {  /* must not use 'isalnum(*np++) */
+		++np;
+		lth++;
+	}
+	csave = *np;
+	*np = 0;
+	if (nameout) *nameout = np;
+	
+	lth = strlen(name);
+	while (p->length) {
+		if (p->length == lth  &&  (nocase ? !my_strcasecmp(p->name, name) : !strcmp(p->name, name)) ) {
+			index = p->value;
+			if (index == xSP) index = 16 + !(state.sr & 0x2000);
+			lookup_value = state.d[index];
+			if (index == 19) lookup_value &= 0xFFFF;
+			*np = csave;
+			return index;
+		}
+		++p;
+	}
+	
+	my_errno = 1;
+	*np = csave;
+	return 0;
+}
+
+
+PRIVATE
+void cmd_error(void)
+{
+	cprintf(" ?\n");
+}
+
+
+PRIVATE
+char *token(char *lp, char **llp)
+{
+	char *tp;
+	int16 ch;
+
+	unblank(lp);
+	tp = lp;
+	ch = *lp;
+	while (isalnum(ch)) {
+		ch = *++lp;
+	}
+	if (lp == tp) tp = NULL;
+	if (*lp) {
+		charsave = *lp;
+		*lp = 0;
+	}
+	*llp = lp;
+	return tp;
+}
+
+
+PRIVATE
+int size_imm(void)
+{
+	word bd, is;
+	int size;
+	word imm = *(word*)(state.pc+2);
+
+	size = 2;		/* the IMM word */
+	if (imm & 0x100) {
+		 bd = (imm>>4) & 3;
+		 is = (imm & 3);
+		 if (bd==2) size += 2;
+		 else if (bd==3) size += 4;
+		 if (is==2) size += 2;
+		 else if (is==3) size += 4;
+	}
+	return size;
+}
+ 
+
+PRIVATE
+int size_ea(word ins)
+{
+	word mode, reg;
+
+	mode = (ins >> 3) & 7;
+	if (mode <= 4) return 0;
+#if 0
+	if (mode <= 6) return 2;
+	/* mode is 7 */
+	reg = ins & 7;
+	if (reg == 1) return 4;
+	if (reg <= 3) return 2;
+	/* immediate */
+	size = (ins >> 6) & 3;
+	if (size == 2) return 4;
+	return 2;
+#else
+	if (mode==5) return 2;
+	reg = ins & 7;
+	if (mode==7) {
+		if (reg==0 || reg==2) return 2;
+		if (reg==1) return 4;
+		if (reg==3) return size_imm();
+		return 0;
+	}
+/*	if (mode==6) */ return size_imm();
+#endif
+}
+
+PRIVATE
+void create_break(char *lp)
+{
+	uint16 n;
+	long addr;
+
+	addr = strtoul(lp, NULL, radix);
+	addr &= BREAK_LIMIT_MASK;
+	if (my_errno || (addr & 1) || 
+				addr < BREAK_LIMIT_LOW || addr >= BREAK_LIMIT_HIGH) {
+		cmd_error();
+		return;
+	}
+/*  Check that a breakpoint is not already set at this location */
+	for (n=0; n<MAXBREAKS; n++)
+		if ( (breakpoint[n].status & BR_USED) &&
+				breakpoint[n].where == addr )  {
+			cmd_error();
+			return;
+		}
+/*  Find an empty slot for the breakpoint definition */
+	for (n=0; n<MAXBREAKS; n++)
+		if ( !(breakpoint[n].status & BR_USED) ) break;
+	if (n < MAXBREAKS) {
+		if (!my_errno && !(addr & 1) && addr>= 0x1000 && (addr & 0x3FFFFF) < 0x3F8000) {
+			breakpoint[n].where = addr;
+			breakpoint[n].instr = *(WORD*)addr;
+			breakpoint[n].status = BR_USED | BR_ENBL;
+		}
+		else cmd_error();
+	}
+	else cmd_error();
+}
+
+PRIVATE
+void enable_break(char *lp)
+{
+	uint16 n = strtoul(lp, NULL, 10);
+
+	if (!my_errno  &&  n < MAXBREAKS  &&  (breakpoint[n].status & BR_USED) ) {
+		breakpoint[n].status |= BR_ENBL;
+	}
+	else cmd_error();
+}
+
+PRIVATE
+void disable_break(char *lp)
+{
+	uint16 n = strtoul(lp, NULL, 10);
+
+	if (!my_errno  &&  n < MAXBREAKS  &&  (breakpoint[n].status & BR_USED) ) {
+		breakpoint[n].status &= ~BR_ENBL;
+	}
+	else cmd_error();
+}
+
+PRIVATE
+void list_breaks(char *lp)
+{
+	uint16 n;
+
+	for (n=0; n<MAXBREAKS; n++) {
+		if (breakpoint[n].status & BR_USED) {
+			cprintf("%2hd %c %06lx\n",
+				n,
+				breakpoint[n].status & BR_ENBL ? 'e' : 'd',
+				breakpoint[n].where );
+		}
+	}
+}
+
+PRIVATE
+void clear_breaks(char *lp)
+{
+	uint16 n, a, b;
+
+	unblank(lp);
+	if (*lp == '*') {
+		a = 0;
+		b = MAXBREAKS-1;
+		my_errno = 0;
+	}
+	else {
+		a = b = strtoul(lp, NULL, 10);
+	}
+	if (my_errno) cmd_error();
+	else for (n = a; n <= b; n++) {
+		breakpoint[n].where = 0;
+		breakpoint[n].instr = 0;
+		breakpoint[n].status = 0;
+	}
+}
+
+/* install all the enabled breakpoints before Go or Trace execution begins */
+void install_breaks(void)
+{
+	uint16 i;
+	T_break	*bp = breakpoint;
+	WORD *insp;
+
+	for (i=0; i<=MAXBREAKS; i++, bp++) {
+		if (bp->status & BR_ENBL) {
+			insp = (WORD*) bp->where;
+/*			bp->instr = *insp;		  */
+			*insp = INSBREAK;
+		}
+	}
+
+}
+
+/* remove all the enabled breakpoints after a Trace or Break trap */
+void remove_breaks(void)
+{
+	uint16 i;
+	T_break	*bp = breakpoint;
+	WORD *insp;
+
+	for (i=0; i<=MAXBREAKS; i++, bp++) {
+		if (bp->status & BR_ENBL) {
+			insp = (WORD*) bp->where;
+			*insp = bp->instr;
+		}
+	}
+	breakpoint[MAXBREAKS].status = 0;	/* stepping breakpoint */
+	breakpoint[MAXBREAKS].where  = 0;	/* not really necessary to do this */
+
+}
+
+
+
+/* check for an enabled breakpoint at the resume PC
+	Return
+		-1		if all clear
+		n		number of the breakpoint  0...
+*/
+PRIVATE
+int check_pc(void)
+{
+	int n;
+
+	for (n=0; n<MAXBREAKS; n++) {
+		if ( (breakpoint[n].status & BR_ENBL) &&
+			   breakpoint[n].where == state.pc )  return n;
+	}
+
+	return -1;
+}
+
+PRIVATE
+void execute_trace(long count)
+{
+	int flag;
+	
+	if ( (flag=check_pc()) >= 0 ) {
+		breakpoint[flag].status &= ~BR_ENBL;
+		Trace(1);
+		breakpoint[flag].status |= BR_ENBL;
+		count--;
+	}
+	if (count > 0) Trace(count);
+}
+
+PRIVATE
+void execute_go(void)
+{
+	int flag;
+	
+	if ( (flag=check_pc()) >= 0 ) {
+		breakpoint[flag].status &= ~BR_ENBL;	/* disable the break */
+		Trace(1);
+		breakpoint[flag].status |= BR_ENBL;		/* enable it again */
+	}
+	Go(1);
+}
+
+
+#define is_jXX(ins) (((ins) & 0xFF80) == 0x4E80)
+#define is_bXX(ins) (((ins) & 0xF000) == 0x6000)
+#define is_dbXX(ins) (((ins) & 0xF0F8) == 0x50C8)
+#define is_trap(ins) (((ins) & 0xFFF0) == 0x4E40)
+#define is_trapv(ins) ((ins) == 0x4E76)
+#define is_trapcc(ins) (((ins) & 0xF0F8) == 0x50F8)
+
+PRIVATE
+void execute_skipover(void)
+{
+	WORD ins;
+	int incr = 2;
+	long addr;
+
+	ins = *(WORD*)state.pc;
+	if (is_jXX(ins)) {
+		incr += size_ea(ins);
+	}
+	else if (is_bXX(ins)) {
+		incr += 2 * ((ins & 0xFF) == 0);
+#if (CPU >= 68020)
+		incr += 4 * ((ins & 0xFF) == 0xFF);
+#endif
+	}
+	else if (is_dbXX(ins)) {
+		incr += 2;
+	}
+	else if (is_trap(ins) || is_trapv(ins)) {
+		/* single word instruction */ ;;;
+	}
+	else if (is_trapcc(ins)) {
+		if ((ins&7) == 2) incr += 2;
+		else if ((ins&7) == 3) incr += 4;
+	}
+	else {	/* none of the above */
+		execute_trace(1);
+		return;
+	}
+/* set the Step Over breakpoint and resume execution */
+	breakpoint[MAXBREAKS].where = addr = state.pc + incr;
+	breakpoint[MAXBREAKS].instr = *(WORD*)addr;
+	breakpoint[MAXBREAKS].status = BR_USED | BR_ENBL;
+	execute_go();
+}
+
+
+
+enum {fmtB=1, fmtW, fmtC, fmtL};
+unsigned long dm_start, dm_count;
+
+PRIVATE
+void dump_memory(int format, uint32 start, int count)
+{
+	fmt_dump(format, start, count);
+}
+
+
+static
+void help(void)
+{
+	cprintf(/* "%s", */
+		"B <addr>  set break                    G  go from current PC\n"
+		"BC <n>  clear break                    N [<radix>]  set/ask radix\n"
+		"BD <n>  disable break                  Q  quit\n"
+		"BE <n>  enable break                   R [<reg>]  register(s) display\n"
+		"BL   list breaks                       S  step over branch or call\n"
+		"D [<addr> [<lth>]]  dump               T [<n>]  trace N instructions\n"
+		" DB, DW, DL, DC  format                U [<addr> [<dlth>]]  unassemble\n"
+		"I <port>  input byte port              <addr> for D or U may be <*>\n"
+		"O <port> <byte>  out to byte port      ? or H  print help\n"
+	);
+}
+
+#if 0
+int do_debug_command(char* argv[], int argc)
+{
+	char ch, ch2, *lp;
+
+#if !RETAIL
+	help();
+	if (debug>3) {
+		int i;
+		cprintf("argc=%d >>", argc);
+		for(i=0; i<argc; ++i) cprintf(" %s", argv[i]);
+		cprintf("\n");
+	}
+#endif
+	if (argc) {
+		ch = argv[0][0];
+		ch2 = argv[0][1];
+		switch ( toupper(ch) ) {
+		case 'B':	/* Breakpoints */
+			lp = argv[1];
+			switch (toupper(ch2)) {
+				case 'C':	clear_breaks(lp); break;
+				case 'D':	disable_break(lp); break;
+				case 'E':	enable_break(lp); break;
+				case 'L':	list_breaks(lp); break;
+				case 'P':
+				case  0 :	create_break(lp); break;
+				default:		cmd_error();
+			}
+			break;
+		case 'G':	/* Go from here */
+			execute_go();
+			skip = 0;
+			break;
+		default: /* case 'H': case '?': */
+			help();
+		} /* switch */
+
+	} /* if */
+
+	return 0;
+}
+#endif
+
+
+void debug68(int option)
+{
+#define line cmd_buffer
+/*	char line[80];	*/
+	char ch, *lp, *tp;
+	long n, v;
+	long dumpbegin = 0x1000;
+	int dumpcount = 0x40;
+	int dumpformatsave = fmtW, dumpformat;
+	int ucount = 4;
+	uint32 udot = 0x1000;
+	byte skip = 0;
+
+	radix = 16;
+	for (;;) {
+		if (!skip) {
+			print_state(&state);
+			dump_memory(2, state.pc, 16);
+			udot = state.pc;
+#if CPU<=68010
+			cprintf("%06lx:  ", udot);
+#else
+			cprintf("%08lx:  ", udot);
+#endif
+			pinstr(udot);	/* print instruction */
+			cprintf("\n");
+		}
+		skip = 1;
+
+		cprintf(">>");
+		if ( GETLINE(line) ) {
+			lp = line;
+			unblank(lp);
+			ch = *lp++;
+			switch (toupper(ch)) {
+				case 'B':	/* Breakpoints */
+					ch = *lp++;
+					switch (toupper(ch)) {
+						case 'C':	clear_breaks(lp); break;
+						case 'D':	disable_break(lp); break;
+						case 'E':	enable_break(lp); break;
+						case 'L':	list_breaks(lp); break;
+						case 'P':
+						case ' ':	create_break(lp); break;
+						default:	cmd_error();
+					}
+					break;
+				case 'D':	/* Dump memory */
+					ch = *lp++;
+					switch (toupper(ch)) {
+						case 'B':	dumpformat = 1; break;
+						case 'W':	dumpformat = 2; break;
+						case 'D':    /* MSDOS debugger carryover */
+						case 'L':	dumpformat = 4; break;
+						case 'C':	dumpformat = 3; break;
+						default:	dumpformat = dumpformatsave;
+								--lp;
+					}
+					unblank(lp);
+					if (*lp == '*') { ++lp; unblank(lp); }
+					else if (*lp) dumpbegin = strtoul(lp, &lp, 16);
+					unblank(lp);
+					if (*lp) dumpcount = strtoul(lp, NULL, 16);
+					dumpformatsave = dumpformat;
+					fmt_dump(dumpformat,dumpbegin,dumpcount);
+					dumpbegin += dumpcount;
+					skip = 1;
+					break;
+				case 'G':	/* Go from here */
+					execute_go();
+					skip = 0;
+					break;
+				case 'I':
+					n = strtoul(lp, NULL, radix);
+					if (my_errno) break;
+					n &= 0x3FFF;
+					v = inp(n);
+					cprintf("%02lx\n", v);
+					skip = 1;
+					break;
+				case 'N':	/* set the numeric radix */
+					n = strtoul(lp, NULL, 10);
+					if (n < 2 || n > 16) {
+						cprintf(" %d\n", radix);
+					} else radix = n;
+					skip = 1;
+					break;
+				case 'O':	/* output to a byte port */
+					n = strtoul(lp, &lp, radix);
+					if (my_errno) break;
+					n &= 0x3FFF;
+					v = strtoul(lp, &lp, radix);
+					if (my_errno) break;
+					outp(n,v);
+					skip = 1;
+					break;
+				case 'Q':	/* quit debugger */
+					return;
+				case 'R':	/* display registers */
+					skip = 0;
+					tp = token(lp, &lp);
+					if (tp) {
+						skip = 1;
+						n = lookup(builtin, tp, &tp, 1);
+						if (my_errno) {
+							cmd_error();
+							break;
+						}
+						cprintf(n==19 ? "%04lx : " : n<15 ? "%08lx : " : "%06lx : ",
+			                                ((long*)&state)[n]); /* state.d[n]) but n may exceed bounds of d */
+						v = GETLINE(line);
+						if (v) {
+							v = strtoul(line, NULL, radix);
+							if (!my_errno) {
+								if (n==19) state.sr = v;
+								else state.d[n] = v;
+							}
+						}
+					}
+					break;
+				case 'S':	/* step over a call or jump */
+					execute_skipover();
+					skip = 0;
+					break;
+				case 'T':	/* trace into */
+					n = strtoul(lp, &lp, radix);
+					if (n < 1)  n = 1;
+					execute_trace(n);
+					skip = 0;
+					break;
+				case 'U':	/* unassemble */
+					unblank(lp);
+					if (*lp == '*') { ++lp; unblank(lp); }
+					else if (*lp) {
+						lookup(builtin, lp, &tp, 1);
+						if (my_errno) {
+							v = strtoul(lp, &tp, 16);
+							if (my_errno) {
+								cmd_error();
+								break;
+							}
+							udot = v;
+						}
+						else udot = lookup_value;
+						lp = tp;
+						unblank(lp);
+					}
+					if (*lp) ucount = strtoul(lp, NULL, 10);
+					udot &= 0xFFFFFFFE;
+					if (ucount < 1) ucount = 1;
+					if (ucount > 22) ucount = 22;
+					n = ucount;
+					while (n--) {
+#if CPU<=68010
+						cprintf("%06lx:  ", udot);
+#else
+						cprintf("%08lx:  ", udot);
+#endif
+						udot += pinstr(udot);
+						cprintf("\n");
+					}
+					break;
+				default: /* case 'H': case '?': */
+					help();
+			} /* switch */
+		} /* if */
+	} /* for(ever) */
+}
+

@@ -1,0 +1,129 @@
+/* bios_doc.txt
+
+	Copyright (C) 2011,2015,2022 John R. Coffman.
+	Licensed for hobbyist use only.
+***********************************************************************
+    Most of the information here is from:
+	biostrap.s	trap definitions file
+	dualide.s	more info on disk calls
+
+#--------------------------------------------------------------------------
+#  bios_xxx
+#--------------------------------------------------------------------------
+#  bios calls pass arguments in the general registers
+#  address registers used to pass data in memory
+#  N.B. undefined bios calls are considered a catastrophic error (HALT)
+#
+#    Call with:
+#	D0 = function code <byte, word, or long>
+#	D1 = data, if required, size as needed by particular call
+#	A0 = address data, if needed (always <long>)
+#
+#    Return with:
+#	D0 = possible error code; not all calls return a completion code
+#	D1 = possible call return, as defined for individual call
+#
+#  N.B. all bios calls indicate a good return with the C=0, (also S=0, V=0)
+#	errors are indicated, even with no error code, C=1, (also S=1, V=1)
+#--------------------------------------------------------------------------
+
+/*
+
+#  There is no error return.
+#
+
+#--------------------------------------------------------------------------
+# Serial Line calls:  sioput, sioget, siotest, siostr
+#
+
+
+#--------------------------------------------------------------------------
+#  bios_sioput
+#--------------------------------------------------------------------------
+#  put a character to the console serial line 
+#
+#    Call with:
+#	D0 = 2	  function code
+#	D1 = <char> to write out
+#
+#    Return with:
+#	Carry = 0
+#	There is no error code return.
+#
+#--------------------------------------------------------------------------
+
+
+
+
+#--------------------------------------------------------------------------
+#  bios_siostr
+#--------------------------------------------------------------------------
+#  put a character string to the console serial line 
+#
+#    Call with:
+#	D0 = 3	  function code
+#	D1 = <terminating character> usually NULL; i.e., zero
+#	A0 = <address of string> usually <NUL> terminated
+#
+#    Return with:
+#	D0 = number of charactes put out <long>  (may be zero)
+#	Carry = 0
+#
+#    Error return:	if string is >4096 characters
+#	Carry = 1
+#	D0 = 0xFFFFFFFF (-1)
+#
+#  Note: a 25x80 screen full is only 2000 characters
+#
+#--------------------------------------------------------------------------
+
+
+
+
+#--------------------------------------------------------------------------
+#  bios_sioget
+#--------------------------------------------------------------------------
+#  get a character from the console serial line, always wait for one to
+#  	be received
+#
+#    Call with:
+#	D0 = 4	  function code
+#
+#    Return with:
+#	D0 = <char> returned from console keyboard
+#	Carry = 0
+#
+#	There is no timeout, and no error return.
+#
+#--------------------------------------------------------------------------
+
+
+
+
+
+/*
+#--------------------------------------------------------------------------
+#  bios_daytime
+#--------------------------------------------------------------------------
+#  date & time BIOS call
+#
+#    Call with:
+#	D0 = 20	  function code
+#	D1 = return format option:
+#		0 = Julian day, tick count since midnight (binary)
+#		1 = Days since Dec. 31, 1900 (i.e., Jan. 1, 1901 = 1)
+#		    Time in binary seconds since midnight
+#		2 = Binary date:  Word:4:8:4  =  Year:Month(4):Day(8):DayOfWeek(4)  Year=2011, e.g.
+#		    Binary time:  Byte:Byte:Byte:Byte = 0:Hour:Minute:Second (24-hr format)
+#		3 = BCD date:  Byte:Byte:Byte:Byte = Century:Year:Month:Day
+#		    BCD time:  Byte:Byte:Byte:Byte = 00:hh:mm:ss
+#
+#    Return with:
+#	D0 = 	date, per format option
+#	D1 =	time, per format option
+#
+#  There is no error return.
+#
+#--------------------------------------------------------------------------
+*/
+

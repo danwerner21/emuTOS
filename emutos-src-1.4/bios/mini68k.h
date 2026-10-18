@@ -70,6 +70,42 @@ void mini68k_int_ignore(void);  /* Raw handler for unused ICU inputs, defined in
 UBYTE mini68k_rtc_read(UBYTE address);
 void mini68k_rtc_write(UBYTE address, UBYTE value);
 
+/*
+ * Disk boards, as configured in the BIOS Setup and saved in its NVRAM.
+ * Board types are those of BIOS 10.3, which differ from the 10.2 sources
+ * in bios-10.2/myide.h.
+ */
+#define MINI68K_MAX_BOARDS      4
+#define MINI68K_BOARD_NONE      0
+#define MINI68K_BOARD_PPIDE     1   /* MF/PIC IDE: 82C55 PPIDE */
+#define MINI68K_BOARD_DISKIO    2   /* DiskIO v2/v3: also an 82C55 PPIDE */
+#define MINI68K_BOARD_DUALSD    3   /* Dual SD */
+#define MINI68K_BOARD_DUALDMA   4   /* Dual DMA IDE (not supported) */
+
+#define MINI68K_MFPIC_PPIDE_PORT    0x44
+
+struct mini68k_board
+{
+    UBYTE type;
+    UBYTE port;     /* ECB base port */
+};
+
+int mini68k_get_disk_boards(struct mini68k_board *boards);
+
+#if CONF_WITH_SDMMC
+BOOL mini68k_dualsd_present(UWORD socket);  /* defined in spi_mini68k.c */
+void mini68k_dualsd_select(UWORD socket);
+#endif
+
+/* Floppy (Disk I/O V3 board), defined in fdc_mini68k.c */
+void mini68k_floppy_init(void);
+BOOL mini68k_flop_detect_drive(WORD dev);
+WORD mini68k_floprw(UBYTE *buf, WORD rw, WORD dev, WORD sect, WORD track, WORD side, WORD count);
+LONG mini68k_flop_mediach(WORD dev);
+void mini68k_fdc_motor_tick(void);  /* called at 50 Hz from the timer interrupt */
+WORD mini68k_flopfmt(const UBYTE *ids, WORD dev, WORD track, WORD side,
+                     WORD spt, BOOL high_density, UBYTE fill);
+
 /* Console UART */
 BOOL mini68k_uart_can_write(void);
 void mini68k_uart_write_byte(UBYTE b);

@@ -12,6 +12,9 @@
 
 #ifdef MACHINE_MINI68K
 
+/* Address of the 82C55 PPI at an ECB base port (PPIDE or DiskIO board) */
+#define PPIDE_PPI(port)     ((volatile UBYTE *)MINI68K_ECB_IO(port))
+
 /*
  * IDE registers, encoded as the value driven on PPI port C:
  * bits 0-2 = IDE A0-A2, bit 3 = CS0 (command block), bit 4 = CS1
@@ -31,8 +34,8 @@
 #define PPIDE_REG_ALT_STATUS    0x16    /* read: alt. status, write: control */
 #define PPIDE_REG_CONTROL       0x16
 
-UBYTE ppide_read_reg(UBYTE reg);
-void ppide_write_reg(UBYTE reg, UBYTE value);
+UBYTE ppide_read_reg(volatile UBYTE *ppi, UBYTE reg);
+void ppide_write_reg(volatile UBYTE *ppi, UBYTE reg, UBYTE value);
 
 /*
  * Block transfers through the data register. Without byteswap, each
@@ -40,8 +43,8 @@ void ppide_write_reg(UBYTE reg, UBYTE value);
  * the EmuTOS IDE driver expects from a plain data register read.
  * Defined in ppide2.S.
  */
-void ppide_read_data(UBYTE *buffer, ULONG bufferlen, WORD need_byteswap);
-void ppide_write_data(const UBYTE *buffer, ULONG bufferlen, WORD need_byteswap);
+void ppide_read_data(volatile UBYTE *ppi, UBYTE *buffer, ULONG bufferlen, WORD need_byteswap);
+void ppide_write_data(volatile UBYTE *ppi, const UBYTE *buffer, ULONG bufferlen, WORD need_byteswap);
 
 #endif /* MACHINE_MINI68K */
 

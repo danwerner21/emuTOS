@@ -10,8 +10,8 @@ The plan is to bring EmuTOS up on the serial console first, then run GEM on the 
 | --- | --- |
 | 0. Groundwork | Done |
 | 1. Serial EmuTOS | Done. Exit test passed: Sozobon C built and ran hello-world on the board (about 45 s) |
-| 2. Shadow framebuffer | Waiting for the VERA card (ordered, not yet arrived, assembled or tested) |
-| 3. Input | Not started; keyboard and mouse hardware not yet chosen |
+| 2. Shadow framebuffer | On hold: waiting for the VERA card (ordered, not yet arrived, assembled or tested) |
+| 3. Input | On hold: keyboard and mouse through the VT82C42 controller on the VERA card |
 | 4. Native driver | Not started |
 
 ## Hardware
@@ -27,10 +27,11 @@ Each row is confirmed. The last column says how it shaped the port.
 | MMU | None | As expected. |
 | Serial | 16550/16C750 at port `0x48`, clocked at 1.8432 MHz | Console driver. The BIOS does not route the UART interrupt to the NS32202, so input is polled from the 200 Hz tick (keeps up with pasted text). |
 | Interrupts and timer | NS32202 at port `0x40`; register *r* at `0xFFFF8040` + *r*·`0x100`; reading register 32 (`0xFFFFA040`) is End-Of-Interrupt; vector base 16 | System tick: H-counter routed to IR3 (vector 19), 1.8432 MHz / 4, count 2303 = exactly 200 Hz. Other inputs are masked. |
-| Disk | PPIDE: 82C55 at ports `0x44`–`0x47` (A = D0–D7, B = D8–D15, C = address and strobes) | Backend under EmuTOS's own IDE driver. Other disk boards can be added as further backends. |
+| Disk | PPIDE: 82C55 at ports `0x44`–`0x47` (A = D0–D7, B = D8–D15, C = address and strobes); DiskIO v2/v3 (also an 82C55) at port `0x20`; Dual-SD (bit-banged SPI) at port `0x08` | Backend under EmuTOS's own IDE driver. Each PPIDE or DiskIO board configured in the BIOS Setup becomes an IDE interface, in Setup order. A Dual-SD board is driven through EmuTOS's SD/MMC driver (socket 0 only). |
+| Floppy | SMC FDC9266 (765 compatible) on the DiskIO at ports `0x36`–`0x38` (board port + `0x16`), polled, no DMA; write-only control latch at `0x38` | Driver ported from the SBC-386EX driver for the same board. Data phase in assembly with interrupts masked (16 µs per byte at 500 kbit/s). 1.44 MB and 720 KB disks read and write. |
 | Clock | DS1302 bit-banged through a latch at port `0x43`; century in BIOS NVRAM byte `0x22` | RTC driver; keeps the BIOS NVRAM checksum valid when the century changes. |
 | Video | VERA card | Ordered; not yet available. |
-| Keyboard and mouse | Not yet decided | See Phase 3. |
+| Keyboard and mouse | VT82C42 keyboard controller on the VERA card | Phase 3; not yet available. |
 | Bus errors | No bus-error timeout: unmapped reads return garbage | All hardware probes are compiled out (`CONF_ATARI_HARDWARE 0`). |
 
 ## How EmuTOS runs on the board
@@ -84,6 +85,9 @@ Each row is confirmed. The last column says how it shaped the port.
 
 **Known gaps**
 
+- Floppy: format works (FORMAT.TTP in mini68k-tests, or XBIOS Flopfmt); about 1 sector in 18 needs a retry because of the timer interrupt, which costs one revolution.
+- Dual-SD socket 1: supported by the driver (presence is decided by starting the card, not by card detect), but not tested: socket 1 on this board has a confirmed hardware fault.
+- The RTC can be set with SETCLOCK.TTP (mini68k-tests).
 - Serial flow control is recorded by `Rsconf` but not implemented.
 - Baud rates without an Atari `Rsconf` code (such as 38400) can be set in the BIOS Setup and are kept, but cannot be selected from EmuTOS.
 - Disk speed (DISKBNCH, 256 KB, assembly transfer loop in `bios/ppide2.S`): raw sector reads 164 KB/s, GEMDOS file reads 127 KB/s, file writes 69 KB/s. With the earlier C loop the figures were 85, 73 and 50 KB/s. Reads are now close to what the 68008 can move through the 8255; writes are limited mostly by something other than the transfer loop.

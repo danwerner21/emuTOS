@@ -1,0 +1,21 @@
+TEST3.BIN:  blink communication
+TEST4.BIN:    "        "
+
+*** Blinks are counted on the STOP (red) LED
+
+4 blinks before DRAM initialization
+
+3 blinks before the SRAM test
+
+8 blinks if SRAM has errors; program halts
+5 blinks if SRAM okay, but UART error, e.g., MF/PIC not set for 40h
+2 blinks if SRAM okay, UART found, subsequent output
+         will be at 9600 8n1 to the terminal
+
+at any time:
+250 blinks if a bus error is detected
+
+NB:  test3.bin is the more extensive DRAM test
+     test4.bin is similar, but quicker per pass
+     
+JRC:  11/23/2021

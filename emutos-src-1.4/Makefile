@@ -306,7 +306,8 @@ bios_src +=  memory.S processor.S vectors.S aciavecs.S bios.c xbios.c acsi.c \
              pmmu030.c 68040_pmmu.S \
              amiga.c amiga2.S spi_vamp.c \
              lisa.c lisa2.S \
-             mini68k.c mini68k2.S ppide.c ppide2.S \
+             mini68k.c mini68k2.S ppide.c ppide2.S spi_mini68k.c \
+             fdc_mini68k.c fdc_mini68k2.S \
              delay.c delayasm.S sd.c memory2.c bootparams.c scsi.c nova.c \
              dsp.c dsp2.S \
              scsidriv.c

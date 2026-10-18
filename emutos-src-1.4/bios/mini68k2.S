@@ -14,6 +14,7 @@
         .extern _vector_5ms
         .extern _int_vbl
         .extern _mini68k_rs232_poll
+        .extern _mini68k_fdc_motor_tick
 
 /* NS32202 End-Of-Interrupt: read "register 32" = 0xffff8040 + 32 * 0x100 */
 #define ICU_EOI 0xffffa040
@@ -44,6 +45,7 @@ timer_5ms_ret:
         jcs     timer_no_vbl
         clr.w   vbl_divider
         jbsr    _int_vbl                // ...call the standard VBL handler
+        jbsr    _mini68k_fdc_motor_tick // floppy motor timeout
 timer_no_vbl:
 
         move.b  ICU_EOI,d0              // Acknowledge the interrupt

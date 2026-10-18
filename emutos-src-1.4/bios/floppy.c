@@ -33,6 +33,7 @@
 #include "intmath.h"
 #include "amiga.h"
 #include "lisa.h"
+#include "mini68k.h"
 
 
 /*==== Introduction =======================================================*/
@@ -321,6 +322,8 @@ void flop_hdv_init(void)
     amiga_floppy_init();
 #elif defined(MACHINE_LISA)
     lisa_floppy_init();
+#elif defined(MACHINE_MINI68K)
+    mini68k_floppy_init();
 #endif
     flop_init(0);
     flop_init(1);
@@ -404,6 +407,14 @@ static void flop_detect_drive(WORD dev)
     return;
 #endif
 
+#ifdef MACHINE_MINI68K
+    if (mini68k_flop_detect_drive(dev)) {
+        flop_add_drive(dev);
+        units[dev].last_access = hz_200;
+    }
+    return;
+#endif
+
 #ifdef MACHINE_LISA
     if (lisa_flop_detect_drive(dev)) {
         flop_add_drive(dev);
@@ -464,6 +475,8 @@ LONG flop_mediach(WORD dev)
     return amiga_flop_mediach(dev);
 #elif defined(MACHINE_LISA)
     return lisa_flop_mediach(dev);
+#elif defined(MACHINE_MINI68K)
+    return mini68k_flop_mediach(dev);
 #endif
 
     fi = &finfo[dev];
@@ -799,7 +812,7 @@ LONG flopver(WORD *buf, LONG filler, WORD dev,
 {
     LONG rc = 0L;
     WORD *bad = buf;
-#if defined(MACHINE_AMIGA) || CONF_WITH_FDC
+#if defined(MACHINE_AMIGA) || defined(MACHINE_MINI68K) || CONF_WITH_FDC
     WORD i, err;
     UBYTE *diskbuf = (UBYTE *)buf + SECTOR_SIZE;
 #endif
@@ -814,6 +827,18 @@ LONG flopver(WORD *buf, LONG filler, WORD dev,
 #ifdef MACHINE_AMIGA
     for (i = 0; i < count; i++, sect++) {
         err = amiga_floprw(diskbuf, RW_READ, dev, sect, track, side, 1);
+        if (err) {
+            *bad++ = sect ? sect : -1;
+            if ((err != EREADF) && (err != ESECNF))
+                rc = err;
+        }
+    }
+
+    units[dev].last_access = hz_200;
+
+#elif defined(MACHINE_MINI68K)
+    for (i = 0; i < count; i++, sect++) {
+        err = mini68k_floprw(diskbuf, RW_READ, dev, sect, track, side, 1);
         if (err) {
             *bad++ = sect ? sect : -1;
             if ((err != EREADF) && (err != ESECNF))
@@ -947,6 +972,56 @@ LONG flopfmt(UBYTE *buf, WORD *skew, WORD dev, WORD spt,
     if (interleave == 0)
         interleave = 1;
 
+#ifdef MACHINE_MINI68K
+    /*
+     * the 765-compatible controller generates the track itself:
+     * it only needs the ID of each sector, as cylinder, head,
+     * sector number and size code
+     */
+    MAYBE_UNUSED(j);
+    MAYBE_UNUSED(b1);
+    MAYBE_UNUSED(b2);
+    MAYBE_UNUSED(track_size);
+    MAYBE_UNUSED(leader);
+
+    {
+        UBYTE ids[4 * 20];      /* spt is at most 20 (checked above) */
+        WORD retry;
+
+        s = ids;
+        for (i = 0, offset = -interleave, used = 0L; i < spt ; i++) {
+            *s++ = track;
+            *s++ = side;
+            if (interleave > 0) {   /* using interleave factor */
+                offset = (offset+interleave) % spt;
+                while(used&(1L<<offset))    /* skip offsets already used */
+                    offset = (offset+1) % spt;
+                *s++ = offset + 1;  /* sector number from 'interleave' */
+                used |= (1L<<offset);
+            } else *s++ = *skew++;  /* sector number from skew array */
+            *s++ = 2;               /* means sector of 512 bytes */
+        }
+
+        /*
+         * format and verify, retrying a track that does not verify:
+         * a sector ID can be damaged if an interrupt delays it
+         */
+        for (retry = 0; retry < 3; retry++) {
+            err = mini68k_flopfmt(ids, dev, track, side, spt, density == DENSITY_HD, LOBYTE(virgin));
+            if (err)
+                return err;
+
+            /* verify sectors and store bad sector numbers in buf */
+            err = flopver((WORD *)buf, 0L, dev, 1, track, side, spt);
+            if (err)
+                return err;
+            if (*(WORD *)buf == 0)
+                return 0;
+        }
+
+        return EBADSF;
+    }
+#else
     s = buf;
 
     /*
@@ -1014,6 +1089,7 @@ LONG flopfmt(UBYTE *buf, WORD *skew, WORD dev, WORD spt,
         return EBADSF;
 
     return 0;
+#endif /* MACHINE_MINI68K */
 }
 
 /*==== xbios floprate ======================================================*/
@@ -1091,6 +1167,9 @@ static WORD flopio(UBYTE *userbuf, WORD rw, WORD dev,
     units[dev].last_access = hz_200;
 #elif defined(MACHINE_LISA)
     err = lisa_floprw(userbuf, rw, dev, sect, track, side, count);
+    units[dev].last_access = hz_200;
+#elif defined(MACHINE_MINI68K)
+    err = mini68k_floprw(userbuf, rw, dev, sect, track, side, count);
     units[dev].last_access = hz_200;
 #elif CONF_WITH_FDC
     floplock(dev);

@@ -180,6 +180,73 @@ typedef struct {
 void fast_bit_blt(struct blit_frame *blit_info);    /* defined in vdi_blit.S */
 #endif
 
+#if CONF_WITH_VERA_DIRECT
+/*
+ * Mini-M68k VERA direct mode: a source or destination form at v_bas_ad
+ * is the screen, which is in the VERA. Load the source and destination
+ * areas into the RAM screen, blit there, and write the destination back.
+ *
+ * Most screen blits (menu and dialog restores, icons in replace mode)
+ * use a logic operation that ignores the destination: then only the
+ * partial words at its left and right edges need loading.
+ */
+static BOOL blit_reads_dst(const struct blit_frame *info)
+{
+    WORD plane;
+
+    /* the operation for each plane is chosen by its colour bits (fg:bg) */
+    for (plane = 0; plane < info->plane_ct; plane++)
+    {
+        UBYTE op = info->op_tab[(((info->fg_col >> plane) & 1) << 1)
+                                | ((info->bg_col >> plane) & 1)] & 0x0f;
+
+        if (!(op == BM_ALL_WHITE || op == BM_S_ONLY
+           || op == BM_NOT_S || op == BM_ALL_BLACK))
+            return TRUE;
+    }
+
+    return FALSE;
+}
+
+static void vera_bit_blt(struct blit_frame *info)
+{
+    BOOL src_screen = (info->s_form == (UWORD *)v_bas_ad);
+    BOOL dst_screen = (info->d_form == (UWORD *)v_bas_ad);
+    WORD sx2 = info->s_xmin + info->b_wd - 1;
+    WORD sy2 = info->s_ymin + info->b_ht - 1;
+    WORD dx2 = info->d_xmin + info->b_wd - 1;
+    WORD dy2 = info->d_ymin + info->b_ht - 1;
+
+    if (!src_screen && !dst_screen)
+    {
+        fast_bit_blt(info);
+        return;
+    }
+
+    vd_begin();
+    if (src_screen)
+        vd_bounce_read(info->s_xmin, info->s_ymin, sx2, sy2);
+    if (dst_screen)
+    {
+        if (blit_reads_dst(info))
+            vd_bounce_read(info->d_xmin, info->d_ymin, dx2, dy2);
+        else
+        {
+            /* the words holding the first and last columns, if partial */
+            if (info->d_xmin & 0x0f)
+                vd_bounce_read(info->d_xmin, info->d_ymin, info->d_xmin, dy2);
+            if ((dx2 & 0x0f) != 0x0f)
+                vd_bounce_read(dx2, info->d_ymin, dx2, dy2);
+        }
+    }
+    fast_bit_blt(info);
+    if (dst_screen)
+        vd_bounce_write(info->d_xmin, info->d_ymin, dx2, dy2);
+    vd_end();
+}
+#define fast_bit_blt vera_bit_blt   /* for cpy_raster() and linea_blit() */
+#endif
+
 /* holds VDI internal info for bit_blt(), fast_bit_blt() */
 static struct blit_frame vdi_info;
 

@@ -21,6 +21,7 @@
 #include "conout.h"
 #include "vt52.h"
 #include "bios.h"
+#include "mini68k.h"
 
 #if CONF_SERIAL_CONSOLE_ANSI
 /* We disable cursor home commands because it is more convenient */
@@ -855,6 +856,12 @@ void blink(void)
     /* test flash bit */
     if (!(v_stat_0 & M_CFLASH) )
         return;    /* if not flashing, return */
+
+#if CONF_WITH_VERA_DIRECT
+    /* the screen is in the VERA: wait while something draws into it */
+    if (mini68k_vera_busy)
+        return;
+#endif
 
     /* decrement cursor flash timer */
     if ( --v_cur_tim )

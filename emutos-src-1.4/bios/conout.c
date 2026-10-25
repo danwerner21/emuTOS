@@ -41,6 +41,13 @@
 #define DIRTY_CELL_AT(addr)
 #endif
 
+/* Scrolling moves screen memory; in the Mini-M68k direct mode, VRAM */
+#if CONF_WITH_VERA_DIRECT
+#define MOVE_SCREEN(dst, src, count)    vd_move(dst, src, count)
+#else
+#define MOVE_SCREEN(dst, src, count)    memmove(dst, src, count)
+#endif
+
 #define PLANE_OFFSET    2       /* interleaved planes */
 
 #if CONF_WITH_VIDEL
@@ -223,6 +230,11 @@ static void cell_xfer(UBYTE *src, UBYTE *dst)
     int fnt_wr, line_wr;
     int plane;
 
+#if CONF_WITH_VERA_DIRECT
+    vd_cell_xfer(src, dst);
+    return;
+#endif
+
 #if CONF_WITH_VIDEL
     if (TRUECOLOR_MODE) {
         cell_xfer16(src, dst);
@@ -317,6 +329,13 @@ static void neg_cell(UBYTE *cell)
     int plane, len;
     int cell_len = v_cel_ht;
     int lin_wr = v_lin_wr;
+
+#if CONF_WITH_VERA_DIRECT
+    v_stat_0 |= M_CRIT;
+    vd_neg_cell(cell);
+    v_stat_0 &= ~M_CRIT;
+    return;
+#endif
 
     v_stat_0 |= M_CRIT;                 /* start of critical section. */
 
@@ -620,6 +639,11 @@ void blank_out(int topx, int topy, int botx, int boty)
     int pair, pairs, row, rows, offs;
     UBYTE *addr;
 
+#if CONF_WITH_VERA_DIRECT
+    vd_blank_out(topx, topy, botx, boty);
+    return;
+#endif
+
 #if CONF_WITH_VIDEL
     if (TRUECOLOR_MODE) {
         blank_out16(topx, topy, botx, boty);
@@ -739,7 +763,7 @@ void scroll_up(UWORD top_line)
     count = (ULONG)v_cel_wr * (v_cel_my - top_line);
 
     /* move BYTEs of memory*/
-    memmove(dst, src, count);
+    MOVE_SCREEN(dst, src, count);
     DIRTY_CELL_ROWS(top_line, v_cel_my);
 
     /* exit thru blank out, bottom line cell address y to top/left cell */
@@ -767,7 +791,7 @@ void scroll_down(UWORD start_line)
     count = (ULONG)v_cel_wr * (v_cel_my - start_line);
 
     /* move BYTEs of memory*/
-    memmove(dst, src, count);
+    MOVE_SCREEN(dst, src, count);
     DIRTY_CELL_ROWS(start_line, v_cel_my);
 
     /* exit thru blank out */

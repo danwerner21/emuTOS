@@ -54,4 +54,98 @@ copy_next:
         dbra    d1,copy_loop
         rts
 
+#if CONF_WITH_VERA_DIRECT
+
+/*
+ * Direct drawing helpers (see vera_direct.c). Writes go through DATA1,
+ * whose address (ADDR1) the caller has set with an increment. Reads go
+ * through DATA0, with ADDR0_H already set to bank 0 and no increment:
+ * on this card reads do not advance the address, so the low (and, every
+ * 256 bytes, the middle) address byte is written before each read.
+ */
+#define VERA_DATA1      0xffff8084
+
+/* void vd_write(const UBYTE *src, UWORD count); */
+        .globl  _vd_write
+_vd_write:
+        move.l  4(sp),a0
+        move.w  8(sp),d1
+        lea     VERA_DATA1,a1
+        jra     write_next
+write_loop:
+        move.b  (a0)+,(a1)
+write_next:
+        dbra    d1,write_loop
+        rts
+
+/* void vd_fill(UWORD value, UWORD count); value in the low byte */
+        .globl  _vd_fill
+_vd_fill:
+        move.w  4(sp),d0
+        move.w  6(sp),d1
+        lea     VERA_DATA1,a1
+        jra     fill_next
+fill_loop:
+        move.b  d0,(a1)
+fill_next:
+        dbra    d1,fill_loop
+        rts
+
+/* void vd_read(UBYTE *dst, UWORD vram, UWORD count); */
+        .globl  _vd_read
+_vd_read:
+        movem.l d2/a2,-(sp)
+        move.l  8+4(sp),a0              // destination in RAM
+        move.w  8+8(sp),d0              // VRAM address (bank 0)
+        move.w  8+10(sp),d1             // byte count
+        jeq     read_done
+        subq.w  #1,d1
+        lea     VERA_ADDR_L,a1
+        lea     VERA_DATA0,a2
+        move.w  d0,d2
+        lsr.w   #8,d2
+        move.b  d2,VERA_ADDR_M
+read_loop:
+        move.b  d0,(a1)                 // address low byte: fetches the data
+        move.b  (a2),(a0)+
+        addq.b  #1,d0
+        jne     read_same_page
+        addq.b  #1,d2                   // next 256-byte page
+        move.b  d2,VERA_ADDR_M
+read_same_page:
+        dbra    d1,read_loop
+read_done:
+        movem.l (sp)+,d2/a2
+        rts
+
+/* void vd_copy(UWORD src_vram, UWORD count);
+ * copy count bytes from VRAM address src_vram (bank 0) to DATA1 */
+        .globl  _vd_copy
+_vd_copy:
+        movem.l d2/a2,-(sp)
+        move.w  8+4(sp),d0              // source VRAM address
+        move.w  8+6(sp),d1              // byte count
+        jeq     vcopy_done
+        subq.w  #1,d1
+        lea     VERA_ADDR_L,a0
+        lea     VERA_DATA0,a1
+        lea     VERA_DATA1,a2
+        move.w  d0,d2
+        lsr.w   #8,d2
+        move.b  d2,VERA_ADDR_M
+vcopy_loop:
+        move.b  d0,(a0)
+        move.b  (a1),(a2)
+        addq.b  #1,d0
+        jne     vcopy_same_page
+        addq.b  #1,d2
+        move.b  d2,VERA_ADDR_M
+vcopy_same_page:
+        dbra    d1,vcopy_loop
+vcopy_done:
+        movem.l (sp)+,d2/a2
+        rts
+
+#endif /* CONF_WITH_VERA_DIRECT */
+
 #endif /* MACHINE_MINI68K */

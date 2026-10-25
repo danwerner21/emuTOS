@@ -791,6 +791,18 @@ static void OPTIMIZE_SMALL swblit_rect_common(const VwkAttrib *attr, const Rect 
  */
 void draw_rect_common(const VwkAttrib *attr, const Rect *rect)
 {
+#if CONF_WITH_VERA_DIRECT
+    /* a pattern per plane (multifill) is drawn in planes, in RAM */
+    if (v_planes > 1 && attr->multifill)
+    {
+        VERA_BOUNCE_BEGIN(rect->x1, rect->y1, rect->x2, rect->y2);
+        swblit_rect_common(attr, rect);
+        VERA_BOUNCE_END(rect->x1, rect->y1, rect->x2, rect->y2);
+    }
+    else
+        vera_rect(attr, rect);
+    return;
+#endif
 #if CONF_WITH_VDI_16BIT
     if (TRUECOLOR_MODE)
         swblit_rect_common16(attr, rect);
@@ -2290,7 +2302,9 @@ void abline(const Line *line, const WORD wrt_mode, UWORD color)
         else
 #endif
         {
+            VERA_BOUNCE_BEGIN(line->x1, line->y1, line->x2, line->y2);
             vertical_line(line, wrt_mode, color);
+            VERA_BOUNCE_END(line->x1, line->y1, line->x2, line->y2);
             return;
         }
     }
@@ -2358,7 +2372,11 @@ void abline(const Line *line, const WORD wrt_mode, UWORD color)
         draw_line16(&ordered, wrt_mode, color);
     else
 #endif
-    draw_line(&ordered, wrt_mode, color);
+    {
+        VERA_BOUNCE_BEGIN(x1, y1, x2, y2);
+        draw_line(&ordered, wrt_mode, color);
+        VERA_BOUNCE_END(x1, y1, x2, y2);
+    }
 }
 
 /*

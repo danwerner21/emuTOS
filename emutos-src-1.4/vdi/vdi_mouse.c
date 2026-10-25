@@ -488,6 +488,11 @@ static void set_mouse_form(const MFORM *src, Mcdb *dst)
         *gmdt++ = *data++;              /* get next word of data */
     }
 
+#if CONF_WITH_VERA_DIRECT
+    if (dst == &mouse_cdb)
+        mini68k_cursor_form();          /* new shape for the VERA sprite */
+#endif
+
     mouse_flag -= 1;                    /* re-enable mouse drawing */
 }
 
@@ -874,6 +879,10 @@ static void cur_display_clip(WORD op,Mcdb *sprite,MCS *mcs,UWORD *mask_start,UWO
  * is subject to left or right clipping, however, then it must lie
  * within one screen word (per plane), so we only save 32 bytes/plane.
  */
+#if CONF_WITH_VERA_DIRECT
+#define cur_display cur_display_screen  /* the wrapper below is cur_display() */
+static void cur_display_screen(Mcdb *sprite, MCS *mcs, WORD x, WORD y);
+#endif
 void cur_display (Mcdb *sprite, MCS *mcs, WORD x, WORD y)
 {
     int row_count, plane, inc, op, dst_inc;
@@ -1063,6 +1072,10 @@ static void cur_replace16(MCS *mcs)
  *      v_planes    number of planes in destination
  *      v_lin_wr    line wrap (byte width of form)
  */
+#if CONF_WITH_VERA_DIRECT
+#define cur_replace cur_replace_screen  /* the wrapper below is cur_replace() */
+static void cur_replace_screen(MCS *mcs);
+#endif
 void cur_replace (MCS *mcs)
 {
     WORD plane, row;
@@ -1118,6 +1131,57 @@ void cur_replace (MCS *mcs)
         }
     }
 }
+
+
+#if CONF_WITH_VERA_DIRECT
+#undef cur_display
+#undef cur_replace
+
+/*
+ * Mini-M68k VERA direct mode: the mouse pointer is a VERA sprite, which
+ * leaves the screen untouched. Other line-A sprites are drawn into the
+ * screen as usual, through the RAM screen.
+ */
+void cur_display(Mcdb *sprite, MCS *mcs, WORD x, WORD y)
+{
+    WORD left = x - sprite->xhot;
+    WORD top = y - sprite->yhot;
+
+    if (sprite == &mouse_cdb && mcs == mcs_ptr)
+    {
+        mini68k_cursor_show(left, top);
+        return;
+    }
+
+    VERA_BOUNCE_BEGIN(left, top, left + MOUSE_WIDTH - 1, top + MOUSE_HEIGHT - 1);
+    cur_display_screen(sprite, mcs, x, y);
+    VERA_BOUNCE_END(left, top, left + MOUSE_WIDTH - 1, top + MOUSE_HEIGHT - 1);
+}
+
+void cur_replace(MCS *mcs)
+{
+    UWORD off;
+    WORD left, top;
+
+    if (mcs == mcs_ptr)
+    {
+        mini68k_cursor_hide();
+        mcs->stat &= ~MCS_VALID;
+        return;
+    }
+
+    if (!(mcs->stat & MCS_VALID))
+        return;
+
+    /* the save area covers 2 words (or 1) from addr, for len rows */
+    off = (UBYTE *)mcs->addr - v_bas_ad;
+    top = off / v_lin_wr;
+    left = ((off % v_lin_wr) / (v_planes * 2)) * 16;  /* its 16-pixel group */
+    VERA_BOUNCE_BEGIN(left, top, left + 31, top + mcs->len - 1);
+    cur_replace_screen(mcs);
+    VERA_BOUNCE_END(left, top, left + 31, top + mcs->len - 1);
+}
+#endif
 
 
 /* line-A support */

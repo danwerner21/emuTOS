@@ -115,12 +115,43 @@ BOOL mini68k_vera_present(void);
 void mini68k_setphys(const UBYTE *addr);
 const UBYTE *mini68k_physbase(void);
 void mini68k_setrez(WORD rez);      /* ST low, medium or high */
+/* 16-pixel groups between Atari planes (2 or 4) and VERA packed pixels */
+void mini68k_to_vera(const UBYTE *src, void *dst, UWORD groups, WORD planes);
+void mini68k_from_vera(const UBYTE *src, UBYTE *dst, UWORD groups, WORD planes);
 WORD mini68k_setcolor(WORD colorNum, WORD color);
 void mini68k_init_palette(WORD rez);
 void mini68k_vera_vbl(void);        /* called at each VBL */
 void mini68k_vera_copy(const UBYTE *src, ULONG vram, UWORD count);
 void mini68k_screen_dirty(WORD y1, WORD y2);    /* rows y1-y2 changed */
 BOOL mini68k_vbl_due(void);         /* called at each timer tick */
+
+/* Mouse pointer as a VERA sprite (direct mode), in vera_mini68k.c */
+void mini68k_cursor_show(WORD x, WORD y);   /* top left of the 16x16 form */
+void mini68k_cursor_hide(void);
+void mini68k_cursor_form(void);     /* the VDI's mouse form changed */
+extern volatile UBYTE mini68k_vera_busy;    /* direct drawing in progress */
+
+#if CONF_WITH_VERA_DIRECT
+/* Direct drawing into the VERA (ST high), in vera_direct.c */
+void vd_begin(void);
+void vd_end(void);
+void vd_set_write(UWORD addr, UBYTE inc);   /* next DATA1 write */
+UBYTE vd_read_byte(UWORD addr);
+UBYTE vd_colour_byte(UWORD colour);         /* colour in every pixel */
+WORD vd_expand_byte(UBYTE g, UBYTE *masks); /* 8 pixels to VERA bytes */
+void vd_bounce_read(WORD x1, WORD y1, WORD x2, WORD y2);
+void vd_bounce_write(WORD x1, WORD y1, WORD x2, WORD y2);
+void vd_clear(void);
+void vd_cell_xfer(const UBYTE *src, const UBYTE *dst);
+void vd_neg_cell(const UBYTE *cell);
+void vd_blank_out(int topx, int topy, int botx, int boty);
+void vd_move(const UBYTE *dst, const UBYTE *src, ULONG count);
+/* in vera_mini68k2.S */
+void vd_write(const UBYTE *src, UWORD count);   /* to DATA1 */
+void vd_fill(UWORD value, UWORD count);         /* to DATA1 */
+void vd_read(UBYTE *dst, UWORD vram, UWORD count);
+void vd_copy(UWORD src_vram, UWORD count);      /* VRAM to DATA1 */
+#endif
 
 /* PS/2 keyboard and mouse (VT82C42 on the VERA card), in kbd_mini68k.c */
 void mini68k_kbd_init(void);

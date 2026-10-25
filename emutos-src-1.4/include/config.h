@@ -2273,6 +2273,18 @@
 # endif
 #endif
 
+/*
+ * Set CONF_WITH_VERA_DIRECT to 1 on the Mini-M68k to make the VDI and the
+ * console draw straight into the VERA card, instead of
+ * drawing into a RAM screen that is copied to the VERA at each VBL
+ */
+#ifndef CONF_WITH_VERA_DIRECT
+# define CONF_WITH_VERA_DIRECT 0
+#endif
+#if CONF_WITH_VERA_DIRECT && !defined(MACHINE_MINI68K)
+# error CONF_WITH_VERA_DIRECT requires MACHINE_MINI68K.
+#endif
+
 #if (CONSOLE_DEBUG_PRINT + RS232_DEBUG_PRINT + SCC_DEBUG_PRINT + COLDFIRE_DEBUG_PRINT + MINI68K_DEBUG_PRINT + MIDI_DEBUG_PRINT + CARTRIDGE_DEBUG_PRINT) > 1
 # error Only one of CONSOLE_DEBUG_PRINT, RS232_DEBUG_PRINT, SCC_DEBUG_PRINT, COLDFIRE_DEBUG_PRINT, MINI68K_DEBUG_PRINT, MIDI_DEBUG_PRINT or CARTRIDGE_DEBUG_PRINT must be set to 1.
 #endif

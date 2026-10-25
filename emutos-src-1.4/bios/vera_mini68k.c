@@ -50,31 +50,10 @@
 #include "biosdefs.h"           /* ST_LOW, ST_MEDIUM, ST_HIGH */
 #include "tosvars.h"            /* colorptr */
 #include "mini68k.h"
+#include "vera.h"
 #include "../vdi/vdi_defs.h"     /* GCURX, GCURY: mouse position */
 
 #ifdef MACHINE_MINI68K
-
-#define VERA_REG(r)     (*(volatile UBYTE *)MINI68K_ECB_IO(MINI68K_VERA_PORT + (r)))
-
-#define VERA_ADDR_L     0x00
-#define VERA_ADDR_M     0x01
-#define VERA_ADDR_H     0x02    /* bit 0: address bit 16, bits 7-4: increment */
-#define VERA_DATA0      0x03
-#define VERA_CTRL       0x05    /* bits 6-1: DCSEL, bit 0: ADDRSEL */
-#define VERA_IEN        0x06
-#define VERA_ISR        0x07    /* bit 0: VSYNC, write 1 to clear */
-#define VERA_DC0        0x09    /* 0x09-0x0c depend on DCSEL */
-#define VERA_DC1        0x0a
-#define VERA_DC2        0x0b
-#define VERA_DC3        0x0c
-#define VERA_L0_CONFIG  0x0d
-#define VERA_L0_TILEBASE 0x0f
-#define VERA_L0_HSCROLL_H 0x11
-#define VERA_L0_VSCROLL_L 0x12
-#define VERA_L0_VSCROLL_H 0x13
-
-#define VERA_INC1       0x10    /* auto-increment by 1, in VERA_ADDR_H */
-#define VERA_PALETTE    0x1fa00L
 
 #define MAX_ROWS        400     /* rows in the tallest mode */
 #define MAX_ROW_BYTES   160
@@ -149,10 +128,31 @@ static UWORD vbl_ticks;
  * plane number. */
 static UWORD medium_table[2][256];
 static ULONG low_table[4][256];
+
+/* Packed pixel to plane tables: for a VERA byte, each plane's bits
+ * (leftmost pixel highest), plane n in byte n (low) or nibble 2n
+ * (medium) of the entry */
+static UWORD unpack_medium[256];
+static ULONG unpack_low[256];
 static ULONG row_buf[MAX_ROW_BYTES / 4];    /* one converted row */
 
 #define ROW_BIT(r)      (0x80 >> ((r) & 7))
 #define IS_DIRTY(r)     (dirty[(r) >> 3] & ROW_BIT(r))
+
+/*
+ * Direct mode (CONF_WITH_VERA_DIRECT, see vera_direct.c): the mouse
+ * pointer is VERA sprite 0, 16x16 at 4 bpp: 0 transparent, 1 background
+ * (mask), 2 foreground (data), with palette offset 1 (entries 17, 18).
+ * The VDI records its position and shape; the VBL writes them.
+ */
+#define SPRITE_DATA     0x1e000L    /* 128 bytes, above the screen */
+#define SPRITE_Y_OFFSET 0           /* sprite lines above the bitmap */
+
+volatile UBYTE mini68k_vera_busy;   /* direct drawing in progress */
+static volatile WORD sprite_x, sprite_y;
+static volatile BOOL sprite_shown;
+static volatile BOOL sprite_moved;  /* position or visibility to write */
+static volatile BOOL sprite_shape_changed;
 
 /*
  * Is a VERA answering? Its address registers must read back what was
@@ -203,6 +203,28 @@ static void build_tables(void)
         medium_table[1][x] = s2 << 1;
         for (k = 0; k < 4; k++)
             low_table[k][x] = s4 << k;
+
+        /* reverse tables, see mini68k_from_vera() */
+        s2 = 0;
+        for (k = 0; k < 4; k++)     /* 4 pixels of 2 bits */
+        {
+            UWORD v = (x >> (6 - 2 * k)) & 3;
+
+            if (v & 1)
+                s2 |= 1U << (3 - k);
+            if (v & 2)
+                s2 |= 1U << (11 - k);
+        }
+        unpack_medium[x] = s2;
+        s4 = 0;
+        for (k = 0; k < 4; k++)     /* 2 pixels of 4 bits */
+        {
+            if (x & (0x10 << k))
+                s4 |= 2UL << (8 * k);
+            if (x & (0x01 << k))
+                s4 |= 1UL << (8 * k);
+        }
+        unpack_low[x] = s4;
     }
 }
 
@@ -212,7 +234,16 @@ static UBYTE ste_to_vera(UWORD n)
     return ((n & 7) << 1) | ((n >> 3) & 1);
 }
 
-/* Write the 16 palette entries. VERA: GGGGBBBB, then 0000RRRR. */
+/* Write one palette entry at the current address. VERA: GGGGBBBB, then
+ * 0000RRRR. */
+static void write_colour(UWORD c)
+{
+    VERA_REG(VERA_DATA0) = (ste_to_vera(c >> 4) << 4) | ste_to_vera(c);
+    VERA_REG(VERA_DATA0) = ste_to_vera(c >> 8);
+}
+
+/* Write the 16 palette entries, then the mouse sprite's colours
+ * (entries 17 and 18) */
 static void write_palette(void)
 {
     UWORD i;
@@ -220,11 +251,85 @@ static void write_palette(void)
     palette_dirty = FALSE;      /* before reading: a change meanwhile is kept */
     vera_set_addr(VERA_PALETTE);
     for (i = 0; i < 16; i++)
+        write_colour(palette[i]);
+    write_colour(palette[0]);                   /* 16: unused */
+    write_colour(palette[mouse_cdb[3] & 15]);   /* 17: background */
+    write_colour(palette[mouse_cdb[4] & 15]);   /* 18: foreground */
+}
+
+/* Mouse pointer sprite, for the direct mode */
+
+void mini68k_cursor_show(WORD x, WORD y)
+{
+    sprite_x = x;
+    sprite_y = y;
+    sprite_shown = TRUE;
+    sprite_moved = TRUE;
+}
+
+void mini68k_cursor_hide(void)
+{
+    sprite_shown = FALSE;
+    sprite_moved = TRUE;
+}
+
+void mini68k_cursor_form(void)
+{
+    sprite_shape_changed = TRUE;
+}
+
+/* Convert the VDI's mouse form (mask and data words, interleaved) */
+static void write_sprite_shape(void)
+{
+    const UWORD *maskdata = (const UWORD *)&mouse_cdb[5];
+    UWORD row, bit;
+
+    sprite_shape_changed = FALSE;
+    vera_set_addr(SPRITE_DATA);
+    for (row = 0; row < 16; row++, maskdata += 2)
     {
-        UWORD c = palette[i];
-        VERA_REG(VERA_DATA0) = (ste_to_vera(c >> 4) << 4) | ste_to_vera(c);
-        VERA_REG(VERA_DATA0) = ste_to_vera(c >> 8);
+        UWORD mask = maskdata[0];
+        UWORD data = maskdata[1];
+
+        for (bit = 0x8000; bit; bit >>= 2)  /* 2 pixels per byte */
+        {
+            UBYTE b;
+
+            b = (data & bit) ? 0x20 : (mask & bit) ? 0x10 : 0x00;
+            b |= (data & (bit >> 1)) ? 0x02 : (mask & (bit >> 1)) ? 0x01 : 0x00;
+            VERA_REG(VERA_DATA0) = b;
+        }
     }
+    palette_dirty = TRUE;       /* the colours may have changed too */
+}
+
+static void write_sprite_attributes(void)
+{
+    WORD x, y;
+
+    sprite_moved = FALSE;
+    x = sprite_x;
+    y = sprite_y + SPRITE_Y_OFFSET;
+
+    vera_set_addr(VERA_SPRITES);    /* sprite 0 */
+    VERA_REG(VERA_DATA0) = (SPRITE_DATA >> 5) & 0xff;
+    VERA_REG(VERA_DATA0) = (SPRITE_DATA >> 13) & 0x0f;  /* 4 bpp */
+    VERA_REG(VERA_DATA0) = LOBYTE(x);
+    VERA_REG(VERA_DATA0) = HIBYTE(x) & 0x03;    /* 10 bits: -1 is 1023 */
+    VERA_REG(VERA_DATA0) = LOBYTE(y);
+    VERA_REG(VERA_DATA0) = HIBYTE(y) & 0x03;
+    VERA_REG(VERA_DATA0) = sprite_shown ? 0x0c : 0x00;  /* Z: in front, or off */
+    VERA_REG(VERA_DATA0) = 0x51;    /* 16x16, palette offset 1 */
+}
+
+/* Direct mode VBL: the screen is in the VERA already; only the mouse
+ * pointer (and the palette, by the caller) need updating */
+static void direct_vbl(void)
+{
+    if (sprite_shape_changed)
+        write_sprite_shape();
+    if (sprite_moved)
+        write_sprite_attributes();
 }
 
 /* Mark rows 0 to rows - 1 dirty (and no others) */
@@ -296,7 +401,26 @@ BOOL mini68k_vera_init(void)
     mini68k_init_palette(ST_HIGH);
     write_palette();
 
-    VERA_REG(VERA_DC0) = 0x11;      /* VGA output, layer 0 only */
+    if (CONF_WITH_VERA_DIRECT)
+    {
+        UWORD i;
+
+        /* the VRAM is the screen: start blank */
+        vera_set_addr(0);
+        for (i = 0; i < 400 * 80; i++)
+            VERA_REG(VERA_DATA0) = 0x00;
+
+        /* all 128 sprites off; sprite 0 (the mouse) set up at the VBL */
+        vera_set_addr(VERA_SPRITES);
+        for (i = 0; i < 128 * 8; i++)
+            VERA_REG(VERA_DATA0) = 0x00;
+        sprite_moved = TRUE;
+        sprite_shape_changed = TRUE;
+
+        VERA_REG(VERA_DC0) = 0x51;  /* VGA output, layer 0 and sprites */
+    }
+    else
+        VERA_REG(VERA_DC0) = 0x11;  /* VGA output, layer 0 only */
 
     return TRUE;
 }
@@ -318,13 +442,26 @@ const UBYTE *mini68k_physbase(void)
     return vera_screen;
 }
 
-/* Setscreen: change the resolution, at the next VBL */
+/* Setscreen: change the resolution (shadow copy: at the next VBL) */
 void mini68k_setrez(WORD rez)
 {
-    if (rez >= ST_LOW && rez <= ST_HIGH)
+    if (rez < ST_LOW || rez > ST_HIGH)
+        return;
+
+    sshiftmod = rez;
+    rez_wanted = rez;
+
+    /*
+     * In the direct mode, drawing in the new layout starts at once, so
+     * the VERA must switch now (with the VBL kept away from it). The
+     * desktop clears and redraws the screen after a resolution change.
+     */
+    if (CONF_WITH_VERA_DIRECT && vera_present)
     {
-        sshiftmod = rez;
-        rez_wanted = rez;
+        mini68k_vera_busy++;
+        apply_mode();
+        palette_dirty = TRUE;
+        mini68k_vera_busy--;
     }
 }
 
@@ -359,21 +496,27 @@ void mini68k_init_palette(WORD rez)
 }
 
 /* Convert groups of 16 pixels from Atari planes to VERA packed pixels */
-static void convert_groups(const UBYTE *src, ULONG *dst, UWORD groups)
+/*
+ * Convert groups of 16 pixels from Atari planes (2 or 4) to VERA packed
+ * pixels. dst must be word-aligned (long-aligned for 4 planes).
+ */
+void mini68k_to_vera(const UBYTE *src, void *dst, UWORD groups, WORD planes)
 {
-    if (rez_shown == ST_LOW)
+    if (planes == 4)
     {
+        ULONG *d = (ULONG *)dst;
+
         do
         {
-            dst[0] = low_table[0][src[0]] | low_table[1][src[2]]
-                   | low_table[2][src[4]] | low_table[3][src[6]];
-            dst[1] = low_table[0][src[1]] | low_table[1][src[3]]
-                   | low_table[2][src[5]] | low_table[3][src[7]];
-            dst += 2;
+            d[0] = low_table[0][src[0]] | low_table[1][src[2]]
+                 | low_table[2][src[4]] | low_table[3][src[6]];
+            d[1] = low_table[0][src[1]] | low_table[1][src[3]]
+                 | low_table[2][src[5]] | low_table[3][src[7]];
+            d += 2;
             src += 8;
         } while (--groups);
     }
-    else    /* ST medium */
+    else    /* 2 planes */
     {
         UWORD *d = (UWORD *)dst;
 
@@ -385,6 +528,62 @@ static void convert_groups(const UBYTE *src, ULONG *dst, UWORD groups)
             src += 4;
         } while (--groups);
     }
+}
+
+/*
+ * Convert groups of 16 pixels from VERA packed pixels to Atari planes
+ * (2 or 4). The bits of 4 bytes (low) or 2 bytes (medium) are shifted
+ * into one plane byte per lane of an accumulator.
+ */
+void mini68k_from_vera(const UBYTE *src, UBYTE *dst, UWORD groups, WORD planes)
+{
+    if (planes == 4)
+    {
+        do
+        {
+            ULONG hi, lo;
+
+            hi = unpack_low[src[0]];
+            hi = (hi << 2) | unpack_low[src[1]];
+            hi = (hi << 2) | unpack_low[src[2]];
+            hi = (hi << 2) | unpack_low[src[3]];
+            lo = unpack_low[src[4]];
+            lo = (lo << 2) | unpack_low[src[5]];
+            lo = (lo << 2) | unpack_low[src[6]];
+            lo = (lo << 2) | unpack_low[src[7]];
+            dst[0] = hi;            /* plane 0 */
+            dst[1] = lo;
+            dst[2] = hi >> 8;       /* plane 1 */
+            dst[3] = lo >> 8;
+            dst[4] = hi >> 16;      /* plane 2 */
+            dst[5] = lo >> 16;
+            dst[6] = hi >> 24;      /* plane 3 */
+            dst[7] = lo >> 24;
+            dst += 8;
+            src += 8;
+        } while (--groups);
+    }
+    else    /* 2 planes */
+    {
+        do
+        {
+            UWORD hi, lo;
+
+            hi = (unpack_medium[src[0]] << 4) | unpack_medium[src[1]];
+            lo = (unpack_medium[src[2]] << 4) | unpack_medium[src[3]];
+            dst[0] = hi;            /* plane 0 */
+            dst[1] = lo;
+            dst[2] = hi >> 8;       /* plane 1 */
+            dst[3] = lo >> 8;
+            dst += 4;
+            src += 4;
+        } while (--groups);
+    }
+}
+
+static void convert_groups(const UBYTE *src, ULONG *dst, UWORD groups)
+{
+    mini68k_to_vera(src, dst, groups, (rez_shown == ST_LOW) ? 4 : 2);
 }
 
 /* Copy rows [first, first + count), clipped to the screen */
@@ -463,6 +662,9 @@ static void copy_box(WORD left, WORD top)
 void mini68k_screen_dirty(WORD y1, WORD y2)
 {
     WORD old_sr;
+
+    if (CONF_WITH_VERA_DIRECT)
+        return;     /* nothing to copy: drawing goes to the VERA */
 
     if (y1 < 0)
         y1 = 0;
@@ -559,12 +761,17 @@ void mini68k_vera_vbl(void)
 
     if (!vera_present || !vera_screen || mini68k_fdc_active)
         return;     /* the floppy needs the CPU more than the screen */
+    if (CONF_WITH_VERA_DIRECT && mini68k_vera_busy)
+        return;     /* direct drawing in progress: next VBL */
 
     if (rez_shown != rez_wanted)
     {
         apply_mode();
         palette_dirty = TRUE;
     }
+
+    if (CONF_WITH_VERA_DIRECT)
+        direct_vbl();
 
     /* Setpalette: like the Atari VBL, load the palette from colorptr */
     new_palette = (const UWORD *)((ULONG)colorptr & ~1UL);
@@ -579,6 +786,9 @@ void mini68k_vera_vbl(void)
     }
     if (palette_dirty)
         write_palette();
+
+    if (CONF_WITH_VERA_DIRECT)
+        return;     /* the screen is in the VERA already */
 
     left = GCURX - mouse_cdb[0];
     top = GCURY - mouse_cdb[1];

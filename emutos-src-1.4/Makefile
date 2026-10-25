@@ -307,7 +307,7 @@ bios_src +=  memory.S processor.S vectors.S aciavecs.S bios.c xbios.c acsi.c \
              amiga.c amiga2.S spi_vamp.c \
              lisa.c lisa2.S \
              mini68k.c mini68k2.S ppide.c ppide2.S spi_mini68k.c \
-             fdc_mini68k.c fdc_mini68k2.S vera_mini68k.c vera_mini68k2.S \
+             fdc_mini68k.c fdc_mini68k2.S vera_mini68k.c vera_mini68k2.S vera_direct.c \
              kbd_mini68k.c \
              delay.c delayasm.S sd.c memory2.c bootparams.c scsi.c nova.c \
              dsp.c dsp2.S \
@@ -344,7 +344,7 @@ endif
 vdi_src = vdi_asm.S vdi_bezier.c vdi_col.c vdi_control.c vdi_esc.c \
           vdi_fill.c vdi_gdp.c vdi_input.c vdi_line.c vdi_main.c \
           vdi_marker.c vdi_misc.c vdi_mouse.c vdi_raster.c vdi_text.c \
-          vdi_textblit.c
+          vdi_textblit.c vdi_vera.c
 
 ifeq (1,$(COLDFIRE))
 vdi_src += vdi_tblit_cf.S
@@ -776,6 +776,11 @@ m548x-bas:
 #
 
 ELF_MINI68K = emutos.elf
+# The VDI and the console draw straight into the VERA (ST low, medium, high).
+# "make mini-68k VERA_DIRECT=0" draws into a RAM screen copied to the
+# VERA at each VBL instead, which also shows programs that write to
+# screen memory themselves.
+VERA_DIRECT = 1
 MINI68K_LOAD = 0x180000
 MINI68K_RAM_TOP = 0x200000
 TOCLEAN += *.elf mkelf68k
@@ -786,7 +791,7 @@ mini-68k: UNIQUE = $(COUNTRY)
 # No video yet: boot straight into EmuCON on the serial console.
 # Use "make mini-68k WITH_AES=1" to include the GEM desktop.
 mini-68k: WITH_AES = 0
-mini-68k: override DEF += -DMACHINE_MINI68K -DMINI68K_LOAD_ADDRESS=$(MINI68K_LOAD) -DMINI68K_RAM_TOP=$(MINI68K_RAM_TOP)
+mini-68k: override DEF += -DMACHINE_MINI68K -DMINI68K_LOAD_ADDRESS=$(MINI68K_LOAD) -DMINI68K_RAM_TOP=$(MINI68K_RAM_TOP) -DCONF_WITH_VERA_DIRECT=$(VERA_DIRECT)
 mini-68k:
 	@echo "# Building Mini-M68k EmuTOS into $(ELF_MINI68K)"
 	$(MAKE) DEF='$(DEF)' UNIQUE=$(UNIQUE) WITH_AES=$(WITH_AES) MINI68K_LOAD=$(MINI68K_LOAD) MINI68K_RAM_TOP=$(MINI68K_RAM_TOP) $(ELF_MINI68K)

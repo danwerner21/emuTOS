@@ -681,6 +681,8 @@ pixelread(const WORD x, const WORD y)
     }
 #endif
 
+    VERA_BOUNCE_READ_ONLY(x, y, x, y);  /* Mini-M68k direct mode */
+
     /* convert x,y to start address and bit mask */
     addr = get_start_addr(x, y);
     addr += v_planes;                   /* start at highest-order bit_plane */
@@ -849,6 +851,9 @@ static WORD end_pts(const VwkClip *clip, WORD x, WORD y, WORD *xleftout, WORD *x
         return end_pts16(clip, x, y, xleftout, xrightout);
     }
 #endif
+
+    /* Mini-M68k direct mode: the row is searched in the RAM screen */
+    VERA_BOUNCE_READ_ONLY(clip->xmn_clip, y, clip->xmx_clip, y);
 
     /* convert x,y to start address and bit mask */
     addr = get_start_addr(x, y);
@@ -1190,6 +1195,7 @@ put_pix(void)
     color = INTIN[0];           /* device dependent encoded color bits */
     mask = 0x8000 >> (x&0xf);   /* initial bit position in WORD */
 
+    VERA_BOUNCE_BEGIN(x, y, x, y);  /* Mini-M68k direct mode */
     for (plane = v_planes; plane; plane--) {
         if (color&0x0001)
             *addr++ |= mask;
@@ -1197,4 +1203,5 @@ put_pix(void)
             *addr++ &= ~mask;
         color >>= 1;
     }
+    VERA_BOUNCE_END(x, y, x, y);
 }

@@ -11,8 +11,8 @@ The plan is to bring EmuTOS up on the serial console first, then run GEM on the 
 | 0. Groundwork | Done |
 | 1. Serial EmuTOS | Done. Exit test passed: Sozobon C built and ran hello-world on the board (about 45 s) |
 | 2. Shadow framebuffer | Done: EmuDesk and EmuCON on the VERA, changed-row copying at the VERA VSYNC (Oct 24, 2026) |
-| 3. Input | Mouse working on the desktop (Oct 24, 2026); keyboard driver written, waiting for a working keyboard |
-| 4. Colour | Colour through the shadow copy written, not yet tested (Oct 24, 2026); native driver set aside |
+| 3. Input | Mouse working on the desktop (Oct 24, 2026); keyboard hardware confirmed with VERATEST (Oct 25, 2026), EmuTOS keyboard being tested |
+| 4. Colour and direct | Colour through the shadow copy working (Oct 24, 2026); direct mode (ST high) working (Oct 24, 2026) |
 
 ## Hardware
 
@@ -140,7 +140,26 @@ EmuTOS takes input as Atari keyboard scancodes and relative mouse packets, so th
 - [x] The copy converts Atari bit planes to packed pixels through lookup tables (`bios/vera_mini68k.c`). Byte offsets are the same in RAM and VRAM, so dirty rows and the mouse pointer box map directly.
 - [x] Palette: `Setcolor`/`Setpalette` update a shadow palette, written to VERA at the next VBL. Resolution changes are also applied at the VBL, so only the VBL touches the VERA registers.
 - [x] The desktop's *Change resolution* offers low, medium and high; the choice is saved in `EMUDESK.INF`.
-- [ ] Test on the board, and tune the per-mode copy budgets.
+- [x] Tested on the board: all three resolutions work (Oct 24, 2026).
+
+**Direct mode, first version (Oct 24, 2026; working on the board, feels smoother than the copy).** Now the default build; `VERA_DIRECT=0` selects the shadow copy (colour). ST high only. The VERA bitmap is the screen and nothing is copied at the VBL:
+
+- [x] Port discipline: writes through DATA1/ADDR1; reads through DATA0 with ADDR0 at no increment, writing the address before each read (works whether or not reads auto-increment). Every drawing operation sets a busy flag; the VBL (cursor blink, sprite, palette) waits while it is set.
+- [x] Native: rectangle fill (also horizontal lines and polygon spans), byte-aligned text, screen clear, the console (character, cursor, blank, scroll as a VRAM-to-VRAM copy).
+- [x] Mouse pointer as VERA sprite 0 (E10). Line-A sprites are still drawn into the screen.
+- [x] Read-back fallback for the rest: diagonal and vertical lines, general text, raster copies, pixel read/write, seed fill. The area is read from the VERA into the RAM screen, drawn there by the existing code, and written back.
+- [x] Tested on the board: desktop, console and mouse sprite all work.
+- [x] Raster copies to the screen only read back the partial edge words when the logic operation ignores the destination (menu and dialog restores, icons in replace mode).
+- [ ] Convert the remaining fallback routines to native ones.
+
+**Colour in direct mode (Oct 24, 2026; written, not yet tested).** ST low and medium are shown as 4 bpp and 2 bpp VERA bitmaps, as in the shadow copy, and the desktop's *Change resolution* works in direct mode:
+
+- [x] The read-back fallback converts both ways: VERA packed pixels to Atari planes on reading (reverse lookup tables, bits shifted into one plane byte per accumulator lane), and back on writing.
+- [x] Native colour versions of rectangle fill (pattern and pixel masks expanded to whole-pixel bit fields), byte-aligned text and the console (cell offsets converted from the planar layout).
+- [x] Multi-plane fill patterns, and everything else not native, go through the fallback.
+- [x] Resolution changes switch the VERA at once (direct drawing in the new layout starts straight away).
+- [ ] Test all three resolutions on the board.
+- [ ] Fix the card's read timing, so reads auto-increment and cost half as much.
 
 The original native driver plan is kept below for reference.
 

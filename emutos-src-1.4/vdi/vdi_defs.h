@@ -299,6 +299,28 @@ void arb_corner(Rect *rect);
 void arb_line(Line *line);
 
 
+#if CONF_WITH_VERA_DIRECT
+/*
+ * Mini-M68k: drawing straight into the VERA, in vdi_vera.c. Code that
+ * draws into screen memory runs between VERA_BOUNCE_BEGIN, which loads
+ * the area it draws on from the VERA into the RAM screen, and
+ * VERA_BOUNCE_END, which writes the area back (see bios/vera_direct.c).
+ */
+#include "../bios/mini68k.h"
+void vera_rect(const VwkAttrib *attr, const Rect *rect);
+void vera_text(WORD count, const WORD *str);
+#define VERA_BOUNCE_BEGIN(x1, y1, x2, y2) \
+    do { vd_begin(); vd_bounce_read(x1, y1, x2, y2); } while (0)
+#define VERA_BOUNCE_END(x1, y1, x2, y2) \
+    do { vd_bounce_write(x1, y1, x2, y2); vd_end(); } while (0)
+#define VERA_BOUNCE_READ_ONLY(x1, y1, x2, y2) \
+    do { vd_begin(); vd_bounce_read(x1, y1, x2, y2); vd_end(); } while (0)
+#else
+#define VERA_BOUNCE_BEGIN(x1, y1, x2, y2)
+#define VERA_BOUNCE_END(x1, y1, x2, y2)
+#define VERA_BOUNCE_READ_ONLY(x1, y1, x2, y2)
+#endif
+
 /* C Support routines */
 Vwk *get_vwk_by_handle(WORD);
 UWORD *get_start_addr(const WORD x, const WORD y);

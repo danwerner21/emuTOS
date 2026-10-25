@@ -19,9 +19,11 @@
  * from the keyboard are dropped, since EmuTOS does its own key repeat.
  *
  * Mouse: each 3-byte PS/2 packet becomes a relative Atari mouse packet.
- * The report rate is set to 40 per second, so that keyboard and mouse
- * together stay well below what 200 Hz polling can collect (one byte per
- * poll, as the controller holds one byte at a time).
+ * The resolution is 8 counts per mm, with the mouse's 2:1 scaling (an
+ * acceleration). The report rate is set to 40 per second, so that
+ * keyboard and mouse together stay well below what 200 Hz polling can
+ * collect (one byte per poll, as the controller holds one byte at a
+ * time).
  */
 
 /* #define ENABLE_KDEBUG */
@@ -48,6 +50,7 @@
 #define ACK             0xfa
 #define SELF_TEST_OK    0xaa
 #define MOUSE_RATE      40      /* reports per second */
+#define MOUSE_RESOLUTION 3      /* 8 counts per mm (the default is 4) */
 
 #define TIMEOUT_SHORT   (CLOCKS_PER_SEC / 5)
 #define TIMEOUT_RESET   CLOCKS_PER_SEC      /* devices answer a reset slowly */
@@ -236,6 +239,32 @@ static WORD kbc_read(LONG timeout)  /* return the byte, or -1 on timeout */
     return -1;
 }
 
+/*
+ * Wait for a given byte from the keyboard (mouse FALSE) or the mouse
+ * (mouse TRUE), dropping anything else: bytes from the other device, and
+ * stale ones such as the self-test result a keyboard sends at power-up,
+ * which the controller holds until its interface is enabled.
+ */
+static BOOL kbc_expect(BOOL mouse, UBYTE wanted, LONG timeout)
+{
+    LONG end = hz_200 + timeout;
+
+    while (hz_200 < end)
+    {
+        UBYTE status = KBC_STAT;
+
+        if (status & KBC_OBF)
+        {
+            UBYTE b = KBC_DATA;
+
+            if (!(status & KBC_AUX) == !mouse && b == wanted)
+                return TRUE;
+        }
+    }
+
+    return FALSE;
+}
+
 static BOOL kbc_wait_write(void)
 {
     LONG end = hz_200 + TIMEOUT_SHORT;
@@ -270,7 +299,7 @@ static BOOL mouse_send(UBYTE b)
 {
     kbc_command(0xd4);              /* next data byte goes to the mouse */
     kbc_write(b);
-    return kbc_read(TIMEOUT_SHORT) == ACK;
+    return kbc_expect(TRUE, ACK, TIMEOUT_SHORT);
 }
 
 void mini68k_kbd_init(void)
@@ -293,16 +322,20 @@ void mini68k_kbd_init(void)
     kbc_write(CONFIG_TRANSLATE);
     kbc_command(0xae);              /* enable the keyboard interface */
     kbc_command(0xa8);              /* enable the mouse interface */
+    kbc_flush();                    /* bytes held while they were disabled */
 
     kbc_write(0xff);                /* reset the keyboard */
-    kbd_ok = kbc_read(TIMEOUT_SHORT) == ACK
-          && kbc_read(TIMEOUT_RESET) == SELF_TEST_OK;
+    kbd_ok = kbc_expect(FALSE, ACK, TIMEOUT_SHORT)
+          && kbc_expect(FALSE, SELF_TEST_OK, TIMEOUT_RESET);
+    kbc_flush();                    /* anything late from the keyboard */
 
     mouse_ok = mouse_send(0xff)     /* reset the mouse */
-            && kbc_read(TIMEOUT_RESET) == SELF_TEST_OK
-            && kbc_read(TIMEOUT_SHORT) == 0x00;     /* mouse ID */
+            && kbc_expect(TRUE, SELF_TEST_OK, TIMEOUT_RESET)
+            && kbc_expect(TRUE, 0x00, TIMEOUT_SHORT);   /* mouse ID */
     if (mouse_ok)
         mouse_ok = mouse_send(0xf3) && mouse_send(MOUSE_RATE)   /* report rate */
+                && mouse_send(0xe8) && mouse_send(MOUSE_RESOLUTION)
+                && mouse_send(0xe7)     /* 2:1 scaling: fast moves go further */
                 && mouse_send(0xf4);                            /* enable reports */
 
     KDEBUG(("PS/2 keyboard %s, mouse %s\n",

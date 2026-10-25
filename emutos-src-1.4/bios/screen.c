@@ -708,7 +708,8 @@ int rez_changeable(void)
 #endif
 
 #ifdef MACHINE_MINI68K
-    return mini68k_vera_present();  /* all 3 ST resolutions on the VERA */
+    /* all 3 ST resolutions on the VERA */
+    return mini68k_vera_present();
 #elif CONF_WITH_ATARI_VIDEO
     return shifter_rez_changeable();
 #else

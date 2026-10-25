@@ -865,6 +865,11 @@ void direct_screen_blit(WORD count, WORD *str)
     }
 #endif
 
+#if CONF_WITH_VERA_DIRECT
+    vera_text(count, str);
+    return;
+#endif
+
     dst = (UBYTE *)get_start_addr(DESTX, DESTY);
     if (DESTX & 0x0008)
         dst++;
@@ -1228,7 +1233,15 @@ static void screen_blit(LOCALVARS *vars)
     vars->dform += (UWORD)(vars->DESTY+vars->DELY-1) * (ULONG)v_lin_wr; /* add y coordinate part of addr */
     vars->d_next = -v_lin_wr;
 
+    /* in the VERA direct mode: one word of margin each side, for skew and
+     * thickening */
+    VERA_BOUNCE_BEGIN(vars->DESTX - 16, vars->DESTY,
+                      vars->DESTX + vars->DELX + vars->smear + 16,
+                      vars->DESTY + vars->DELY - 1);
     normal_blit(vars+1, vars->sform, vars->dform);  /* call assembler helper function */
+    VERA_BOUNCE_END(vars->DESTX - 16, vars->DESTY,
+                    vars->DESTX + vars->DELX + vars->smear + 16,
+                    vars->DESTY + vars->DELY - 1);
 }
 
 

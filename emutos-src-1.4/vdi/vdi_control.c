@@ -615,6 +615,10 @@ void vdi_v_clrwk(Vwk * vwk)
     {
         fill = 0x00;
     }
+#if CONF_WITH_VERA_DIRECT
+    vd_clear();         /* Mini-M68k: the screen is in the VERA */
+    return;
+#endif
     memset(v_bas_ad, fill, size);
 }
 

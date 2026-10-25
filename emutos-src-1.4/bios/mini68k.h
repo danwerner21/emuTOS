@@ -110,12 +110,17 @@ extern volatile BOOL mini68k_fdc_active;   /* a floppy transfer is in progress *
 
 /* VERA video card, defined in vera_mini68k.c and vera_mini68k2.S */
 #define MINI68K_VERA_PORT   0x80    /* ECB ports 0x80-0x9f */
-BOOL mini68k_vera_init(void);       /* detect and set up 640x400, 1 bpp */
+BOOL mini68k_vera_init(void);       /* detect and set up ST high */
 BOOL mini68k_vera_present(void);
 void mini68k_setphys(const UBYTE *addr);
 const UBYTE *mini68k_physbase(void);
+void mini68k_setrez(WORD rez);      /* ST low, medium or high */
+WORD mini68k_setcolor(WORD colorNum, WORD color);
+void mini68k_init_palette(WORD rez);
 void mini68k_vera_vbl(void);        /* called at each VBL */
 void mini68k_vera_copy(const UBYTE *src, ULONG vram, UWORD count);
+void mini68k_screen_dirty(WORD y1, WORD y2);    /* rows y1-y2 changed */
+BOOL mini68k_vbl_due(void);         /* called at each timer tick */
 
 /* PS/2 keyboard and mouse (VT82C42 on the VERA card), in kbd_mini68k.c */
 void mini68k_kbd_init(void);

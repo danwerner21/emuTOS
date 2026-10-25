@@ -12,6 +12,7 @@
 #include "vdi_defs.h"
 #include "lineavars.h"
 #include "asm.h"
+#include "../bios/mini68k.h"
 
 /* forward prototypes */
 void screen(void);
@@ -115,6 +116,54 @@ static struct vdi_jmptab const jmptb2[] = {
 #define JMPTB2_ENTRIES  ARRAY_SIZE(jmptb2)
 
 
+#ifdef MACHINE_MINI68K
+/*
+ * On the Mini-M68k, the screen is copied to the VERA card: tell its driver
+ * which rows a call may have changed. Drawing is limited to the clipping
+ * rectangle when clipping is on; rectangle fills and raster copies give
+ * their own rectangle. Other drawing calls mark the whole screen.
+ */
+static void mark_dirty_rows(WORD opcode, const Vwk *vwk)
+{
+    WORD y1, y2;
+
+    switch(opcode) {
+    case 3:     /* v_clrwk */
+    case 5:     /* escapes: alpha mode, clear screen, ... */
+        mini68k_screen_dirty(0, 32767);
+        break;
+    case 6:     /* v_pline */
+    case 7:     /* v_pmarker */
+    case 8:     /* v_gtext */
+    case 9:     /* v_fillarea */
+    case 10:    /* v_cellarray */
+    case 11:    /* v_gdp: bars, arcs, circles, justified text ... */
+    case 103:   /* v_contourfill */
+        if (vwk->clip)
+            mini68k_screen_dirty(vwk->ymn_clip, vwk->ymx_clip);
+        else
+            mini68k_screen_dirty(0, 32767);
+        break;
+    case 114:   /* vr_recfl: rectangle in PTSIN[0-3] */
+        y1 = PTSIN[1];
+        y2 = PTSIN[3];
+        mini68k_screen_dirty(y1 < y2 ? y1 : y2, y1 < y2 ? y2 : y1);
+        break;
+    case 109:   /* vro_cpyfm */
+    case 121:   /* vrt_cpyfm: destination rectangle in PTSIN[4-7] */
+        y1 = PTSIN[5];
+        y2 = PTSIN[7];
+        mini68k_screen_dirty(y1 < y2 ? y1 : y2, y1 < y2 ? y2 : y1);
+        break;
+    case 111:   /* vsc_form: new mouse pointer shape */
+    case 122:   /* v_show_c */
+    case 123:   /* v_hide_c */
+        mini68k_screen_dirty(GCURY - 16, GCURY + 16);
+        break;
+    }
+}
+#endif
+
 /*
  * screen - Screen driver entry point
  */
@@ -169,6 +218,11 @@ void screen(void)
     {
         vwk = CUR_WORK;
     }
+
+#ifdef MACHINE_MINI68K
+    if (vwk)
+        mark_dirty_rows(opcode, vwk);
+#endif
 
     /*
      * set some line-A variables from the vwk info (as long as

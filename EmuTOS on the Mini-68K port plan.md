@@ -10,9 +10,9 @@ The plan is to bring EmuTOS up on the serial console first, then run GEM on the 
 | --- | --- |
 | 0. Groundwork | Done |
 | 1. Serial EmuTOS | Done. Exit test passed: Sozobon C built and ran hello-world on the board (about 45 s) |
-| 2. Shadow framebuffer | In progress: EmuDesk and EmuCON shown on the VERA (Oct 24, 2026). Next: VERA VSYNC as the VBL, then copying only changed rows |
-| 3. Input | Next: keyboard and mouse through the VT82C42 controller on the VERA card |
-| 4. Native driver | Not started |
+| 2. Shadow framebuffer | Done: EmuDesk and EmuCON on the VERA, changed-row copying at the VERA VSYNC (Oct 24, 2026) |
+| 3. Input | Mouse working on the desktop (Oct 24, 2026); keyboard driver written, waiting for a working keyboard |
+| 4. Colour | Colour through the shadow copy written, not yet tested (Oct 24, 2026); native driver set aside |
 
 ## Hardware
 
@@ -105,7 +105,7 @@ Start at 640×400, one bit per pixel. That is exactly Atari ST high resolution (
 - [ ] VERA init: one layer in 640-wide 1 bpp bitmap mode, two palette entries, border set for the 400-line area, other layer and sprites off (E7).
 - [x] Screen setup: done in Phase 1. EmuTOS already keeps a 640×400 one-plane screen in RAM below `phystop` and reports it to the VDI and Line-A. The copy routine only needs to read it.
 - [ ] Copy routine: for each dirty row, set the VERA address once and stream 80 bytes; unrolled loop, written in assembly (E6).
-- [ ] Vsync interrupt: wire VERA's interrupt line to a free NS32202 input (the CPU has no other usable level), unmask that input, and make it EmuTOS's vertical-blank tick in place of the one emulated from the timer in `bios/mini68k2.S` (E8).
+- [x] Vsync as the VBL: the 200 Hz timer polls the VERA VSYNC flag (ISR bit 0) and runs the VBL when it is set, so no interrupt line or jumper is needed. With no VSYNC within 100 ms it falls back to a 50 Hz VBL from the timer. Working on hardware (E8).
 - [ ] VERA register discipline: the address and control registers are shared state, so any interrupt code that touches VERA must save and restore them, or all VERA access must happen at one interrupt level.
 - [ ] Console switch: move the text console from serial to the screen, keeping serial as a debug channel.
 - [ ] Build with `WITH_AES=1` to include the GEM desktop.
@@ -113,7 +113,7 @@ Start at 640×400, one bit per pixel. That is exactly Atari ST high resolution (
 **Dirty tracking, in three steps**
 
 1. No tracking: sweep the whole screen round-robin, a fixed number of rows per frame. Slow but proves the path.
-2. Coarse tracking: hook the VDI trap and the console output routine, and mark the rows inside the current clip rectangle or text line. Keep a slow background sweep for anything that wrote to the screen directly.
+2. Coarse tracking (done, working on hardware): the VDI dispatcher (`vdi/vdi_main.c`) and the console output routines (`bios/conout.c`) mark changed rows in a bitmap after drawing; each VBL copies up to 48 marked rows, plus the rows around a moving mouse pointer. A background sweep of 8 rows per idle VBL catches anything that wrote to the screen directly.
 3. Exact tracking: have each VDI primitive report the rectangle it actually touched. This is also the first step toward Phase 4.
 
 **Budget (estimates to be checked by E6 and E9)**
@@ -133,6 +133,16 @@ EmuTOS takes input as Atari keyboard scancodes and relative mouse packets, so th
 - [ ] Fallback for early testing: EmuTOS lets the keyboard move the pointer, so GEM can be tried before the mouse works.
 
 ## Phase 4: native VERA driver
+
+**Decision (Oct 24, 2026): colour through the shadow copy instead.** On this card VERA reads do not auto-increment, so every read needs its address set again. A native driver needs reads for XOR drawing, the text cursor, transparent text and scrolling, so in monochrome it would be slower than the shadow copy, and it would break programs that write to screen memory. Colour is done with the shadow method instead:
+
+- [x] EmuTOS draws in ST low (320×200, 16 colours) or ST medium (640×200, 4 colours) in RAM. VERA shows them as 4 bpp at 320 wide or 2 bpp at 640 wide, with lines doubled (VSCALE 64).
+- [x] The copy converts Atari bit planes to packed pixels through lookup tables (`bios/vera_mini68k.c`). Byte offsets are the same in RAM and VRAM, so dirty rows and the mouse pointer box map directly.
+- [x] Palette: `Setcolor`/`Setpalette` update a shadow palette, written to VERA at the next VBL. Resolution changes are also applied at the VBL, so only the VBL touches the VERA registers.
+- [x] The desktop's *Change resolution* offers low, medium and high; the choice is saved in `EMUDESK.INF`.
+- [ ] Test on the board, and tune the per-mode copy budgets.
+
+The original native driver plan is kept below for reference.
 
 A native driver replaces the lowest drawing layer so that the VDI, Line-A and the text console write to VERA's memory through its ports, with no RAM copy of the screen.
 

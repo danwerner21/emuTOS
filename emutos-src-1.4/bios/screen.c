@@ -418,7 +418,12 @@ WORD check_moderez(WORD moderez)
         return videl_check_moderez(moderez);
 #endif
 
-#if CONF_WITH_ATARI_VIDEO
+#ifdef MACHINE_MINI68K
+    /* ST resolutions only, ST high included */
+    if (moderez > 0 || (moderez & 0x00ff) > ST_HIGH)
+        return 0;
+    return ((moderez & 0x00ff) == getrez()) ? 0 : moderez;
+#elif CONF_WITH_ATARI_VIDEO
     return shifter_check_moderez(moderez);
 #else
     return 0;
@@ -431,6 +436,9 @@ WORD check_moderez(WORD moderez)
  */
 void initialise_palette_registers(WORD rez,WORD mode)
 {
+#ifdef MACHINE_MINI68K
+    mini68k_init_palette(rez);
+#endif
 #if CONF_WITH_ATARI_VIDEO
 UWORD mask;
 
@@ -699,7 +707,9 @@ int rez_changeable(void)
         return (VgetMonitor() != MON_MONO);
 #endif
 
-#if CONF_WITH_ATARI_VIDEO
+#ifdef MACHINE_MINI68K
+    return mini68k_vera_present();  /* all 3 ST resolutions on the VERA */
+#elif CONF_WITH_ATARI_VIDEO
     return shifter_rez_changeable();
 #else
     return FALSE;
@@ -1148,6 +1158,8 @@ WORD setscreen(UBYTE *logLoc, const UBYTE *physLoc, WORD rez, WORD videlmode)
 
 #ifdef MACHINE_AMIGA
     amiga_setrez(rez, videlmode);
+#elif defined(MACHINE_MINI68K)
+    mini68k_setrez(rez);
 #elif CONF_WITH_ATARI_VIDEO
     atari_setrez(rez, videlmode);
 #endif
@@ -1191,6 +1203,8 @@ WORD setcolor(WORD colorNum, WORD color)
 {
 #ifdef MACHINE_AMIGA
     return amiga_setcolor(colorNum, color);
+#elif defined(MACHINE_MINI68K)
+    return mini68k_setcolor(colorNum, color);
 #elif CONF_WITH_ATARI_VIDEO
     return atari_setcolor(colorNum, color);
 #else

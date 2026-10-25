@@ -24,6 +24,22 @@
 #include "string.h"
 #include "conout.h"
 #include "../vdi/vdi_defs.h"    /* for phys_work stuff */
+#include "mini68k.h"
+
+/*
+ * On the Mini-M68k, the screen is copied to the VERA card: tell its driver
+ * which pixel rows changed, as character cell rows or from a cell address.
+ */
+#ifdef MACHINE_MINI68K
+#define DIRTY_CELL_ROWS(top, bot) \
+    mini68k_screen_dirty((top) * v_cel_ht, ((bot) + 1) * v_cel_ht - 1)
+#define DIRTY_CELL_AT(addr) \
+    do { WORD y_ = (WORD)(((addr) - v_bas_ad) / v_lin_wr); \
+         mini68k_screen_dirty(y_, y_ + v_cel_ht - 1); } while (0)
+#else
+#define DIRTY_CELL_ROWS(top, bot)
+#define DIRTY_CELL_AT(addr)
+#endif
 
 #define PLANE_OFFSET    2       /* interleaved planes */
 
@@ -276,6 +292,8 @@ static void cell_xfer(UBYTE *src, UBYTE *dst)
         fg >>= 1;                       /* next foreground color bit */
         dst_sav += PLANE_OFFSET;        /* top of block in next plane */
     }
+
+    DIRTY_CELL_AT(dst_sav - PLANE_OFFSET * v_planes);   /* original dst */
 }
 
 
@@ -325,6 +343,7 @@ static void neg_cell(UBYTE *cell)
             }
             cell += PLANE_OFFSET;       /* a1 -> top of block in next plane */
         }
+        DIRTY_CELL_AT(cell - PLANE_OFFSET * v_planes);  /* original cell */
     }
 
     v_stat_0 &= ~M_CRIT;                /* end of critical section. */
@@ -681,6 +700,8 @@ void blank_out(int topx, int topy, int botx, int boty)
             addr += offs;       /* skip non-region area with stride advance */
         }
     }
+
+    DIRTY_CELL_ROWS(topy, boty);
 }
 
 
@@ -719,6 +740,7 @@ void scroll_up(UWORD top_line)
 
     /* move BYTEs of memory*/
     memmove(dst, src, count);
+    DIRTY_CELL_ROWS(top_line, v_cel_my);
 
     /* exit thru blank out, bottom line cell address y to top/left cell */
     blank_out(0, v_cel_my , v_cel_mx, v_cel_my);
@@ -746,6 +768,7 @@ void scroll_down(UWORD start_line)
 
     /* move BYTEs of memory*/
     memmove(dst, src, count);
+    DIRTY_CELL_ROWS(start_line, v_cel_my);
 
     /* exit thru blank out */
     blank_out(0, start_line , v_cel_mx, start_line);

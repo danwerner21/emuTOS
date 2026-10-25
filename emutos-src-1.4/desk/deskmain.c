@@ -906,7 +906,7 @@ static WORD do_optnmenu(WORD item)
             else if (newres == FALCON_REZ)
                 shel_write(SHW_RESCHNG,newmode,1,NULL,NULL);
 #endif
-#if CONF_WITH_ATARI_VIDEO
+#if CONF_WITH_ATARI_VIDEO || defined(MACHINE_MINI68K)
             else shel_write(SHW_RESCHNG,newres+2,0,NULL,NULL);
 #endif
             done = TRUE;

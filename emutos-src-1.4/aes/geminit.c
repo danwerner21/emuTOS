@@ -777,7 +777,7 @@ void gem_main(void)
 
     if (gl_changerez) {
         switch(gl_changerez) {
-#if CONF_WITH_ATARI_VIDEO
+#if CONF_WITH_ATARI_VIDEO || defined(MACHINE_MINI68K)
         case 1:                     /* ST(e) or TT display */
             Setscreen(-1L, -1L, gl_nextrez-2, 0);
             initialise_palette_registers(gl_nextrez-2, 0);

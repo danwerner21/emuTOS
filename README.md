@@ -70,7 +70,7 @@ New files in `emutos-src-1.4`:
 | File | Purpose |
 | --- | --- |
 | `bios/mini68k.c`, `bios/mini68k.h` | Machine support: UART console, NS32202 timer, DS1302 RTC, the BIOS NVRAM board list, `Rsconf` |
-| `bios/mini68k2.S` | Timer interrupt: 200 Hz tick, UART polling, VBL, floppy motor timeout |
+| `bios/mini68k2.S` | Timer interrupt: 200 Hz tick, UART and PS/2 polling, VBL (on VERA VSYNC), floppy motor timeout |
 | `bios/ppide.c`, `bios/ppide.h`, `bios/ppide2.S` | 82C55 PPIDE back-end under EmuTOS's IDE driver (MF/PIC and DiskIO); assembly sector transfers |
 | `bios/spi_mini68k.c` | Dual-SD SPI back-end for EmuTOS's SD/MMC driver, two sockets |
 | `bios/fdc_mini68k.c`, `bios/fdc_mini68k2.S` | DiskIO floppy driver: polled 765 commands, read, write and format; assembly data phase |
@@ -110,13 +110,13 @@ The detailed plan, with checklists and experiments, is in [EmuTOS on the Mini-68
 | --- | --- | --- |
 | 0. Groundwork | Toolchain, machine target, load-and-test loop | Done |
 | 1. Serial EmuTOS | EmuTOS with disks on the serial console; build a C program on the board | Done |
-| 2. GEM on VERA | GEM desktop shown on the VERA card | In progress: the desktop is displayed (`make mini-68k WITH_AES=1`) |
-| 3. Keyboard and mouse | Input through the VT82C42 controller on the VERA card | Next |
-| 4. Native VERA driver | VDI and console drawing straight to VERA, colour modes | Later |
+| 2. GEM on VERA | GEM desktop shown on the VERA card | Working: desktop shown with changed-row copying at the VERA VSYNC (`make mini-68k WITH_AES=1`) |
+| 3. Keyboard and mouse | Input through the VT82C42 controller on the VERA card | Mouse working; keyboard driver written, not yet tested |
+| 4. Colour | ST low (16 colours) and ST medium (4 colours) on the VERA | Written, not yet tested |
 
-- **Phase 2** copies changed rows of the existing 640×400 monochrome RAM screen to VERA's 1-bit bitmap mode. Work starts by checking copy speed, the display mode and the VERA vertical-blank interrupt. That interrupt has to come through an NS32202 input, because the CPU has no other usable interrupt level.
+- **Phase 2** copies changed rows of the existing 640×400 monochrome RAM screen to VERA's 1-bit bitmap mode. The console and the VDI mark the rows they draw on, and each VBL copies up to 48 of them. The VBL follows the VERA VSYNC (60 Hz), polled from the 200 Hz timer, so no interrupt line is needed.
 - **Phase 3** converts the VT82C42's PC keyboard and mouse data into the Atari keyboard codes and mouse packets that EmuTOS expects. It also shows the mouse pointer as a VERA sprite.
-- **Phase 4** puts a device layer under EmuTOS's VDI, so drawing goes straight to VERA. Its main benefit is colour.
+- **Phase 4** adds colour by keeping the RAM screen: EmuTOS draws in ST low or medium, and the VBL copy converts Atari bit planes to VERA packed pixels (2 or 4 bits per pixel) through lookup tables. The desktop's *Change resolution* offers low, medium and high. A native driver writing straight to VERA was set aside: VERA reads do not auto-increment on this card, so the reads it needs (XOR drawing, cursor, scrolling) would make it slower than the copy, and it would break programs that write to screen memory.
 
 ## Repository layout
 

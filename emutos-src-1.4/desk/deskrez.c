@@ -302,6 +302,29 @@ WORD oldmode;
 }
 #endif
 
+#ifdef MACHINE_MINI68K
+/*
+ *  change_mini68k_rez(): choose one of the 3 ST resolutions, which the
+ *  VERA card can all show (English only, for now)
+ *  returns:    0   user cancelled change
+ *              1   user wants to change; newres is updated with new resolution.
+ */
+static int change_mini68k_rez(WORD *newres)
+{
+    WORD oldres = Getrez();
+    WORD button;
+
+    button = form_alert(oldres + 1,
+        "[2][Screen resolution:| |Low:    320x200, 16 colours|"
+        "Medium: 640x200, 4 colours|High:   640x400, mono][Low|Medium|High]");
+    if (button - 1 == oldres)
+        return 0;
+
+    *newres = button - 1;
+    return 1;
+}
+#endif
+
 /*
  *  change_resolution(): change desktop resolution
  *
@@ -317,6 +340,10 @@ int change_resolution(WORD *newres,WORD *newmode)
 {
 #ifdef MACHINE_AMIGA
     return change_amiga_rez(newres,newmode);
+#endif
+
+#ifdef MACHINE_MINI68K
+    return change_mini68k_rez(newres);
 #endif
 
 #if CONF_WITH_VIDEL

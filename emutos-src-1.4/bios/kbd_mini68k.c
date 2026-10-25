@@ -240,26 +240,20 @@ static WORD kbc_read(LONG timeout)  /* return the byte, or -1 on timeout */
 }
 
 /*
- * Wait for a given byte from the keyboard (mouse FALSE) or the mouse
- * (mouse TRUE), dropping anything else: bytes from the other device, and
- * stale ones such as the self-test result a keyboard sends at power-up,
- * which the controller holds until its interface is enabled.
+ * Wait for a given byte, dropping anything else, such as the self-test
+ * result a keyboard sends at power-up, which the controller holds until
+ * its interface is enabled. The controller's AUX status bit is not used
+ * here: it is reliable for mouse movement data, but replies to commands
+ * sent to the mouse may not have it.
  */
-static BOOL kbc_expect(BOOL mouse, UBYTE wanted, LONG timeout)
+static BOOL kbc_expect(UBYTE wanted, LONG timeout)
 {
     LONG end = hz_200 + timeout;
 
     while (hz_200 < end)
     {
-        UBYTE status = KBC_STAT;
-
-        if (status & KBC_OBF)
-        {
-            UBYTE b = KBC_DATA;
-
-            if (!(status & KBC_AUX) == !mouse && b == wanted)
-                return TRUE;
-        }
+        if ((KBC_STAT & KBC_OBF) && KBC_DATA == wanted)
+            return TRUE;
     }
 
     return FALSE;
@@ -299,7 +293,7 @@ static BOOL mouse_send(UBYTE b)
 {
     kbc_command(0xd4);              /* next data byte goes to the mouse */
     kbc_write(b);
-    return kbc_expect(TRUE, ACK, TIMEOUT_SHORT);
+    return kbc_expect(ACK, TIMEOUT_SHORT);
 }
 
 void mini68k_kbd_init(void)
@@ -325,18 +319,21 @@ void mini68k_kbd_init(void)
     kbc_flush();                    /* bytes held while they were disabled */
 
     kbc_write(0xff);                /* reset the keyboard */
-    kbd_ok = kbc_expect(FALSE, ACK, TIMEOUT_SHORT)
-          && kbc_expect(FALSE, SELF_TEST_OK, TIMEOUT_RESET);
+    kbd_ok = kbc_expect(ACK, TIMEOUT_SHORT)
+          && kbc_expect(SELF_TEST_OK, TIMEOUT_RESET);
     kbc_flush();                    /* anything late from the keyboard */
 
     mouse_ok = mouse_send(0xff)     /* reset the mouse */
-            && kbc_expect(TRUE, SELF_TEST_OK, TIMEOUT_RESET)
-            && kbc_expect(TRUE, 0x00, TIMEOUT_SHORT);   /* mouse ID */
-    if (mouse_ok)
-        mouse_ok = mouse_send(0xf3) && mouse_send(MOUSE_RATE)   /* report rate */
-                && mouse_send(0xe8) && mouse_send(MOUSE_RESOLUTION)
-                && mouse_send(0xe7)     /* 2:1 scaling: fast moves go further */
-                && mouse_send(0xf4);                            /* enable reports */
+            && kbc_expect(SELF_TEST_OK, TIMEOUT_RESET)
+            && kbc_expect(0x00, TIMEOUT_SHORT);     /* mouse ID */
+
+    /* The settings are optional: whatever happens, enable the reports */
+    mouse_send(0xf3);               /* report rate */
+    mouse_send(MOUSE_RATE);
+    mouse_send(0xe8);               /* resolution */
+    mouse_send(MOUSE_RESOLUTION);
+    mouse_send(0xe7);               /* 2:1 scaling: fast moves go further */
+    mouse_ok = mouse_send(0xf4) && mouse_ok;    /* enable reports */
 
     KDEBUG(("PS/2 keyboard %s, mouse %s\n",
             kbd_ok ? "OK" : "not found", mouse_ok ? "OK" : "not found"));

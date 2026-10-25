@@ -12,7 +12,7 @@ The plan is to bring EmuTOS up on the serial console first, then run GEM on the 
 | 1. Serial EmuTOS | Done. Exit test passed: Sozobon C built and ran hello-world on the board (about 45 s) |
 | 2. Shadow framebuffer | Done: EmuDesk and EmuCON on the VERA, changed-row copying at the VERA VSYNC (Oct 24, 2026) |
 | 3. Input | Mouse working on the desktop (Oct 24, 2026); keyboard hardware confirmed with VERATEST (Oct 25, 2026), EmuTOS keyboard being tested |
-| 4. Colour and direct | Colour through the shadow copy working (Oct 24, 2026); direct mode (ST high) working (Oct 24, 2026) |
+| 4. Colour and direct | Colour through the shadow copy working (Oct 24, 2026); direct mode working in all three resolutions and the default (Oct 25, 2026) |
 
 ## Hardware
 
@@ -152,13 +152,13 @@ EmuTOS takes input as Atari keyboard scancodes and relative mouse packets, so th
 - [x] Raster copies to the screen only read back the partial edge words when the logic operation ignores the destination (menu and dialog restores, icons in replace mode).
 - [ ] Convert the remaining fallback routines to native ones.
 
-**Colour in direct mode (Oct 24, 2026; written, not yet tested).** ST low and medium are shown as 4 bpp and 2 bpp VERA bitmaps, as in the shadow copy, and the desktop's *Change resolution* works in direct mode:
+**Colour in direct mode (Oct 24, 2026; working on the board).** ST low and medium are shown as 4 bpp and 2 bpp VERA bitmaps, as in the shadow copy, and the desktop's *Change resolution* works in direct mode:
 
 - [x] The read-back fallback converts both ways: VERA packed pixels to Atari planes on reading (reverse lookup tables, bits shifted into one plane byte per accumulator lane), and back on writing.
 - [x] Native colour versions of rectangle fill (pattern and pixel masks expanded to whole-pixel bit fields), byte-aligned text and the console (cell offsets converted from the planar layout).
 - [x] Multi-plane fill patterns, and everything else not native, go through the fallback.
 - [x] Resolution changes switch the VERA at once (direct drawing in the new layout starts straight away).
-- [ ] Test all three resolutions on the board.
+- [x] Tested on the board: all three resolutions work (Oct 25, 2026).
 - [ ] Fix the card's read timing, so reads auto-increment and cost half as much.
 
 The original native driver plan is kept below for reference.

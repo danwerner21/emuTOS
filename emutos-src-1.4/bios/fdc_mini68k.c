@@ -120,6 +120,7 @@ static WORD cur_track;              /* -1: unknown, recalibrate first */
 static BOOL rate_known;             /* data rate determined for this disk */
 static UBYTE gpl;                   /* gap length for the current density */
 static BOOL formatted;              /* a track was formatted: report a media change */
+volatile BOOL mini68k_fdc_active;   /* a transfer is in progress: no screen copying */
 
 /*
  * Latch and motor
@@ -497,6 +498,7 @@ WORD mini68k_floprw(UBYTE *buf, WORD rw, WORD dev, WORD sect, WORD track, WORD s
     if (!fdc_msr || dev != 0)
         return EUNDEV;
 
+    mini68k_fdc_active = TRUE;
     motor_on();
 
     for (i = 0; i < count; i++, sect++, buf += SECTOR_SIZE)
@@ -529,6 +531,7 @@ WORD mini68k_floprw(UBYTE *buf, WORD rw, WORD dev, WORD sect, WORD track, WORD s
         motor_ticks = MOTOR_OFF_TICKS;
     }
 
+    mini68k_fdc_active = FALSE;
     return err;
 }
 
@@ -548,6 +551,7 @@ WORD mini68k_flopfmt(const UBYTE *ids, WORD dev, WORD track, WORD side,
     if (!fdc_msr || dev != 0)
         return EUNDEV;
 
+    mini68k_fdc_active = TRUE;
     motor_on();
     set_rate(high_density);
     rate_known = TRUE;
@@ -593,6 +597,7 @@ WORD mini68k_flopfmt(const UBYTE *ids, WORD dev, WORD track, WORD side,
     }
 
     motor_ticks = MOTOR_OFF_TICKS;
+    mini68k_fdc_active = FALSE;
     return err;
 }
 

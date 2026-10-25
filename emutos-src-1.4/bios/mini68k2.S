@@ -15,6 +15,8 @@
         .extern _int_vbl
         .extern _mini68k_rs232_poll
         .extern _mini68k_fdc_motor_tick
+        .extern _mini68k_vera_vbl
+        .extern _mini68k_kbd_poll
 
 /* NS32202 End-Of-Interrupt: read "register 32" = 0xffff8040 + 32 * 0x100 */
 #define ICU_EOI 0xffffa040
@@ -39,16 +41,25 @@ _mini68k_int_timer:
 timer_5ms_ret:
 
         jbsr    _mini68k_rs232_poll     // Drain the UART receive FIFO
+        jbsr    _mini68k_kbd_poll       // PS/2 keyboard and mouse
+
+        // Acknowledge now: the VBL work below (which includes copying part
+        // of the screen to the VERA) may take a few ms, and the next timer
+        // interrupt must be able to come in meanwhile.
+        move.b  ICU_EOI,d0
 
         addq.w  #1,vbl_divider          // Every 4th tick...
         cmp.w   #4,vbl_divider
         jcs     timer_no_vbl
         clr.w   vbl_divider
-        jbsr    _int_vbl                // ...call the standard VBL handler
+        tas     vbl_busy                // ...unless the previous VBL work
+        jne     timer_no_vbl            //    is still running
+        move.w  #0x2100,sr              // let the timer (level 2) interrupt us
+        jbsr    _int_vbl                // standard VBL handler
         jbsr    _mini68k_fdc_motor_tick // floppy motor timeout
+        jbsr    _mini68k_vera_vbl       // copy part of the screen to the VERA
+        clr.b   vbl_busy
 timer_no_vbl:
-
-        move.b  ICU_EOI,d0              // Acknowledge the interrupt
 
         movem.l (sp)+,d0-d1/a0-a1
         rte
@@ -68,5 +79,7 @@ _mini68k_int_ignore:
 
 vbl_divider:
         .ds.w   1
+vbl_busy:
+        .ds.b   1               /* set by TAS while the VBL work runs */
 
 #endif /* MACHINE_MINI68K */

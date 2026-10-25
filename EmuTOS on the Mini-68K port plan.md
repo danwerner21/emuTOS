@@ -10,8 +10,8 @@ The plan is to bring EmuTOS up on the serial console first, then run GEM on the 
 | --- | --- |
 | 0. Groundwork | Done |
 | 1. Serial EmuTOS | Done. Exit test passed: Sozobon C built and ran hello-world on the board (about 45 s) |
-| 2. Shadow framebuffer | On hold: waiting for the VERA card (ordered, not yet arrived, assembled or tested) |
-| 3. Input | On hold: keyboard and mouse through the VT82C42 controller on the VERA card |
+| 2. Shadow framebuffer | In progress: EmuDesk and EmuCON shown on the VERA (Oct 24, 2026). Next: VERA VSYNC as the VBL, then copying only changed rows |
+| 3. Input | Next: keyboard and mouse through the VT82C42 controller on the VERA card |
 | 4. Native driver | Not started |
 
 ## Hardware

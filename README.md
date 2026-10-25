@@ -92,6 +92,7 @@ Hooks in existing files:
 | `FORMAT.C` | Format a floppy: `format a:` (1.44 MB) or `format a: dd` (720 KB) |
 | `DISKBNCH.C` | Disk speed test: raw sector reads, file write and file read |
 | `SECDUMP.C` | Hex dump of a physical sector, with its partition table: `secdump 26` |
+| `VERATEST.C` | VERA card test: registers, VRAM, a 640x400 test card, vertical blank, keyboard and mouse, parallel port |
 
 ## Known limitations
 
@@ -109,8 +110,8 @@ The detailed plan, with checklists and experiments, is in [EmuTOS on the Mini-68
 | --- | --- | --- |
 | 0. Groundwork | Toolchain, machine target, load-and-test loop | Done |
 | 1. Serial EmuTOS | EmuTOS with disks on the serial console; build a C program on the board | Done |
-| 2. GEM on VERA | GEM desktop shown on the VERA card | Waiting for the VERA card |
-| 3. Keyboard and mouse | Input through the VT82C42 controller on the VERA card | Waiting for the VERA card |
+| 2. GEM on VERA | GEM desktop shown on the VERA card | In progress: the desktop is displayed (`make mini-68k WITH_AES=1`) |
+| 3. Keyboard and mouse | Input through the VT82C42 controller on the VERA card | Next |
 | 4. Native VERA driver | VDI and console drawing straight to VERA, colour modes | Later |
 
 - **Phase 2** copies changed rows of the existing 640×400 monochrome RAM screen to VERA's 1-bit bitmap mode. Work starts by checking copy speed, the display mode and the VERA vertical-blank interrupt. That interrupt has to come through an NS32202 input, because the CPU has no other usable interrupt level.

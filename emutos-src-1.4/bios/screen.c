@@ -36,6 +36,7 @@
 #include "bdosbind.h"
 #include "amiga.h"
 #include "lisa.h"
+#include "mini68k.h"
 #include "nova.h"
 
 void detect_monitor_change(void);
@@ -629,9 +630,10 @@ void screen_init_mode(void)
 #endif
 
 #ifdef MACHINE_MINI68K
-    /* No video hardware yet: use an 80-column monochrome screen in RAM,
-     * the same 640x400 mode that will later be shown on the VERA card */
+    /* An 80-column monochrome screen in RAM (ST high), copied to the VERA
+     * card if there is one; otherwise only the serial console is used */
     sshiftmod = ST_HIGH;
+    mini68k_vera_init();
 #endif
 
     rez_was_hacked = FALSE; /* initial assumption */
@@ -1037,6 +1039,8 @@ const UBYTE *physbase(void)
     return amiga_physbase();
 #elif defined(MACHINE_LISA)
     return lisa_physbase();
+#elif defined(MACHINE_MINI68K)
+    return mini68k_physbase();
 #elif CONF_WITH_ATARI_VIDEO
     return atari_physbase();
 #else
@@ -1055,6 +1059,8 @@ static void setphys(const UBYTE *addr)
     amiga_setphys(addr);
 #elif defined(MACHINE_LISA)
     lisa_setphys(addr);
+#elif defined(MACHINE_MINI68K)
+    mini68k_setphys(addr);
 #elif CONF_WITH_ATARI_VIDEO
     atari_setphys(addr);
 #endif

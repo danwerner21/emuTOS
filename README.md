@@ -19,9 +19,9 @@ EmuTOS boots on the board from a CF card and runs the GEM desktop on a VERA vide
 | MF/PIC: IDE | 82C55 parallel-port IDE (PPIDE) | `0x44`–`0x47` | Working: about 164 KB/s raw read |
 | DiskIO v2/v3: IDE | 82C55 parallel-port IDE | set in BIOS Setup (e.g. `0x20`) | Working |
 | DiskIO v3: floppy | SMC FDC9266 (765 compatible), polled | DiskIO port + `0x16` (e.g. `0x36`–`0x38`) | Working: 1.44 MB and 720 KB read, write and format |
-| Dual-SD | bit-banged SPI | set in BIOS Setup (e.g. `0x08`) | Socket 0 working. Socket 1 is supported but untested, because of a hardware fault on the test board |
+| Dual-SD | bit-banged SPI | set in BIOS Setup (e.g. `0x08`) | Working: both sockets |
 | VERA card: video | VERA (FPGA) | `0x80`–`0x9F` | Working: ST high (640×400, 2 colours), ST medium (640×200, 4 colours), ST low (320×200, 16 colours); mouse pointer as a VERA sprite. See [VERA card read bug](#vera-card-read-bug) |
-| VERA card: keyboard and mouse | VT82C42 (8042 compatible), polled | `0xA0`–`0xA1` | Mouse working. Keyboard hardware confirmed with VERATEST; the EmuTOS keyboard driver is being tested |
+| VERA card: keyboard and mouse | VT82C42 (8042 compatible), polled | `0xA0`–`0xA1` | Working: keyboard and mouse |
 | VERA card: parallel port | PC-style printer port | `0xA4`–`0xA6` | Not supported yet |
 | Dual DMA IDE | — | — | Not supported |
 
@@ -127,12 +127,11 @@ Hooks in existing files:
 - **VERA reads don't auto-increment** on the current card. EmuTOS works around it at some cost in speed; see [VERA card read bug](#vera-card-read-bug).
 - **Direct mode doesn't show programs that write to screen memory themselves** (many games and some Line-A programs). Build with `VERA_DIRECT=0` for those.
 - **Colour drawing is slower than mono**, because each byte holds fewer pixels and the read-back fallback converts between bit planes and VERA pixels both ways. Icons and menus in ST low show it most.
-- **Keyboard:** the EmuTOS keyboard driver is still being tested on real hardware.
 - **VERATEST conflicts with EmuTOS's drivers**, because both use the VERA and the keyboard controller. Its keyboard test can also report "unexpected" replies when the keyboard's power-up byte is still waiting; running the test again gives clean results.
 - **Parallel port:** not supported yet, so there's no printing.
 - **Programs that use Atari hardware directly** (sound chip, shifter registers, blitter) don't work.
 - **Floppy:** reads retry about 1 sector in 18, because of the timer interrupt, and each retry costs one disk revolution. Only one drive (`A:`) is supported.
-- **Dual-SD** transfers are slow, because the SPI is bit-banged. Socket 1 is untested, because of a hardware fault on the test board.
+- **Dual-SD** transfers are slow, because the SPI is bit-banged.
 - **Serial:** flow control is recorded by `Rsconf` but not implemented. Baud rates without an Atari code, such as 38400, can be set in the BIOS Setup but not from EmuTOS.
 
 ## Plans
@@ -144,15 +143,14 @@ The detailed plan, with checklists and experiments, is in [EmuTOS on the Mini-68
 | 0. Groundwork | Toolchain, machine target, load-and-test loop | Done |
 | 1. Serial EmuTOS | EmuTOS with disks on the serial console; build a C program on the board | Done |
 | 2. GEM on VERA | GEM desktop on the VERA card | Done: shadow copy of changed rows at the VERA VSYNC |
-| 3. Keyboard and mouse | Input through the VT82C42 on the VERA card | Mouse done. Keyboard hardware confirmed; EmuTOS keyboard being tested |
+| 3. Keyboard and mouse | Input through the VT82C42 on the VERA card | Done: keyboard and mouse working |
 | 4. Colour and direct drawing | ST low and medium colour; drawing straight into the VERA | Done: direct mode is the default, in all three resolutions; shadow copy kept as an option |
 
 Next steps:
 1. **Card read fix:** finish the V1.1 CS-stretch rework, and the address latch if needed. Then switch the EmuTOS read loops to sequential reads, which halves the cost of every screen read.
-2. **Keyboard:** finish testing in EmuTOS (EmuCON, desktop shortcuts, arrows, keypad, F11/F12 as Undo/Help).
-3. **Printer:** a driver for the card's parallel port, so `Cprnout` and desktop printing work.
-4. **VERATEST:** update it to work alongside EmuTOS's drivers, and to skip stale keyboard bytes.
-5. **Direct mode:** convert the remaining read-back routines to native VERA drawing, busiest first.
+2. **Printer:** a driver for the card's parallel port, so `Cprnout` and desktop printing work.
+3. **VERATEST:** update it to work alongside EmuTOS's drivers, and to skip stale keyboard bytes.
+4. **Direct mode:** convert the remaining read-back routines to native VERA drawing, busiest first.
 
 ## Repository layout
 

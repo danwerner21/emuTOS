@@ -11,7 +11,7 @@ The plan is to bring EmuTOS up on the serial console first, then run GEM on the 
 | 0. Groundwork | Done |
 | 1. Serial EmuTOS | Done. Exit test passed: Sozobon C built and ran hello-world on the board (about 45 s) |
 | 2. Shadow framebuffer | Done: EmuDesk and EmuCON on the VERA, changed-row copying at the VERA VSYNC (Oct 24, 2026) |
-| 3. Input | Mouse working on the desktop (Oct 24, 2026); keyboard hardware confirmed with VERATEST (Oct 25, 2026), EmuTOS keyboard being tested |
+| 3. Input | Mouse working on the desktop (Oct 24, 2026); keyboard working in EmuTOS (Oct 25, 2026) |
 | 4. Colour and direct | Colour through the shadow copy working (Oct 24, 2026); direct mode working in all three resolutions and the default (Oct 25, 2026) |
 
 ## Hardware
@@ -86,7 +86,7 @@ Each row is confirmed. The last column says how it shaped the port.
 **Known gaps**
 
 - Floppy: format works (FORMAT.TTP in mini68k-tests, or XBIOS Flopfmt); about 1 sector in 18 needs a retry because of the timer interrupt, which costs one revolution.
-- Dual-SD socket 1: supported by the driver (presence is decided by starting the card, not by card detect), but not tested: socket 1 on this board has a confirmed hardware fault.
+- Dual-SD socket 1: supported by the driver (presence is decided by starting the card, not by card detect). The socket fault on the test board was repaired, and socket 1 is confirmed working (Oct 25, 2026).
 - The RTC can be set with SETCLOCK.TTP (mini68k-tests).
 - Serial flow control is recorded by `Rsconf` but not implemented.
 - Baud rates without an Atari `Rsconf` code (such as 38400) can be set in the BIOS Setup and are kept, but cannot be selected from EmuTOS.

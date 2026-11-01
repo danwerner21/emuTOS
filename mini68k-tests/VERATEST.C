@@ -13,6 +13,12 @@
  * VERA register layout from the VERA programmer's reference. The tests
  * cover experiments E6-E8 of the port plan: copy speed, the 640x400 1 bpp
  * bitmap mode and the vertical blank, plus keyboard, mouse and printer.
+ *
+ * Under an EmuTOS with the VERA drivers (it publishes the 'VERA' cookie),
+ * the tests share the card with EmuTOS and fVDI: they hold the busy flag
+ * while they use the VERA ports, save the screen before the tests that
+ * overwrite it and restore it afterwards (printing their results only
+ * then), and borrow the keyboard controller for the keyboard test.
  */
 
 #include <stdio.h>
@@ -83,6 +89,51 @@ int p;
 /* NS32202 interrupt pending register (MF/PIC), low byte: IR0-IR7 */
 #define ICU_IPND        (*(unsigned char *)0xffff8640L)
 
+/*
+ * EmuTOS's 'VERA' cookie (emutos-src-1.4/bios/mini68k.h). While *busy is
+ * non-zero, EmuTOS's VBL and fVDI's mouse routine leave the VERA ports
+ * alone. kbd_hold(1L) stops EmuTOS polling the keyboard controller, and
+ * kbd_hold(0L) sets up the keyboard and mouse again (version 2 on).
+ */
+#define COOKIE_VERA     0x56455241L     /* 'VERA' */
+
+struct vera_cookie {
+    int version;
+    int reserved;
+    unsigned char *busy;
+    long (*take_over)();
+    long (*release_hook)();             /* set by fVDI's VERA driver */
+    long (*kbd_hold)();
+};
+
+static struct vera_cookie *cookie;      /* 0: no EmuTOS drivers */
+
+static void find_cookie()
+{
+    long *jar = *(long **)0x5a0L;       /* _p_cookies */
+
+    cookie = 0;
+    if (jar == 0)
+        return;
+    for ( ; jar[0] != 0; jar += 2)
+        if (jar[0] == COOKIE_VERA) {
+            cookie = (struct vera_cookie *)jar[1];
+            return;
+        }
+}
+
+static void vera_hold()                 /* keep EmuTOS and fVDI off the ports */
+{
+    if (cookie)
+        (*cookie->busy)++;
+}
+
+static void vera_release()
+{
+    if (cookie && --(*cookie->busy) == 0 && cookie->release_hook)
+        (*cookie->release_hook)();      /* a mouse move that waited */
+}
+
 static long ticks()                     /* 200 Hz system timer */
 {
     return *(long *)0x4baL;
@@ -141,17 +192,133 @@ long base;
 /* Find the card: return 1 and set io_base, or return 0 */
 static int find_card()
 {
-    if (vera_answers(0xffff8000L)) {
+    int found;
+
+    vera_hold();
+    found = vera_answers(0xffff8000L) ? 1 : vera_answers(0xffff0000L) ? 2 : 0;
+    vera_release();
+
+    if (found == 1)
         printf("VERA found at 0xffff8080 (ports with A8-A15 = 0x80, like the BIOS)\n");
-        return 1;
-    }
-    if (vera_answers(0xffff0000L)) {
+    else if (found == 2)
         printf("VERA found at 0xffff0080 (the card decodes A8-A15 = 0)\n");
-        return 1;
+    else {
+        io_base = 0xffff8000L;
+        printf("VERA not found at 0xffff8080 or 0xffff0080: the tests will not work\n");
     }
-    io_base = 0xffff8000L;
-    printf("VERA not found at 0xffff8080 or 0xffff0080: the tests will not work\n");
-    return 0;
+    return found != 0;
+}
+
+/*
+ * Saving the screen, for the tests that overwrite VRAM or change the
+ * mode while EmuTOS uses the card. Everything below the PSG, palette
+ * and sprite attributes is saved, with the display and layer registers.
+ * Reads set the address for each byte: on the current card, data port
+ * reads do not step it (see test 7).
+ */
+static unsigned char *screen_save;
+static int reg_save[23];
+
+static void vram_read(buf, count)       /* VRAM from address 0 */
+unsigned char *buf;
+long count;
+{
+    unsigned char *d = &IO(V_DATA0);
+    long n;
+
+    vera_addr(0L, 0);
+    for (n = 0; n < count; n++) {
+        if ((n & 0xff) == 0) {          /* new 256-byte page */
+            IO(V_ADDR_M) = n >> 8;
+            IO(V_ADDR_H) = (n >> 16) & 1;
+        }
+        IO(V_ADDR_L) = n;
+        buf[n] = *d;
+    }
+}
+
+static void vram_write(buf, count)      /* VRAM from address 0 */
+unsigned char *buf;
+long count;
+{
+    unsigned char *d = &IO(V_DATA0);
+
+    vera_addr(0L, INC1);
+    while (count-- > 0)
+        *d = *buf++;
+}
+
+/* IEN, DC0-DC3 with DCSEL 0 and 1, layer 0 and 1 registers (0x0d-0x1a) */
+static void regs_save()
+{
+    int i, n = 0;
+
+    IO(V_CTRL) = 0;
+    reg_save[n++] = inb(V_IEN);
+    for (i = 0; i < 4; i++)
+        reg_save[n++] = inb(V_DC0 + i);
+    IO(V_CTRL) = 1 << 1;
+    for (i = 0; i < 4; i++)
+        reg_save[n++] = inb(V_DC0 + i);
+    IO(V_CTRL) = 0;
+    for (i = V_L0_CONFIG; i <= VERA + 0x1a; i++)
+        reg_save[n++] = inb(i);
+}
+
+static void regs_restore()
+{
+    int i, n = 0;
+
+    IO(V_CTRL) = 0;
+    IO(V_IEN) = reg_save[n++];
+    for (i = 0; i < 4; i++)
+        IO(V_DC0 + i) = reg_save[n++];
+    IO(V_CTRL) = 1 << 1;
+    for (i = 0; i < 4; i++)
+        IO(V_DC0 + i) = reg_save[n++];
+    IO(V_CTRL) = 0;
+    for (i = V_L0_CONFIG; i <= VERA + 0x1a; i++)
+        IO(i) = reg_save[n++];
+}
+
+/* Under EmuTOS: hold the VERA and save the screen. Return 0 if there
+ * is not enough memory (then the test must not run). Print nothing
+ * between this and screen_restore(): the console draws into the VERA. */
+static int screen_keep()
+{
+    long m;
+
+    if (!cookie)
+        return 1;                       /* nobody else uses the card */
+    if (!screen_save) {
+        m = Malloc(VRAM_TEST_END);
+        if (m <= 0) {
+            printf("Not enough memory to save the screen (%ld bytes)\n", VRAM_TEST_END);
+            return 0;
+        }
+        screen_save = (unsigned char *)m;
+    }
+    printf("Saving the screen; it comes back after the test\n");
+    vera_hold();
+    regs_save();
+    vram_read(screen_save, VRAM_TEST_END);
+    return 1;
+}
+
+static void screen_restore()
+{
+    if (!cookie)
+        return;
+    vram_write(screen_save, VRAM_TEST_END);
+    regs_restore();
+    vera_release();
+}
+
+/* Empty the console's key buffer */
+static void flush_keys()
+{
+    while (key_waiting())
+        get_key();
 }
 
 /*
@@ -164,31 +331,38 @@ static void test_vera_id()
     printf("\n");
     find_card();
 
+    vera_hold();
     IO(V_CTRL) = 63 << 1;               /* DCSEL = 63: version */
     for (i = 0; i < 4; i++)
         v[i] = inb(V_DC0 + i);
     IO(V_CTRL) = 0;
+    for (i = 0; i < 32; i++)
+        r[i] = inb(VERA + i);
+    vera_release();
+
     if (v[0] == 'V')
         printf("Firmware version: %d.%d.%d\n", v[1], v[2], v[3]);
     else
         printf("No version signature (read %02x %02x %02x %02x): older firmware?\n",
                v[0], v[1], v[2], v[3]);
 
-    for (i = 0; i < 32; i++)
-        r[i] = inb(VERA + i);
     printf("Registers 00-1f (DCSEL = 0):\n");
     for (i = 0; i < 32; i++)
         printf("%02x%s", r[i], (i % 16) == 15 ? "\n" : " ");
 }
 
 /*
- * 2. VRAM: write and read back with two patterns, and time it
+ * 2. VRAM: write and read back with two patterns, and time it. The
+ *    results are kept and printed afterwards, since under EmuTOS the
+ *    console draws into the VRAM being tested.
  */
+static long pass_time[2], pass_errors[2], pass_where[2][8];
+
 static int vram_pass(invert)
 int invert;
 {
     unsigned char *d = &IO(V_DATA0);
-    long n, t0, t1, errors = 0;
+    long n, t0, errors = 0;
     unsigned char v;
 
     vera_addr(0L, INC1);
@@ -197,9 +371,7 @@ int invert;
         v = (n ^ (n >> 8) ^ (n >> 16)) & 0xff;
         *d = invert ? ~v : v;
     }
-    t1 = ticks();
-    printf("  write %ld bytes: %ld.%02ld s\n", VRAM_TEST_END,
-           (t1 - t0) / 200, ((t1 - t0) % 200) / 2);
+    pass_time[invert] = ticks() - t0;
 
     /*
      * Read back without auto-increment, setting the address for each
@@ -218,13 +390,27 @@ int invert;
             v = ~v;
         if (*d != v) {
             if (errors < 8)
-                printf("  error at %05lx\n", n);
+                pass_where[invert][errors] = n;
             errors++;
         }
     }
-    printf("  read back: %ld errors\n", errors);
+    pass_errors[invert] = errors;
 
     return errors == 0;
+}
+
+static void report_pass(title, invert)
+char *title;
+int invert;
+{
+    long t = pass_time[invert];
+    int i;
+
+    printf("%s\n", title);
+    printf("  write %ld bytes: %ld.%02ld s\n", VRAM_TEST_END, t / 200, (t % 200) / 2);
+    for (i = 0; i < 8 && i < pass_errors[invert]; i++)
+        printf("  error at %05lx\n", pass_where[invert][i]);
+    printf("  read back: %ld errors\n", pass_errors[invert]);
 }
 
 static void test_vram()
@@ -232,10 +418,14 @@ static void test_vram()
     int ok;
 
     printf("\nVRAM test, 0x00000-0x%05lx (overwrites the screen)\n", VRAM_TEST_END - 1);
-    printf("Pattern 1:\n");
+    if (!screen_keep())
+        return;
     ok = vram_pass(0);
-    printf("Pattern 2 (inverted):\n");
     ok &= vram_pass(1);
+    screen_restore();
+
+    report_pass("Pattern 1:", 0);
+    report_pass("Pattern 2 (inverted):", 1);
     printf("VRAM test %s\n", ok ? "PASSED" : "FAILED");
 }
 
@@ -263,14 +453,30 @@ int x, y;
     return 0x00;
 }
 
+static void card_checklist()
+{
+    printf("Check on the monitor:\n");
+    printf("  - a 1-pixel border on all four sides, picture centred vertically\n");
+    printf("  - near the top left, a short dash starting 8 pixels in from the border\n");
+    printf("    (if it starts 12 pixels in, the bit order is reversed: MSB = right)\n");
+    printf("  - vertical bars, a checkerboard and a fine grey dither, all stable\n");
+}
+
 static void test_card()
 {
     unsigned char *d = &IO(V_DATA0);
     static unsigned char frame[80];
     int x, y;
-    long t0, t1;
+    long t0, t_frame, t_copy;
 
     printf("\nTest card: 640x400, 1 bpp, bitmap at VRAM 0x00000\n");
+    if (cookie) {
+        card_checklist();
+        printf("The test card stays up until you press a key.\n");
+    }
+    if (!screen_keep())
+        return;
+    flush_keys();
 
     IO(V_CTRL) = 0;                     /* DCSEL = 0 */
     IO(V_DC0) = 0x00;                   /* video off while setting up */
@@ -299,21 +505,16 @@ static void test_card()
         for (x = 0; x < 80; x++)        /* only this loop is the copy */
             *d = frame[x];
     }
-    t1 = ticks();
+    t_frame = ticks() - t0;
 
     IO(V_DC0) = 0x11;                   /* VGA output, layer 0 only */
-
-    printf("Frame drawn in %ld.%02ld s (includes building the rows)\n",
-           (t1 - t0) / 200, ((t1 - t0) % 200) / 2);
 
     vera_addr(0L, INC1);                /* copy timing alone */
     t0 = ticks();
     for (y = 0; y < 400; y++)
         for (x = 0; x < 80; x++)
             *d = frame[x];
-    t1 = ticks();
-    printf("Copy of 32000 bytes alone: %ld.%02ld s (target: under 0.15 s in assembly)\n",
-           (t1 - t0) / 200, ((t1 - t0) % 200) / 2);
+    t_copy = ticks() - t0;
 
     /* redraw the real card (the timing loop above repeated the last row) */
     vera_addr(0L, INC1);
@@ -321,40 +522,70 @@ static void test_card()
         for (x = 0; x < 80; x++)
             *d = card_byte(x, y);
 
-    printf("Check on the monitor:\n");
-    printf("  - a 1-pixel border on all four sides, picture centred vertically\n");
-    printf("  - near the top left, a short dash starting 8 pixels in from the border\n");
-    printf("    (if it starts 12 pixels in, the bit order is reversed: MSB = right)\n");
-    printf("  - vertical bars, a checkerboard and a fine grey dither, all stable\n");
+    if (cookie) {
+        get_key();
+        screen_restore();
+    }
+
+    printf("Frame drawn in %ld.%02ld s (includes building the rows)\n",
+           t_frame / 200, (t_frame % 200) / 2);
+    printf("Copy of 32000 bytes alone: %ld.%02ld s (target: under 0.15 s in assembly)\n",
+           t_copy / 200, (t_copy % 200) / 2);
+    if (!cookie)
+        card_checklist();
 }
 
 /*
- * 4. Vertical blank: count VSYNC flags and look for the interrupt line
+ * 4. Vertical blank: count VSYNC flags and look for the interrupt line.
+ *    Under EmuTOS, its timer interrupt takes the VSYNC flags (they are
+ *    its VBL), so the test counts EmuTOS's VBLs instead.
  */
+static int ipnd_seen(n)                 /* IR0-IR7 pending at any time in n ticks */
+long n;
+{
+    long end = ticks() + n;
+    int seen = 0;
+
+    while (ticks() < end)
+        seen |= ICU_IPND;
+    return seen & 0xff;
+}
+
 static void test_vsync()
 {
     long end, count = 0;
     int before, during;
 
-    printf("\nVertical blank (VSYNC), polled for 2 seconds\n");
-
-    IO(V_ISR) = 0x01;                   /* clear a pending VSYNC */
-    before = ICU_IPND;
-    IO(V_IEN) = 0x01;                   /* enable the VSYNC interrupt */
-
-    end = ticks() + 400;
-    while (ticks() < end) {
-        if (IO(V_ISR) & 0x01) {
-            count++;
-            IO(V_ISR) = 0x01;           /* acknowledge */
+    if (cookie) {
+        printf("\nVertical blank: EmuTOS's VBL (_frclock), counted for 2 seconds\n");
+        count = *(long *)0x466L;
+        wait_ticks(400L);
+        count = *(long *)0x466L - count;
+        printf("%ld VBLs in 2 s: %ld.%ld Hz (60: VERA VSYNC; 50: timer fallback)\n",
+               count, count / 2, (count % 2) * 5);
+    } else {
+        printf("\nVertical blank (VSYNC), polled for 2 seconds\n");
+        IO(V_ISR) = 0x01;               /* clear a pending VSYNC */
+        end = ticks() + 400;
+        while (ticks() < end) {
+            if (IO(V_ISR) & 0x01) {
+                count++;
+                IO(V_ISR) = 0x01;       /* acknowledge */
+            }
         }
+        printf("%ld VSYNCs in 2 s: %ld.%ld Hz (expected 60)\n",
+               count, count / 2, (count % 2) * 5);
     }
-    printf("%ld VSYNCs in 2 s: %ld.%ld Hz (expected 60)\n",
-           count, count / 2, (count % 2) * 5);
 
-    /* leave one VSYNC pending, so that the IRQ line stays active */
-    wait_ticks(10L);
-    during = ICU_IPND;
+    /*
+     * The interrupt line: watch the pending register with the VSYNC
+     * interrupt off, then on. EmuTOS may clear the flag within 5 ms,
+     * so it is sampled continuously.
+     */
+    IO(V_IEN) = 0x00;
+    before = ipnd_seen(20L);
+    IO(V_IEN) = 0x01;                   /* enable the VSYNC interrupt */
+    during = ipnd_seen(20L);
     IO(V_IEN) = 0x00;
     IO(V_ISR) = 0x01;
 
@@ -411,6 +642,25 @@ static void kbc_flush()
         ;
 }
 
+/* Wait for a given byte, skipping others (such as the keyboard's
+ * power-up AA still waiting). Return it, the last other byte, or -1. */
+static int kbc_expect(want, timeout)
+int want;
+long timeout;
+{
+    long end = ticks() + timeout;
+    int v, last = -1;
+
+    while (ticks() < end)
+        if (IO(KBC_STAT) & KBC_OBF) {
+            v = inb(KBC_DATA);
+            if (v == want)
+                return v;
+            last = v;
+        }
+    return last;
+}
+
 static void expect(what, got, want)
 char *what;
 int got, want;
@@ -425,36 +675,48 @@ static void test_keyboard()
 {
     int v, n, packet[3], stat;
 
+    if (cookie) {
+        if (cookie->version < 2) {
+            printf("\nThis EmuTOS can't lend the keyboard controller (VERA cookie version %d;\n",
+                   cookie->version);
+            printf("version 2 is needed): build a newer EmuTOS for this test\n");
+            return;
+        }
+        (*cookie->kbd_hold)(1L);        /* EmuTOS stops polling the controller */
+    }
+    flush_keys();
+
     printf("\nVT82C42 keyboard controller at 0xa0/0xa1, status %02x\n", inb(KBC_STAT));
     kbc_flush();
 
     kbc_command(0xaa);                  /* controller self-test */
-    expect("Controller self-test (55)", kbc_read(200L), 0x55);
+    expect("Controller self-test (55)", kbc_expect(0x55, 200L), 0x55);
     kbc_command(0xab);                  /* keyboard interface test */
-    expect("Keyboard interface test (00)", kbc_read(100L), 0x00);
+    expect("Keyboard interface test (00)", kbc_expect(0x00, 100L), 0x00);
     kbc_command(0xa9);                  /* mouse interface test */
-    expect("Mouse interface test (00)", kbc_read(100L), 0x00);
+    expect("Mouse interface test (00)", kbc_expect(0x00, 100L), 0x00);
 
     kbc_command(0x60);                  /* configuration: polled, translation on */
     kbc_write_data(0x40);
     kbc_command(0xae);                  /* enable keyboard */
     kbc_command(0xa8);                  /* enable mouse */
+    kbc_flush();                        /* bytes held while they were disabled */
 
     kbc_write_data(0xff);               /* reset keyboard */
-    expect("Keyboard reset ack (fa)", kbc_read(200L), 0xfa);
-    expect("Keyboard self-test (aa)", kbc_read(400L), 0xaa);
+    expect("Keyboard reset ack (fa)", kbc_expect(0xfa, 200L), 0xfa);
+    expect("Keyboard self-test (aa)", kbc_expect(0xaa, 400L), 0xaa);
 
     kbc_command(0xd4);                  /* next byte to the mouse */
     kbc_write_data(0xff);               /* reset mouse */
-    expect("Mouse reset ack (fa)", kbc_read(200L), 0xfa);
-    expect("Mouse self-test (aa)", kbc_read(400L), 0xaa);
-    expect("Mouse ID (00)", kbc_read(100L), 0x00);
+    expect("Mouse reset ack (fa)", kbc_expect(0xfa, 200L), 0xfa);
+    expect("Mouse self-test (aa)", kbc_expect(0xaa, 400L), 0xaa);
+    expect("Mouse ID (00)", kbc_expect(0x00, 100L), 0x00);
     kbc_command(0xd4);
     kbc_write_data(0xf4);               /* enable mouse reporting */
-    expect("Mouse enable ack (fa)", kbc_read(200L), 0xfa);
+    expect("Mouse enable ack (fa)", kbc_expect(0xfa, 200L), 0xfa);
 
     printf("Press keys on the PS/2 keyboard and move the mouse.\n");
-    printf("Press any key on the serial console to stop.\n");
+    printf("Press Esc on the PS/2 keyboard, or any key on the serial console, to stop.\n");
     n = 0;
     while (!key_waiting()) {
         stat = IO(KBC_STAT);
@@ -470,14 +732,22 @@ static void test_keyboard()
                        (packet[0] & 0x20) ? packet[2] - 256 : packet[2]);
                 n = 0;
             }
-        } else
+        } else {
             printf("Key: scancode %02x (%s)\n", v, (v & 0x80) ? "release" : "press");
+            if (v == 0x81)              /* Esc released */
+                break;
+        }
     }
-    get_key();
+    flush_keys();
 
     kbc_command(0xd4);
     kbc_write_data(0xf5);               /* disable mouse reporting */
     kbc_flush();
+
+    if (cookie) {
+        printf("Giving the keyboard and mouse back to EmuTOS\n");
+        (*cookie->kbd_hold)(0L);        /* sets them up again */
+    }
 }
 
 /*
@@ -673,9 +943,16 @@ int v[];
 
 static void test_vram_diag()
 {
-    int i, v[16];
+    int i, a[16], b[16], c[16], d[3], keep[16];
 
     printf("\nVRAM access diagnostic, addresses 0-15 (each line should count up)\n");
+
+    /* the 16 bytes are the top left of the screen: keep them */
+    vera_hold();
+    for (i = 0; i < 16; i++) {
+        vera_addr((long)i, 0);
+        keep[i] = inb(V_DATA0);
+    }
 
     /* A: no auto-increment, one address at a time */
     for (i = 0; i < 16; i++) {
@@ -684,9 +961,8 @@ static void test_vram_diag()
     }
     for (i = 0; i < 16; i++) {
         vera_addr((long)i, 0);
-        v[i] = inb(V_DATA0);
+        a[i] = inb(V_DATA0);
     }
-    show16("A. 10-1f written and read one address at a time:", v);
 
     /* B: write with auto-increment, read one address at a time */
     vera_addr(0L, INC1);
@@ -694,19 +970,30 @@ static void test_vram_diag()
         IO(V_DATA0) = 0x20 + i;
     for (i = 0; i < 16; i++) {
         vera_addr((long)i, 0);
-        v[i] = inb(V_DATA0);
+        b[i] = inb(V_DATA0);
     }
-    show16("B. 20-2f written with auto-increment, read one address at a time:", v);
 
     /* C: read with auto-increment what B wrote */
     vera_addr(0L, INC1);
     for (i = 0; i < 16; i++)
-        v[i] = inb(V_DATA0);
-    show16("C. the same bytes read with auto-increment:", v);
+        c[i] = inb(V_DATA0);
 
     /* D: where did the address end up after 16 auto-increment reads? */
+    d[0] = inb(V_ADDR_H) & 1;
+    d[1] = inb(V_ADDR_M);
+    d[2] = inb(V_ADDR_L);
+
+    for (i = 0; i < 16; i++) {
+        vera_addr((long)i, 0);
+        IO(V_DATA0) = keep[i];
+    }
+    vera_release();
+
+    show16("A. 10-1f written and read one address at a time:", a);
+    show16("B. 20-2f written with auto-increment, read one address at a time:", b);
+    show16("C. the same bytes read with auto-increment:", c);
     printf("D. address after the 16 reads of C: %02x%02x%02x (expected 000010)\n",
-           inb(V_ADDR_H) & 1, inb(V_ADDR_M), inb(V_ADDR_L));
+           d[0], d[1], d[2]);
 
     printf("If A is wrong: VRAM data path. If only B is wrong: writes step wrongly.\n");
     printf("If only C or D is wrong: reads step wrongly (e.g. a doubled RD pulse).\n");
@@ -714,9 +1001,21 @@ static void test_vram_diag()
 
 static void reset_vera()
 {
+    int c;
+
+    if (cookie) {
+        printf("\nEmuTOS is using the card: after a reset the screen stays blank\n");
+        printf("until you restart EmuTOS. Reset anyway? (y/n) ");
+        c = get_key();
+        printf("%c\n", c);
+        if ((c | 0x20) != 'y')
+            return;
+    }
+    vera_hold();
     IO(V_CTRL) = 0x80;                  /* reset */
     wait_ticks(2L);
     IO(V_CTRL) = 0;
+    vera_release();
     printf("\nVERA reset\n");
 }
 
@@ -726,7 +1025,12 @@ main()
     int c;
 
     ssp = Super(0L);                    /* the ECB I/O space is supervisor only */
+    find_cookie();
     find_card();
+    if (cookie)
+        printf("Sharing the card with EmuTOS (VERA cookie version %d)\n", cookie->version);
+    else
+        printf("No VERA cookie: the tests take the card over\n");
 
     for (;;) {
         printf("\nVERA card test\n");

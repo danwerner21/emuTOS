@@ -1,0 +1,6 @@
+struct.tab.o: struct.tab.c list.h misc.h hash.h expr.h struct.tab.h
+list.h:
+misc.h:
+hash.h:
+expr.h:
+struct.tab.h:

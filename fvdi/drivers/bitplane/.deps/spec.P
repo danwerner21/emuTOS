@@ -1,0 +1,17 @@
+spec.o: spec.c ../../include/fvdi.h ../../include/relocate.h \
+ ../../include/fvdi.h ../../include/os.h ../../drivers/include/driver.h \
+ bitplane.h ../../include/string/memset.h
+
+../../include/fvdi.h:
+
+../../include/relocate.h:
+
+../../include/fvdi.h:
+
+../../include/os.h:
+
+../../drivers/include/driver.h:
+
+bitplane.h:
+
+../../include/string/memset.h:

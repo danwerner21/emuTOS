@@ -1,0 +1,6 @@
+local_xosera_m68k_api.o: local_xosera_m68k_api.c xosera_m68k_api.h \
+ xosera_m68k_defs.h
+
+xosera_m68k_api.h:
+
+xosera_m68k_defs.h:

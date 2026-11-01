@@ -1,0 +1,119 @@
+# Handle cross compilation
+
+NATIVE_CC = gcc
+NATIVE_CFLAGS = -O2
+
+CROSS_SH=case `uname -s` in *mint*|*MINT*) echo no ;; *) echo yes ;; esac
+M68K_ATARI_MINT_CROSS := $(shell $(CROSS_SH))
+
+ifeq ($(M68K_ATARI_MINT_CROSS),yes)
+ CROSSPREFIX = m68k-atari-mint
+
+ CC     = $(CROSSPREFIX)-gcc
+ AS     = $(CROSSPREFIX)-as
+ LD     = $(CROSSPREFIX)-ld
+ AR     = $(CROSSPREFIX)-ar
+ RANLIB = $(CROSSPREFIX)-ranlib
+ STRIP  = $(CROSSPREFIX)-strip
+ FLAGS  = $(CROSSPREFIX)-flags
+else
+ CC     = gcc
+ AS     = as
+ LD     = ld
+ AR     = ar
+ RANLIB = ranlib
+ STRIP  = strip
+ FLAGS  = flags
+endif
+
+# Debug build (mainly FreeType2 debugs here)
+ifndef DEBUG
+DEBUG  = no
+endif
+
+# CPU to compile for
+ifeq ($(CPU),)
+CPU    ?= 020
+endif
+
+ifeq ($(CPU),v4e)
+	CPUOPTS = -mcpu=547x
+else
+	CPUOPTS = -m68$(CPU)
+endif
+
+DRIVER_INCLUDES = -I$(top_srcdir)/include -I$(top_srcdir)/drivers/include
+ASFLAGS = $(CPUOPTS) $(DRIVER_INCLUDES)
+
+# General compilation and optimization options (CFLAGS)
+WARNINGS = -Wall -W -Wunused -Wundef -Wstrict-prototypes -Wmissing-prototypes -Wnested-externs -Wno-declaration-after-statement
+# Warnings to use when compiling FreeType2 code
+# we do not intend to fix any warnings we inherit from the FreeType2 sources
+# consequently, we suppress most warnings here
+FT2_WARNINGS = -Wstrict-prototypes -Wmissing-prototypes -Wno-attributes
+FT2_CFLAGS = -std=gnu99 -DFT2 -I$(top_srcdir)/modules/ft2/include -I$(ft2_srcdir)/include -DFT_CONFIG_CONFIG_H="<freetype/config/ftconfig.h>" -DFT2_BUILD_LIBRARY
+
+ifeq ($(OPTS),)
+OPTS   = -O2 -fomit-frame-pointer -fno-common
+endif
+# OPTS   +=  -mshort
+ifeq ($(DEBUG),yes)
+  OPTS += -DFVDI_DEBUG
+  OPTS += -g
+else
+  LDFLAGS = -s
+endif
+
+# If building for 68000 (no long multiply instruction),
+# we need to link with libgcc.
+LIBS := $(shell $(CC) $(CPUOPTS) --print-file-name=libgcc.a)
+
+# Set these to point to the correct directories for FreeType support!
+# Note: "freetype" is expected to be symlink to the actual source tree
+ifneq (,$(wildcard $(top_srcdir)/modules/ft2/freetype))
+ft2_srcdir     = $(top_srcdir)/modules/ft2/freetype
+endif
+
+
+#
+# for silent make rules
+# use make V=1 to override
+#
+AM_DEFAULT_VERBOSITY = 0
+
+AM_V_GEN    = $(am__v_GEN_$(V))
+am__v_GEN_  = $(am__v_GEN_$(AM_DEFAULT_VERBOSITY))
+am__v_GEN_0 = @echo "  GEN     " $@;
+am__v_GEN_1 = 
+
+AM_V_at     = $(am__v_at_$(V))
+am__v_at_   = $(am__v_at_$(AM_DEFAULT_VERBOSITY))
+am__v_at_0  = @
+am__v_at_1  = 
+
+AM_V_CC     = $(am__v_CC_$(V))
+am__v_CC_   = $(am__v_CC_$(AM_DEFAULT_VERBOSITY))
+am__v_CC_0  = @echo "  CC      " $@;
+am__v_CC_1  = 
+
+AM_V_AS     = $(am__v_AS_$(V))
+am__v_AS_   = $(am__v_AS_$(AM_DEFAULT_VERBOSITY))
+am__v_AS_0  = @echo "  AS      " $@;
+am__v_AS_1  = 
+
+AM_V_LD     = $(am__v_LD_$(V))
+am__v_LD_   = $(am__v_LD_$(AM_DEFAULT_VERBOSITY))
+am__v_LD_0  = @echo "  LD      " $@;
+am__v_LD_1  = 
+
+AM_V_AR     = $(am__v_AR_$(V))
+am__v_AR_   = $(am__v_AR_$(AM_DEFAULT_VERBOSITY))
+am__v_AR_0  = @echo "  AR      " $@;
+am__v_AR_1  = 
+
+comma = ,
+empty =
+space = $(empty) $(empty)
+COMPILE.c = $(AM_V_CC)$(CC) $(CFLAGS) $(CPPFLAGS) $(TARGET_ARCH) -MT $@ -MMD -MP -MF .deps/$(@F:.o=.P) -c
+COMPILE.s = $(AM_V_AS)$(CC) -x assembler-with-cpp $(ASFLAGS) $(SYMBOLS) $(addprefix,-Wa$(comma),$(DRIVER_INCLUDES)) $(TARGET_ARCH) -c
+COMPILE.S = $(AM_V_AS)$(CC) $(ASFLAGS) -Dgas=1 -Dlattice=0 $(TARGET_ARCH) -c

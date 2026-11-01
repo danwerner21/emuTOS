@@ -1,0 +1,6 @@
+expr.o: expr.c misc.h hash.h expr.h list.h memory.h
+misc.h:
+hash.h:
+expr.h:
+list.h:
+memory.h:

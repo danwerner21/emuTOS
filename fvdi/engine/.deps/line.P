@@ -1,0 +1,22 @@
+line.o: line.c ../include/fvdi.h ../include/function.h ../include/fvdi.h \
+ ../include/relocate.h ../modules/include/string.h \
+ ../modules/include/libkern.h ../include/utility.h ../include/globals.h \
+ ../include/relocate.h
+
+../include/fvdi.h:
+
+../include/function.h:
+
+../include/fvdi.h:
+
+../include/relocate.h:
+
+../modules/include/string.h:
+
+../modules/include/libkern.h:
+
+../include/utility.h:
+
+../include/globals.h:
+
+../include/relocate.h:

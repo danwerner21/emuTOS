@@ -1,0 +1,13 @@
+# Rename this file to FVDI.SYS if you want to use it.
+# Make sure the driver name below corresponds to the mode
+# your screen is currently in.
+#
+# With the fVDI directory topped, double click FVDI.PRG.
+# The device driver will be fetched from .\GEMSYS and the
+# normal system font from the ROM will be used.
+#
+# Double click REMOVE.PRG to uninstall once you're done testing.
+standalone
+debug debug debug
+#01r xosera.sys xosera_base 0xff81c1 enable_timer_b
+01r xosera.sys      

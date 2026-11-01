@@ -1,0 +1,5 @@
+vera_xbios.o: vera_xbios.c vera.h ../../include/fvdi.h
+
+vera.h:
+
+../../include/fvdi.h:

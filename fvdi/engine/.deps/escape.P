@@ -1,0 +1,20 @@
+escape.o: escape.c ../include/fvdi.h ../include/function.h \
+ ../include/fvdi.h ../include/os.h ../include/globals.h \
+ ../include/relocate.h ../modules/include/string.h \
+ ../modules/include/libkern.h
+
+../include/fvdi.h:
+
+../include/function.h:
+
+../include/fvdi.h:
+
+../include/os.h:
+
+../include/globals.h:
+
+../include/relocate.h:
+
+../modules/include/string.h:
+
+../modules/include/libkern.h:

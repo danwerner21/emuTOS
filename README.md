@@ -22,7 +22,7 @@ EmuTOS boots on the board from a CF card and runs the GEM desktop on a VERA vide
 | Dual-SD | bit-banged SPI | set in BIOS Setup (e.g. `0x08`) | Working: both sockets |
 | VERA card: video | VERA (FPGA) | `0x80`–`0x9F` | Working: ST high (640×400, 2 colours), ST medium (640×200, 4 colours), ST low (320×200, 16 colours); mouse pointer as a VERA sprite. See [VERA card read bug](#vera-card-read-bug) |
 | VERA card: keyboard and mouse | VT82C42 (8042 compatible), polled | `0xA0`–`0xA1` | Working: keyboard and mouse |
-| VERA card: parallel port | PC-style printer port | `0xA4`–`0xA6` | Driver written (`bios/parport.c`); the card needs the strobe wire (see below) |
+| VERA card: parallel port | PC-style printer port | `0xA4`–`0xA6` | Working (`bios/parport.c`); V1.1 cards need the strobe wire (see below) |
 | Dual DMA IDE | — | — | Not supported |
 
 The MF/PIC board is required, at base port `0x40`. The VERA card is needed for the desktop.
@@ -122,15 +122,13 @@ Hooks in existing files:
 | `FORMAT.C` | Format a floppy: `format a:` (1.44 MB) or `format a: dd` (720 KB) |
 | `DISKBNCH.C` | Disk speed test: raw sector reads, file write and file read |
 | `SECDUMP.C` | Hex dump of a physical sector, with its partition table: `secdump 26` |
-| `VERATEST.C` | VERA card test: registers, VRAM, a 640x400 test card, vertical blank, keyboard and mouse, parallel port, VRAM access diagnostic |
+| `VERATEST.C` | VERA card test: registers, VRAM, a 640x400 test card, vertical blank, keyboard and mouse, parallel port, VRAM access diagnostic. Runs under EmuTOS, with or without fVDI: it saves and restores the screen around the tests that overwrite it, and borrows the keyboard controller for the keyboard test |
 
 ## Known bugs and limitations
 
 - **VERA reads don't auto-increment** on the current card. EmuTOS works around it at some cost in speed; see [VERA card read bug](#vera-card-read-bug).
 - **Direct mode doesn't show programs that write to screen memory themselves** (many games and some Line-A programs). Build with `VERA_DIRECT=0` for those.
 - **Colour drawing is slower than mono**, because each byte holds fewer pixels and the read-back fallback converts between bit planes and VERA pixels both ways. Icons and menus in ST low show it most.
-- **VERATEST conflicts with EmuTOS's drivers**, because both use the VERA and the keyboard controller. Its keyboard test can also report "unexpected" replies when the keyboard's power-up byte is still waiting; running the test again gives clean results.
-- **Parallel port:** not supported yet, so there's no printing.
 - **Programs that use Atari hardware directly** (sound chip, shifter registers, blitter) don't work.
 - **Floppy:** reads retry about 1 sector in 18, because of the timer interrupt, and each retry costs one disk revolution. Only one drive (`A:`) is supported.
 - **Dual-SD** transfers are slow, because the SPI is bit-banged.
@@ -147,15 +145,13 @@ The detailed plan, with checklists and experiments, is in [EmuTOS on the Mini-68
 | 2. GEM on VERA | GEM desktop on the VERA card | Done: shadow copy of changed rows at the VERA VSYNC |
 | 3. Keyboard and mouse | Input through the VT82C42 on the VERA card | Done: keyboard and mouse working |
 | 4. Colour and direct drawing | ST low and medium colour; drawing straight into the VERA | Done: direct mode is the default, in all three resolutions; shadow copy kept as an option |
-| 5. fVDI | fVDI with a VERA driver: 640×240 at 16 colours, then 640×400 | 640×240 and 640×400 working on the board (16 colours, no crashes) |
+| 5. fVDI | fVDI with a VERA driver: 640×240 at 16 colours, then 640×400 | Working on the board: 640×240 and 640×400 at 16 colours, XBIOS palette calls, mouse pointer as a sprite |
 
-**fVDI (phase 5).** [fVDI](https://github.com/freemint/fvdi), the replacement VDI used on Rob Gowin's BITSY MK I (a 68000 board with a Xosera video card; his distribution is in `bitsy/`), now has a VERA driver in `fvdi/fvdi/drivers/vera/`. fVDI is loaded from the `AUTO` folder and replaces EmuTOS's VDI for GEM. The driver sets the VERA to 640×240 at 16 colours (or 640×400 with the `640x400` option), and draws everything with the CPU through the VERA ports: fills, lines, text and mono icons, blits with all 16 logic operations, pixels, the palette, and the mouse pointer as a sprite. EmuTOS publishes a `VERA` cookie for it: the driver tells EmuTOS when it takes the VERA over, so that EmuTOS's VBL leaves the mode, palette and sprites alone and its text console switches to the new screen size, and they share a busy flag so they never use the VERA ports at the same time. This needs the default (direct) EmuTOS build.
+**fVDI (phase 5).** [fVDI](https://github.com/freemint/fvdi), the replacement VDI used on Rob Gowin's BITSY MK I (a 68000 board with a Xosera video card; his distribution is in `bitsy/`), now has a VERA driver in `fvdi/drivers/vera/`. fVDI is loaded from the `AUTO` folder and replaces EmuTOS's VDI for GEM. The driver sets the VERA to 640×240 at 16 colours (or 640×400 with the `640x400` option), and draws everything with the CPU through the VERA ports: fills, lines, text and mono icons, blits with all 16 logic operations, pixels, the palette, and the mouse pointer as a sprite. EmuTOS publishes a `VERA` cookie for it: the driver tells EmuTOS when it takes the VERA over, so that EmuTOS's VBL leaves the mode, palette and sprites alone and its text console switches to the new screen size, and they share a busy flag so they never use the VERA ports at the same time. This needs the default (direct) EmuTOS build.
 
 Next steps:
-1. **Card read fix:** finish the V1.1 CS-stretch rework, and the address latch if needed. Then switch the EmuTOS read loops to sequential reads, which halves the cost of every screen read.
-2. **Printer:** a driver for the card's parallel port, so `Cprnout` and desktop printing work.
-3. **VERATEST:** update it to work alongside EmuTOS's drivers, and to skip stale keyboard bytes.
-4. **Direct mode:** convert the remaining read-back routines to native VERA drawing, busiest first.
+1. **fVDI speed, second pass:** diagonal lines and the pixel calls.
+2. **Card read fix:** finish the V1.1 CS-stretch rework, and the address latch if needed. Then switch the fVDI driver and the EmuTOS read loops to sequential reads, which halves the cost of every screen read.
 
 ## Repository layout
 
@@ -163,7 +159,7 @@ Next steps:
 | --- | --- |
 | `emutos-src-1.4/` | EmuTOS 1.4 source, with the Mini-M68k port |
 | `mini68k-tests/` | Utilities and test programs for the board (Sozobon C) |
-| `fvdi/` | fVDI source (Rob Gowin's fork, `xosera` branch), with the Mini-M68k VERA driver in `fvdi/drivers/vera/` |
+| `fvdi/` | fVDI source (from Rob Gowin's fork, `xosera` branch), with the Mini-M68k VERA driver in `fvdi/drivers/vera/`. Build with `cd fvdi && make CPU=000` |
 | `bitsy/` | Rob Gowin's BITSY MK I software distribution, for reference |
 | `EmuTOS on the Mini-68K port plan.md` | Port plan and status; the `.pdf` is an older export |
 | `X16 Reference - 09 - VERA Programmer's Reference.md` | The VERA programmer's reference, used for the video driver |

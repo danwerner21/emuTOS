@@ -1,0 +1,17 @@
+bconout.o: bconout.c ../include/fvdi.h ../include/relocate.h \
+ ../include/fvdi.h ../modules/include/string.h \
+ ../modules/include/libkern.h ../include/utility.h ../include/function.h
+
+../include/fvdi.h:
+
+../include/relocate.h:
+
+../include/fvdi.h:
+
+../modules/include/string.h:
+
+../modules/include/libkern.h:
+
+../include/utility.h:
+
+../include/function.h:

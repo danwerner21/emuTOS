@@ -1,0 +1,15 @@
+16b_pal.o: 16b_pal.c palette.c ../../include/fvdi.h \
+ ../../include/relocate.h ../../include/fvdi.h \
+ ../../drivers/include/driver.h aranym.h
+
+palette.c:
+
+../../include/fvdi.h:
+
+../../include/relocate.h:
+
+../../include/fvdi.h:
+
+../../drivers/include/driver.h:
+
+aranym.h:

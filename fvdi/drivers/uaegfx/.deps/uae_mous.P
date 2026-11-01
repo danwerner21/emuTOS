@@ -1,0 +1,21 @@
+uae_mous.o: uae_mous.c ../../include/fvdi.h \
+ ../../drivers/include/driver.h ../../include/relocate.h \
+ ../../include/fvdi.h uaegfx.h types.h uaelib.h p96.h aos.h
+
+../../include/fvdi.h:
+
+../../drivers/include/driver.h:
+
+../../include/relocate.h:
+
+../../include/fvdi.h:
+
+uaegfx.h:
+
+types.h:
+
+uaelib.h:
+
+p96.h:
+
+aos.h:

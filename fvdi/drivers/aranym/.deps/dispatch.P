@@ -1,0 +1,17 @@
+dispatch.o: dispatch.c ../../include/fvdi.h ../../include/relocate.h \
+ ../../include/fvdi.h fvdidrv_nfapi.h ../../drivers/include/driver.h \
+ aranym.h ../../include/os.h
+
+../../include/fvdi.h:
+
+../../include/relocate.h:
+
+../../include/fvdi.h:
+
+fvdidrv_nfapi.h:
+
+../../drivers/include/driver.h:
+
+aranym.h:
+
+../../include/os.h:

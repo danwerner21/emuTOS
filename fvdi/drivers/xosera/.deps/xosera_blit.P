@@ -1,0 +1,17 @@
+xosera_blit.o: xosera_blit.c ../../include/fvdi.h xosera.h \
+ xosera_m68k_api.h xosera_m68k_defs.h ../../drivers/include/driver.h \
+ ../../include/relocate.h ../../include/fvdi.h
+
+../../include/fvdi.h:
+
+xosera.h:
+
+xosera_m68k_api.h:
+
+xosera_m68k_defs.h:
+
+../../drivers/include/driver.h:
+
+../../include/relocate.h:
+
+../../include/fvdi.h:

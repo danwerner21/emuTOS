@@ -1,0 +1,5 @@
+list.o: list.c list.h misc.h hash.h memory.h
+list.h:
+misc.h:
+hash.h:
+memory.h:

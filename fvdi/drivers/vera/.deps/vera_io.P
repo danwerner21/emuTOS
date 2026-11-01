@@ -1,0 +1,13 @@
+vera_io.o: vera_io.c vera.h ../../include/fvdi.h \
+ ../../drivers/include/driver.h ../../include/relocate.h \
+ ../../include/fvdi.h
+
+vera.h:
+
+../../include/fvdi.h:
+
+../../drivers/include/driver.h:
+
+../../include/relocate.h:
+
+../../include/fvdi.h:

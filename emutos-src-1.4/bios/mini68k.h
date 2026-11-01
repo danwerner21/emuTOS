@@ -133,8 +133,8 @@ extern volatile UBYTE mini68k_vera_busy;    /* direct drawing in progress */
 
 /*
  * The 'VERA' cookie points to this, for an fVDI driver that takes over
- * the VERA (fvdi/fvdi/drivers/vera, which has its own copy of this
- * structure: keep them the same).
+ * the VERA (fvdi/drivers/vera, which has its own copy of this
+ * structure: keep them the same), and for VERATEST.
  *
  * The driver increments *busy while it uses the VERA ports, and the
  * console and the VBL leave the VERA alone while it is non-zero. It
@@ -144,10 +144,14 @@ extern volatile UBYTE mini68k_vera_busy;    /* direct drawing in progress */
  * pixel, packed). When EmuTOS's own drawing ends and the VERA becomes
  * free, it calls release_hook() if the driver has set it.
  *
+ * Version 2 adds kbd_hold(): kbd_hold(1) stops EmuTOS polling the
+ * VT82C42, so a test program can drive it; kbd_hold(0) sets up the
+ * keyboard and mouse again and resumes polling.
+ *
  * Functions use 32-bit arguments, whatever the compiler's int size.
  */
 #define COOKIE_VERA     0x56455241L     /* 'VERA' */
-#define VERA_COOKIE_VERSION 1
+#define VERA_COOKIE_VERSION 2
 
 struct mini68k_vera_cookie
 {
@@ -156,6 +160,7 @@ struct mini68k_vera_cookie
     volatile UBYTE *busy;
     void (*take_over)(LONG width, LONG height, LONG planes);
     void (*release_hook)(void);         /* set by the driver */
+    void (*kbd_hold)(LONG hold);        /* version 2 */
 };
 
 extern struct mini68k_vera_cookie mini68k_vera_cookie;
@@ -186,6 +191,7 @@ void vd_copy(ULONG src_vram, UWORD count);      /* VRAM to DATA1 */
 
 /* PS/2 keyboard and mouse (VT82C42 on the VERA card), in kbd_mini68k.c */
 void mini68k_kbd_init(void);
+void mini68k_kbd_hold(LONG hold);   /* for VERATEST, via the 'VERA' cookie */
 void mini68k_kbd_poll(void);        /* called from the 200 Hz timer interrupt */
 
 /* Console UART */

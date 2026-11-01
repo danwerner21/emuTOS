@@ -1,0 +1,49 @@
+utility.o: utility.c ../include/fvdi.h ../modules/include/stdio.h \
+ ../modules/include/libkern.h ../include/os.h ../include/relocate.h \
+ ../include/fvdi.h ../modules/include/string.h \
+ ../modules/include/stdlib.h ../include/utility.h ../include/globals.h \
+ ../include/relocate.h ../include/nf_ops.h ../include/function.h \
+ ../include/string/memcpy.h ../include/string/memmove.h \
+ ../include/stdlib/atol.h ../include/stdlib/ltoa.h \
+ ../include/stdlib/ultoa.h ../include/string/memset.h \
+ ../include/stdio/printf.h
+
+../include/fvdi.h:
+
+../modules/include/stdio.h:
+
+../modules/include/libkern.h:
+
+../include/os.h:
+
+../include/relocate.h:
+
+../include/fvdi.h:
+
+../modules/include/string.h:
+
+../modules/include/stdlib.h:
+
+../include/utility.h:
+
+../include/globals.h:
+
+../include/relocate.h:
+
+../include/nf_ops.h:
+
+../include/function.h:
+
+../include/string/memcpy.h:
+
+../include/string/memmove.h:
+
+../include/stdlib/atol.h:
+
+../include/stdlib/ltoa.h:
+
+../include/stdlib/ultoa.h:
+
+../include/string/memset.h:
+
+../include/stdio/printf.h:

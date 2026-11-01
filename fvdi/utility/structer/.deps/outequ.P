@@ -1,0 +1,6 @@
+outequ.o: outequ.c misc.h hash.h expr.h list.h memory.h
+misc.h:
+hash.h:
+expr.h:
+list.h:
+memory.h:

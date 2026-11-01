@@ -1,0 +1,26 @@
+calamus.o: calamus.c ../include/fvdi.h ../modules/include/stdio.h \
+ ../modules/include/libkern.h ../include/relocate.h ../include/fvdi.h \
+ ../modules/include/string.h ../include/utility.h ../include/function.h \
+ ../include/globals.h ../include/relocate.h ../include/calamus.h
+
+../include/fvdi.h:
+
+../modules/include/stdio.h:
+
+../modules/include/libkern.h:
+
+../include/relocate.h:
+
+../include/fvdi.h:
+
+../modules/include/string.h:
+
+../include/utility.h:
+
+../include/function.h:
+
+../include/globals.h:
+
+../include/relocate.h:
+
+../include/calamus.h:

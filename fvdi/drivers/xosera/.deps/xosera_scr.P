@@ -1,0 +1,17 @@
+xosera_scr.o: xosera_scr.c xosera.h ../../include/fvdi.h \
+ xosera_m68k_api.h xosera_m68k_defs.h ../../drivers/include/driver.h \
+ ../../include/relocate.h ../../include/fvdi.h
+
+xosera.h:
+
+../../include/fvdi.h:
+
+xosera_m68k_api.h:
+
+xosera_m68k_defs.h:
+
+../../drivers/include/driver.h:
+
+../../include/relocate.h:
+
+../../include/fvdi.h:

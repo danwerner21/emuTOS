@@ -34,3 +34,8 @@ tests/*/*.tos
 bin/
 *.elf
 mkelf68k
+
+# fVDI build products (fvdi.sys in each driver directory is a config file and stays tracked)
+fvdi/**/*.o
+fvdi/drivers/*/*.sys
+!fvdi/drivers/*/fvdi.sys

@@ -1,0 +1,345 @@
+#include "xosera.h"
+
+void xosera_palette_register_write(volatile xmreg_t *const xosera_ptr, uint8_t palette, uint16_t data)
+{
+    xm_setw(WR_XADDR, XR_COLOR_ADDR | palette);
+    xm_setw(XDATA, data);
+}
+
+// A lookup table to take a color in 4 bits and expand it to sixteen, e.g A => 0xAAAA
+uint16_t expanded_color[16] = {
+        0x0000, 0x1111, 0x2222, 0x3333, 0x4444, 0x5555, 0x6666, 0x7777,
+        0x8888, 0x9999, 0xAAAA, 0xBBBB, 0xCCCC, 0xDDDD, 0xEEEE, 0xFFFF
+};
+
+uint16_t expand_table[] = {
+        0x0000, 0x0000, // 0
+        0x0000, 0x000f, // 1
+        0x0000, 0x00f0, // 2
+        0x0000, 0x00ff, // 3
+        0x0000, 0x0f00, // 4
+        0x0000, 0x0f0f, // 5
+        0x0000, 0x0ff0, // 6
+        0x0000, 0x0fff, // 7
+        0x0000, 0xf000, // 8
+        0x0000, 0xf00f, // 9
+        0x0000, 0xf0f0, // 10
+        0x0000, 0xf0ff, // 11
+        0x0000, 0xff00, // 12
+        0x0000, 0xff0f, // 13
+        0x0000, 0xfff0, // 14
+        0x0000, 0xffff, // 15
+        0x000f, 0x0000, // 16
+        0x000f, 0x000f, // 17
+        0x000f, 0x00f0, // 18
+        0x000f, 0x00ff, // 19
+        0x000f, 0x0f00, // 20
+        0x000f, 0x0f0f, // 21
+        0x000f, 0x0ff0, // 22
+        0x000f, 0x0fff, // 23
+        0x000f, 0xf000, // 24
+        0x000f, 0xf00f, // 25
+        0x000f, 0xf0f0, // 26
+        0x000f, 0xf0ff, // 27
+        0x000f, 0xff00, // 28
+        0x000f, 0xff0f, // 29
+        0x000f, 0xfff0, // 30
+        0x000f, 0xffff, // 31
+        0x00f0, 0x0000, // 32
+        0x00f0, 0x000f, // 33
+        0x00f0, 0x00f0, // 34
+        0x00f0, 0x00ff, // 35
+        0x00f0, 0x0f00, // 36
+        0x00f0, 0x0f0f, // 37
+        0x00f0, 0x0ff0, // 38
+        0x00f0, 0x0fff, // 39
+        0x00f0, 0xf000, // 40
+        0x00f0, 0xf00f, // 41
+        0x00f0, 0xf0f0, // 42
+        0x00f0, 0xf0ff, // 43
+        0x00f0, 0xff00, // 44
+        0x00f0, 0xff0f, // 45
+        0x00f0, 0xfff0, // 46
+        0x00f0, 0xffff, // 47
+        0x00ff, 0x0000, // 48
+        0x00ff, 0x000f, // 49
+        0x00ff, 0x00f0, // 50
+        0x00ff, 0x00ff, // 51
+        0x00ff, 0x0f00, // 52
+        0x00ff, 0x0f0f, // 53
+        0x00ff, 0x0ff0, // 54
+        0x00ff, 0x0fff, // 55
+        0x00ff, 0xf000, // 56
+        0x00ff, 0xf00f, // 57
+        0x00ff, 0xf0f0, // 58
+        0x00ff, 0xf0ff, // 59
+        0x00ff, 0xff00, // 60
+        0x00ff, 0xff0f, // 61
+        0x00ff, 0xfff0, // 62
+        0x00ff, 0xffff, // 63
+        0x0f00, 0x0000, // 64
+        0x0f00, 0x000f, // 65
+        0x0f00, 0x00f0, // 66
+        0x0f00, 0x00ff, // 67
+        0x0f00, 0x0f00, // 68
+        0x0f00, 0x0f0f, // 69
+        0x0f00, 0x0ff0, // 70
+        0x0f00, 0x0fff, // 71
+        0x0f00, 0xf000, // 72
+        0x0f00, 0xf00f, // 73
+        0x0f00, 0xf0f0, // 74
+        0x0f00, 0xf0ff, // 75
+        0x0f00, 0xff00, // 76
+        0x0f00, 0xff0f, // 77
+        0x0f00, 0xfff0, // 78
+        0x0f00, 0xffff, // 79
+        0x0f0f, 0x0000, // 80
+        0x0f0f, 0x000f, // 81
+        0x0f0f, 0x00f0, // 82
+        0x0f0f, 0x00ff, // 83
+        0x0f0f, 0x0f00, // 84
+        0x0f0f, 0x0f0f, // 85
+        0x0f0f, 0x0ff0, // 86
+        0x0f0f, 0x0fff, // 87
+        0x0f0f, 0xf000, // 88
+        0x0f0f, 0xf00f, // 89
+        0x0f0f, 0xf0f0, // 90
+        0x0f0f, 0xf0ff, // 91
+        0x0f0f, 0xff00, // 92
+        0x0f0f, 0xff0f, // 93
+        0x0f0f, 0xfff0, // 94
+        0x0f0f, 0xffff, // 95
+        0x0ff0, 0x0000, // 96
+        0x0ff0, 0x000f, // 97
+        0x0ff0, 0x00f0, // 98
+        0x0ff0, 0x00ff, // 99
+        0x0ff0, 0x0f00, // 100
+        0x0ff0, 0x0f0f, // 101
+        0x0ff0, 0x0ff0, // 102
+        0x0ff0, 0x0fff, // 103
+        0x0ff0, 0xf000, // 104
+        0x0ff0, 0xf00f, // 105
+        0x0ff0, 0xf0f0, // 106
+        0x0ff0, 0xf0ff, // 107
+        0x0ff0, 0xff00, // 108
+        0x0ff0, 0xff0f, // 109
+        0x0ff0, 0xfff0, // 110
+        0x0ff0, 0xffff, // 111
+        0x0fff, 0x0000, // 112
+        0x0fff, 0x000f, // 113
+        0x0fff, 0x00f0, // 114
+        0x0fff, 0x00ff, // 115
+        0x0fff, 0x0f00, // 116
+        0x0fff, 0x0f0f, // 117
+        0x0fff, 0x0ff0, // 118
+        0x0fff, 0x0fff, // 119
+        0x0fff, 0xf000, // 120
+        0x0fff, 0xf00f, // 121
+        0x0fff, 0xf0f0, // 122
+        0x0fff, 0xf0ff, // 123
+        0x0fff, 0xff00, // 124
+        0x0fff, 0xff0f, // 125
+        0x0fff, 0xfff0, // 126
+        0x0fff, 0xffff, // 127
+        0xf000, 0x0000, // 128
+        0xf000, 0x000f, // 129
+        0xf000, 0x00f0, // 130
+        0xf000, 0x00ff, // 131
+        0xf000, 0x0f00, // 132
+        0xf000, 0x0f0f, // 133
+        0xf000, 0x0ff0, // 134
+        0xf000, 0x0fff, // 135
+        0xf000, 0xf000, // 136
+        0xf000, 0xf00f, // 137
+        0xf000, 0xf0f0, // 138
+        0xf000, 0xf0ff, // 139
+        0xf000, 0xff00, // 140
+        0xf000, 0xff0f, // 141
+        0xf000, 0xfff0, // 142
+        0xf000, 0xffff, // 143
+        0xf00f, 0x0000, // 144
+        0xf00f, 0x000f, // 145
+        0xf00f, 0x00f0, // 146
+        0xf00f, 0x00ff, // 147
+        0xf00f, 0x0f00, // 148
+        0xf00f, 0x0f0f, // 149
+        0xf00f, 0x0ff0, // 150
+        0xf00f, 0x0fff, // 151
+        0xf00f, 0xf000, // 152
+        0xf00f, 0xf00f, // 153
+        0xf00f, 0xf0f0, // 154
+        0xf00f, 0xf0ff, // 155
+        0xf00f, 0xff00, // 156
+        0xf00f, 0xff0f, // 157
+        0xf00f, 0xfff0, // 158
+        0xf00f, 0xffff, // 159
+        0xf0f0, 0x0000, // 160
+        0xf0f0, 0x000f, // 161
+        0xf0f0, 0x00f0, // 162
+        0xf0f0, 0x00ff, // 163
+        0xf0f0, 0x0f00, // 164
+        0xf0f0, 0x0f0f, // 165
+        0xf0f0, 0x0ff0, // 166
+        0xf0f0, 0x0fff, // 167
+        0xf0f0, 0xf000, // 168
+        0xf0f0, 0xf00f, // 169
+        0xf0f0, 0xf0f0, // 170
+        0xf0f0, 0xf0ff, // 171
+        0xf0f0, 0xff00, // 172
+        0xf0f0, 0xff0f, // 173
+        0xf0f0, 0xfff0, // 174
+        0xf0f0, 0xffff, // 175
+        0xf0ff, 0x0000, // 176
+        0xf0ff, 0x000f, // 177
+        0xf0ff, 0x00f0, // 178
+        0xf0ff, 0x00ff, // 179
+        0xf0ff, 0x0f00, // 180
+        0xf0ff, 0x0f0f, // 181
+        0xf0ff, 0x0ff0, // 182
+        0xf0ff, 0x0fff, // 183
+        0xf0ff, 0xf000, // 184
+        0xf0ff, 0xf00f, // 185
+        0xf0ff, 0xf0f0, // 186
+        0xf0ff, 0xf0ff, // 187
+        0xf0ff, 0xff00, // 188
+        0xf0ff, 0xff0f, // 189
+        0xf0ff, 0xfff0, // 190
+        0xf0ff, 0xffff, // 191
+        0xff00, 0x0000, // 192
+        0xff00, 0x000f, // 193
+        0xff00, 0x00f0, // 194
+        0xff00, 0x00ff, // 195
+        0xff00, 0x0f00, // 196
+        0xff00, 0x0f0f, // 197
+        0xff00, 0x0ff0, // 198
+        0xff00, 0x0fff, // 199
+        0xff00, 0xf000, // 200
+        0xff00, 0xf00f, // 201
+        0xff00, 0xf0f0, // 202
+        0xff00, 0xf0ff, // 203
+        0xff00, 0xff00, // 204
+        0xff00, 0xff0f, // 205
+        0xff00, 0xfff0, // 206
+        0xff00, 0xffff, // 207
+        0xff0f, 0x0000, // 208
+        0xff0f, 0x000f, // 209
+        0xff0f, 0x00f0, // 210
+        0xff0f, 0x00ff, // 211
+        0xff0f, 0x0f00, // 212
+        0xff0f, 0x0f0f, // 213
+        0xff0f, 0x0ff0, // 214
+        0xff0f, 0x0fff, // 215
+        0xff0f, 0xf000, // 216
+        0xff0f, 0xf00f, // 217
+        0xff0f, 0xf0f0, // 218
+        0xff0f, 0xf0ff, // 219
+        0xff0f, 0xff00, // 220
+        0xff0f, 0xff0f, // 221
+        0xff0f, 0xfff0, // 222
+        0xff0f, 0xffff, // 223
+        0xfff0, 0x0000, // 224
+        0xfff0, 0x000f, // 225
+        0xfff0, 0x00f0, // 226
+        0xfff0, 0x00ff, // 227
+        0xfff0, 0x0f00, // 228
+        0xfff0, 0x0f0f, // 229
+        0xfff0, 0x0ff0, // 230
+        0xfff0, 0x0fff, // 231
+        0xfff0, 0xf000, // 232
+        0xfff0, 0xf00f, // 233
+        0xfff0, 0xf0f0, // 234
+        0xfff0, 0xf0ff, // 235
+        0xfff0, 0xff00, // 236
+        0xfff0, 0xff0f, // 237
+        0xfff0, 0xfff0, // 238
+        0xfff0, 0xffff, // 239
+        0xffff, 0x0000, // 240
+        0xffff, 0x000f, // 241
+        0xffff, 0x00f0, // 242
+        0xffff, 0x00ff, // 243
+        0xffff, 0x0f00, // 244
+        0xffff, 0x0f0f, // 245
+        0xffff, 0x0ff0, // 246
+        0xffff, 0x0fff, // 247
+        0xffff, 0xf000, // 248
+        0xffff, 0xf00f, // 249
+        0xffff, 0xf0f0, // 250
+        0xffff, 0xf0ff, // 251
+        0xffff, 0xff00, // 252
+        0xffff, 0xff0f, // 253
+        0xffff, 0xfff0, // 254
+        0xffff, 0xffff, // 255
+};
+// Various debug routines below here
+
+#ifdef FVDI_DEBUG
+
+#include "driver.h"
+
+const char *mode2string(long mode)
+{
+    switch (mode) {
+        case 1:
+            return "Replace";
+        case 2:
+            return "Transparent";
+        case 3:
+            return "XOR";
+        case 4:
+            return "Reverse Transparent";
+        default:
+            return "Unknown";
+    }
+}
+
+const char *operation2string(long operation)
+{
+    switch (operation) {
+        case 0:
+            return "D' = 0 (clear)";
+        case 1:
+            return "D' = S AND D";
+        case 2:
+            return "D' = S AND (NOT D)";
+        case 3:
+            return "D' = S (replace)";
+        case 4:
+            return "D' = (NOT S) AND D (erase)";
+        case 5:
+            return "D' = D  (dest unchaned)";
+        case 6:
+            return "D' = S XOR D (XOR mode)";
+        case 7:
+            return "D' = S OR D (transparent mode)";
+        case 8:
+            return "D' = NOT (S OR D)";
+        case 9:
+            return "D' = NOT (S XOR D)";
+        case 10:
+            return "D' = NOT D";
+        case 11:
+            return "D' = S OR (NOT D)";
+        case 12:
+            return "D' = NOT S";
+        case 13:
+            return "D' = (NOT S) OR D (reverse transparent mode)";
+        case 14:
+            return "D' = NOT (S AND D)";
+        case 15:
+            return "D' = 1 (fill dest)";
+        default:
+            return "unknown";
+    }
+}
+
+void dump_fill_area_params(long x0, long y0, long w, long h, long colour, long mode, long interior_style)
+{
+    int16_t fg = (int16_t) (colour & 0xFFFF);
+    int16_t bg = (int16_t) ((colour >> 16) & 0xFFFF);
+    int16_t fill_type = (int16_t)((interior_style >> 16) & 0xFFFF);
+    int16_t pattern_index = (int16_t)(interior_style & 0xFFFF);
+    PRINTF(("c_fill_area(): x0: %3ld, y0: %3ld, w: %3ld, h: %3ld, col: %5ld (bg=0x%04x, fg=0x%04x), mode: %ld (%s), interior_style = %d,%d\n",
+            x0, y0, w, h, colour, bg, fg, mode, mode2string(mode), fill_type, pattern_index));
+}
+
+#endif

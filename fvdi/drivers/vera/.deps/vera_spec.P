@@ -1,0 +1,15 @@
+vera_spec.o: vera_spec.c ../../include/fvdi.h \
+ ../../drivers/include/driver.h ../../include/relocate.h \
+ ../../include/fvdi.h vera.h ../../include/string/memset.h
+
+../../include/fvdi.h:
+
+../../drivers/include/driver.h:
+
+../../include/relocate.h:
+
+../../include/fvdi.h:
+
+vera.h:
+
+../../include/string/memset.h:

@@ -1,0 +1,15 @@
+printf.o: printf.c ../common/printf.c ../../include/os.h \
+ ../../include/fvdi.h ../../include/relocate.h ../../include/fvdi.h \
+ ../../drivers/include/driver.h
+
+../common/printf.c:
+
+../../include/os.h:
+
+../../include/fvdi.h:
+
+../../include/relocate.h:
+
+../../include/fvdi.h:
+
+../../drivers/include/driver.h:

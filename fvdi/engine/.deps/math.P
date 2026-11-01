@@ -1,0 +1,17 @@
+math.o: math.c ../include/fvdi.h ../include/function.h ../include/fvdi.h \
+ ../include/relocate.h ../modules/include/string.h \
+ ../modules/include/libkern.h ../include/utility.h
+
+../include/fvdi.h:
+
+../include/function.h:
+
+../include/fvdi.h:
+
+../include/relocate.h:
+
+../modules/include/string.h:
+
+../modules/include/libkern.h:
+
+../include/utility.h:

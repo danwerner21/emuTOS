@@ -1,0 +1,15 @@
+init.o: init.c ../common/init.c ../../include/os.h ../../include/fvdi.h \
+ ../../include/relocate.h ../../include/fvdi.h \
+ ../../drivers/include/driver.h
+
+../common/init.c:
+
+../../include/os.h:
+
+../../include/fvdi.h:
+
+../../include/relocate.h:
+
+../../include/fvdi.h:
+
+../../drivers/include/driver.h:

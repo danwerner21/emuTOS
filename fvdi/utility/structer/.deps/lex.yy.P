@@ -1,0 +1,6 @@
+lex.yy.o: lex.yy.c misc.h hash.h expr.h list.h struct.tab.h
+misc.h:
+hash.h:
+expr.h:
+list.h:
+struct.tab.h:

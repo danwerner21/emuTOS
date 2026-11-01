@@ -1,0 +1,22 @@
+textlib.o: textlib.c ../include/fvdi.h ../include/function.h \
+ ../include/fvdi.h ../include/globals.h ../include/relocate.h \
+ ../modules/include/string.h ../modules/include/libkern.h \
+ ../include/utility.h ../include/modules/ft2.h
+
+../include/fvdi.h:
+
+../include/function.h:
+
+../include/fvdi.h:
+
+../include/globals.h:
+
+../include/relocate.h:
+
+../modules/include/string.h:
+
+../modules/include/libkern.h:
+
+../include/utility.h:
+
+../include/modules/ft2.h:

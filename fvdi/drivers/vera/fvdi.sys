@@ -1,0 +1,16 @@
+# fVDI configuration for the VERA card on the RetroBrew Mini-M68k.
+# Copy this file to C:\FVDI.SYS, VERA.SYS to C:\GEMSYS\ (or change
+# PATH), and FVDI_GNU.PRG to C:\AUTO\.
+#
+# The driver uses 640x240 at 16 colours. Add 640x400 after vera.sys for
+# 640x400 at 16 colours.
+#
+# standalone: fVDI does everything itself, without passing calls on to
+# EmuTOS's own VDI (as on BITSY).
+# lineafix makes fVDI set all the screen lineA variables, which EmuTOS's
+# text console uses.
+PATH = C:\GEMSYS
+standalone
+lineafix
+01r vera.sys
+#01r vera.sys 640x400

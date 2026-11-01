@@ -1,0 +1,10 @@
+8b_pal.o: 8b_pal.c ../../include/fvdi.h ../../include/relocate.h \
+ ../../include/fvdi.h aranym.h
+
+../../include/fvdi.h:
+
+../../include/relocate.h:
+
+../../include/fvdi.h:
+
+aranym.h:

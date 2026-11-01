@@ -1,0 +1,8 @@
+polygon.o: polygon.c ../include/fvdi.h ../include/function.h \
+ ../include/fvdi.h
+
+../include/fvdi.h:
+
+../include/function.h:
+
+../include/fvdi.h:

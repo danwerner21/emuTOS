@@ -1,0 +1,6 @@
+../modules/ft2/bics2u.o: ../modules/ft2/bics2u.c ../include/fvdi.h \
+ ../include/modules/ft2.h
+
+../include/fvdi.h:
+
+../include/modules/ft2.h:

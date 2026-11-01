@@ -1,0 +1,2 @@
+# fVDI is built on Linux from this working tree, so keep LF endings even on Windows checkouts
+* text=auto eol=lf

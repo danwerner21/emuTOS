@@ -1,0 +1,14 @@
+uae_scr.o: uae_scr.c ../../include/fvdi.h ../../drivers/include/driver.h \
+ ../../include/relocate.h ../../include/fvdi.h uaegfx.h types.h
+
+../../include/fvdi.h:
+
+../../drivers/include/driver.h:
+
+../../include/relocate.h:
+
+../../include/fvdi.h:
+
+uaegfx.h:
+
+types.h:

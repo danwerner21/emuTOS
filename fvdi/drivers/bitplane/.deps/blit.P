@@ -1,0 +1,14 @@
+blit.o: blit.c ../../include/fvdi.h ../../include/relocate.h \
+ ../../include/fvdi.h ../../drivers/include/driver.h bitplane.h mouse.c
+
+../../include/fvdi.h:
+
+../../include/relocate.h:
+
+../../include/fvdi.h:
+
+../../drivers/include/driver.h:
+
+bitplane.h:
+
+mouse.c:

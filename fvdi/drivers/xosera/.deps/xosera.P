@@ -1,0 +1,10 @@
+xosera.o: xosera.c xosera.h ../../include/fvdi.h xosera_m68k_api.h \
+ xosera_m68k_defs.h
+
+xosera.h:
+
+../../include/fvdi.h:
+
+xosera_m68k_api.h:
+
+xosera_m68k_defs.h:

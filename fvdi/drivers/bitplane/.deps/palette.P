@@ -1,0 +1,12 @@
+palette.o: palette.c ../../include/fvdi.h ../../drivers/include/driver.h \
+ ../../include/relocate.h ../../include/fvdi.h bitplane.h
+
+../../include/fvdi.h:
+
+../../drivers/include/driver.h:
+
+../../include/relocate.h:
+
+../../include/fvdi.h:
+
+bitplane.h:

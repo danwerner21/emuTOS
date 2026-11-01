@@ -429,6 +429,7 @@ BOOL mini68k_vera_init(void)
         mini68k_vera_cookie.version = VERA_COOKIE_VERSION;
         mini68k_vera_cookie.busy = &mini68k_vera_busy;
         mini68k_vera_cookie.take_over = mini68k_vera_take_over;
+        mini68k_vera_cookie.kbd_hold = mini68k_kbd_hold;
         cookie_add(COOKIE_VERA, (ULONG)&mini68k_vera_cookie);
     }
     else

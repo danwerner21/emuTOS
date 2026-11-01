@@ -1,0 +1,24 @@
+workstn.o: workstn.c ../include/fvdi.h ../modules/include/stdio.h \
+ ../modules/include/libkern.h ../include/function.h ../include/fvdi.h \
+ ../include/relocate.h ../modules/include/string.h ../include/utility.h \
+ ../include/globals.h ../include/relocate.h
+
+../include/fvdi.h:
+
+../modules/include/stdio.h:
+
+../modules/include/libkern.h:
+
+../include/function.h:
+
+../include/fvdi.h:
+
+../include/relocate.h:
+
+../modules/include/string.h:
+
+../include/utility.h:
+
+../include/globals.h:
+
+../include/relocate.h:

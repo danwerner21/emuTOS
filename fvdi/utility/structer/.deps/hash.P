@@ -1,0 +1,3 @@
+hash.o: hash.c hash.h memory.h
+hash.h:
+memory.h:

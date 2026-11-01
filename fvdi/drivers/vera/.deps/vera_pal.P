@@ -1,0 +1,13 @@
+vera_pal.o: vera_pal.c vera.h ../../include/fvdi.h \
+ ../../drivers/include/driver.h ../../include/relocate.h \
+ ../../include/fvdi.h
+
+vera.h:
+
+../../include/fvdi.h:
+
+../../drivers/include/driver.h:
+
+../../include/relocate.h:
+
+../../include/fvdi.h:

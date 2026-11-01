@@ -29,6 +29,7 @@
 /* #define ENABLE_KDEBUG */
 
 #include "emutos.h"
+#include "asm.h"                /* set_sr() */
 #include "mini68k.h"
 #include "ikbd.h"
 #include "tosvars.h"
@@ -343,6 +344,39 @@ void mini68k_kbd_init(void)
     pause_skip = 0;
     mouse_count = 0;
     kbc_ready = TRUE;               /* from now on, the timer polls it */
+}
+
+/*
+ * For a test program that drives the controller itself (VERATEST),
+ * through the 'VERA' cookie. Holding stops the polling, and releases the
+ * keys that are down, since their releases would go to the program.
+ * Ending the hold sets up the controller, keyboard and mouse again,
+ * because the program may have reset them.
+ */
+void mini68k_kbd_hold(LONG hold)
+{
+    UWORD atari;
+    WORD old_sr;
+
+    if (!hold)
+    {
+        mini68k_kbd_init();
+        return;
+    }
+
+    old_sr = set_sr(0x2700);        /* kbd_int() expects the interrupt context */
+    kbc_ready = FALSE;
+    for (atari = 0; atari < 128; atari++)
+    {
+        UBYTE mask = 1 << (atari & 7);
+
+        if (keys_down[atari >> 3] & mask)
+        {
+            keys_down[atari >> 3] &= ~mask;
+            kbd_int(atari | 0x80);
+        }
+    }
+    set_sr(old_sr);
 }
 
 #endif /* MACHINE_MINI68K */

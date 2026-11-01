@@ -1,0 +1,13 @@
+colours.o: colours.c ../common/colours.c ../../include/fvdi.h \
+ ../../drivers/include/driver.h ../../include/relocate.h \
+ ../../include/fvdi.h
+
+../common/colours.c:
+
+../../include/fvdi.h:
+
+../../drivers/include/driver.h:
+
+../../include/relocate.h:
+
+../../include/fvdi.h:

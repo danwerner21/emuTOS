@@ -1,0 +1,96 @@
+# To be included after the SINCSRC and SSRC are defined
+
+CONV2GAS = $(top_srcdir)/utility/conv2gas/conv2gas
+PACF ?= pacf
+
+SYMBOLS = -Wa,--defsym,gas=1 -Wa,--defsym,lattice=0
+ifeq ($(CPU),000)
+	SYMBOLS += -Wa,--defsym,mc68000=1 -Wa,--defsym,mcoldfire=0
+else ifeq ($(CPU),v4e)
+ifeq (, $(shell which $(PACF)))
+    $(info ***)
+    $(info *** No pacf in $$(PATH), compiling for ColdFire requires)
+    $(info *** an installation of MicroAPL's PortAsm)
+    $(info *** (see http://microapl.com/downloads.html))
+    $(info ***)
+    $(error )
+endif
+	SYMBOLS += -Wa,--defsym,mc68000=0 -Wa,--defsym,mcoldfire=1
+else
+	SYMBOLS += -Wa,--defsym,mc68000=0 -Wa,--defsym,mcoldfire=0
+endif
+ifeq ($(DEBUG),yes)
+	SYMBOLS += -Wa,--defsym,FVDI_DEBUG=1
+else
+	SYMBOLS += -Wa,--defsym,FVDI_DEBUG=0
+endif
+
+
+# Use native compiler when cross compiling
+$(CONV2GAS): $(top_srcdir)/utility/conv2gas/conv2gas.c
+	$(MAKE) -C $(top_srcdir)/utility/conv2gas
+
+SINCSRC_GNU = $(SINCSRC:=.gnu)
+SSRC_GNU    = $(SSRC:.s=.gnu.s)
+$(SINCSRC_GNU): $(SINCSRC)
+
+# special treatment for ColdFire target (uses Micro APL's PortAsm to convert the sources for ColdFire)
+ifeq ($(CPU),v4e)
+PORTASM_FLAGS = \
+	-blanks on  \
+	-case on \
+	-core v4 \
+	-branch_external_long \
+	-hardware_divide \
+	-hardware_mac \
+	-implicit_externs \
+	-a gnu \
+	-gnu_locals \
+	-out_syntax standard \
+	-nowarning 402,502,600,900,1111,1150,1700 \
+	-noerrfile
+
+comma = ,
+empty =
+space = $(empty) $(empty)
+# externally defined assembler symbols syntax to pacf style
+PACF_SYMBOLS = $(subst -Wa$(comma)--defsym$(comma),-define$(space),$(SYMBOLS))
+PORTASM_FLAGS += $(PACF_SYMBOLS)
+
+# include paths. Better pass a variable suitable for gas _and_ pacf from toplevel?
+PORTASM_INCLUDE = -i $(top_srcdir)/include,$(top_srcdir)/drivers/include
+
+# intermediate filenames for PortAsm output
+SSRC_GNU_CF    = $(SSRC:.s=.cf_gnu.s)
+
+# dependencies for include files and PortAsm converted sources
+$(SSRC_GNU_CF): $(SSRC_GNU) $(SINCSRC_GNU)
+
+# pattern rule for assembler sources (traditional assembler to gas syntax)
+# after conversion, process by PortAsm pacf (gas m68k sources to ColdFire).
+# need to hack section statements that m68k-atari-mint-as doesn't translate
+%.cf_gnu.s: %.gnu.s
+	$(AM_V_GEN)$(PACF) $(PORTASM_FLAGS) $(PORTASM_INCLUDE) -o $@ $<
+	$(AM_V_at)sed -ie 's/\.section.*\(text\|data\|bss\).*/.\1/' $@
+
+# Assember for .gnu
+%.cf_gnu.o: %.cf_gnu.s
+	$(AM_V_AS)$(AS) $(ASFLAGS) -o $@ $<
+
+endif
+
+# assembler includes only need to go through conv2gas
+# (will be milled through PortAsm with the sources they include them)
+%.inc.gnu: %.inc $(CONV2GAS)
+	$(AM_V_GEN)$(CONV2GAS).sh $<
+
+# straight m68k to gas syntax conversion
+%.gnu.s: %.s $(CONV2GAS)
+	$(AM_V_GEN)$(CONV2GAS).sh $<
+
+# Assember for .gnu
+%.gnu.o: %.gnu.s
+	$(AM_V_AS)$(CC) -x assembler-with-cpp $(ASFLAGS) $(SYMBOLS) $(addprefix -Wa$(comma),$(DRIVER_INCLUDES)) -c -o $@ $<
+
+clean_gnu:
+	$(RM) *.inc.gnu *.gnu.s *.cf_gnu.s *.cf_gnu.se *.inf *.ino

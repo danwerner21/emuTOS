@@ -1,6 +1,0 @@
-WRAP
-CLS
-ECHO Please wait while COREMARK is executing
-COREMARK.TOS 0x0 0x0 0x66 0 7 1 2000
-PAUSE
-EXIT

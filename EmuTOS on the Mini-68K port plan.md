@@ -89,9 +89,9 @@ Each row is confirmed. The last column says how it shaped the port.
 
 **Known gaps**
 
-- Floppy: format works (FORMAT.TTP in mini68k-tests, or XBIOS Flopfmt); about 1 sector in 18 needs a retry because of the timer interrupt, which costs one revolution.
+- Floppy: format works (FORMAT.TTP in apps/UTILITIE, or XBIOS Flopfmt); about 1 sector in 18 needs a retry because of the timer interrupt, which costs one revolution.
 - Dual-SD socket 1: supported by the driver (presence is decided by starting the card, not by card detect). The socket fault on the test board was repaired, and socket 1 is confirmed working (Oct 25, 2026).
-- The RTC can be set with SETCLOCK.TTP (mini68k-tests).
+- The RTC can be set with SETCLOCK.TTP (apps/UTILITIE).
 - Serial flow control is recorded by `Rsconf` but not implemented.
 - Baud rates without an Atari `Rsconf` code (such as 38400) can be set in the BIOS Setup and are kept, but cannot be selected from EmuTOS.
 - Disk speed (DISKBNCH, 256 KB, assembly transfer loop in `bios/ppide2.S`): raw sector reads 164 KB/s, GEMDOS file reads 127 KB/s, file writes 69 KB/s. With the earlier C loop the figures were 85, 73 and 50 KB/s. Reads are now close to what the 68008 can move through the 8255; writes are limited mostly by something other than the transfer loop.
@@ -221,7 +221,7 @@ Most of these are small standalone programs that run under the existing monitor 
 | E1 | Load a test image into RAM from the monitor or CP/M-68K and jump to it | Whether development can avoid reflashing | Image runs from its link address and prints over serial | Passed: the BIOS loads `EMUTOS.ELF` from FAT into RAM and jumps to it. |
 | E2 | Read an unmapped address with a bus-error handler installed | Whether EmuTOS hardware probes can stay enabled | Handler is entered; if the board hangs, probes are compiled out | Settled from the BIOS docs: no bus-error timeout, so probes are compiled out. |
 | E3 | Program the interrupt controller's counter for 200 Hz and count ticks against a stopwatch | Tick source and interrupt glue | Within 1% over 10 minutes | Partly done: the 3-second boot countdown looks right. The 10-minute stopwatch check is still to do. |
-| E4 | Read sectors through PPIDE; check byte order and timing; read a FAT16 partition made on a PC | Disk driver design and disk layout | Boot sector reads correctly; note KB per second | Passed: MBR and FAT read and written correctly; byte swap detected automatically. Speed with the assembly loop: raw reads 164 KB/s, file reads 127 KB/s, file writes 69 KB/s (`mini68k-tests/DISKBNCH.C`). |
+| E4 | Read sectors through PPIDE; check byte order and timing; read a FAT16 partition made on a PC | Disk driver design and disk layout | Boot sector reads correctly; note KB per second | Passed: MBR and FAT read and written correctly; byte swap detected automatically. Speed with the assembly loop: raw reads 164 KB/s, file reads 127 KB/s, file writes 69 KB/s (`apps/mini68k-tests/DISKBNCH.C`). |
 | E5 | Run a VT52 test pattern through the terminal, with and without ANSI translation | Terminal setup for Phase 1 | Cursor addressing and clear-screen work | Partly done: the ANSI console works with EmuCON. A full VT52 test pattern is still to do. |
 | E6 | Stream 32,000 bytes to VERA with several loop variants, time it, then read back and verify all of VERA's memory | Copy speed and bus-timing reliability | Full frame under 150 ms; zero verify errors over repeated passes | Partly run: a C loop took 0.89 s for 32,000 bytes, so the copy was written in assembly. The verify found that reads don't auto-increment (the card read bug). |
 | E7 | Set the 640-wide 1 bpp bitmap mode by hand and draw a test card | Register values, bit order within a byte, border and 400 versus 480 lines | Leftmost pixel is the top bit; image stable | Passed (Oct 24, 2026): the leftmost pixel is the top bit and the test card is stable. |

@@ -101,7 +101,7 @@ Pressing the board's RESET button always returns you to the BIOS.
 - **Resolution:** *Options → Change resolution* offers Low (320×200, 16 colours), Medium (640×200, 4 colours) and High (640×400, 2 colours). *Options → Save desktop* keeps the choice for the next boot.
 - **Running programs:** double-click a `.PRG` (GEM program), `.TOS` (text program) or `.TTP` (text program that asks for parameters).
 - **Command line:** EmuCON is built in. Choose *File → Execute EmuCON* on the desktop; type `exit` to come back.
-- **Date and time:** EmuTOS reads the clock on the MF/PIC at boot. Set it with `SETCLOCK.TTP` from `mini68k-tests/` (see [Utilities](#utilities)).
+- **Date and time:** EmuTOS reads the clock on the MF/PIC at boot. Set it with `SETCLOCK.TTP` from `apps/UTILITIE/` (see [Utilities](#utilities)).
 
 ### 7. Optional: 640×400 in 16 colours with fVDI
 
@@ -109,7 +109,7 @@ Once the desktop works, you can add fVDI for 16 colours at 640×400. See [fVDI](
 
 ### 8. Optional: a C compiler on the board
 
-`PURE_C/` contains the Pure C compiler, patched to run on this board. Copy the whole folder to the CF card and start `PC.PRG`. The small test programs in `mini68k-tests/` can also be built on the board with the Sozobon C compiler.
+`apps/` holds Atari software tested on the board, including two C compilers: Sozobon C (`apps/SOZOBON/`, freely distributable) and Pure C (`apps/PURE_C/`, patched to run on this board). Copy a package folder to the CF card and start its program, for example `PC.PRG` for Pure C. Check `apps/README.md` for each package's licence and distribution status first.
 
 ### If something goes wrong
 
@@ -257,7 +257,7 @@ Compared with Rob Gowin's fVDI fork (`xosera` branch):
 
 ## Utilities
 
-`mini68k-tests/` holds small programs to compile on the board with Sozobon C, for example `cc setclock.c -o setclock.ttp`:
+`apps/mini68k-tests/` holds small programs to compile on the board with Sozobon C, for example `cc setclock.c -o setclock.ttp`:
 
 | Program | Purpose |
 | --- | --- |
@@ -274,7 +274,7 @@ Compared with Rob Gowin's fVDI fork (`xosera` branch):
 - **Direct mode doesn't show programs that write to screen memory themselves** (many games and some Line-A programs). Build with `VERA_DIRECT=0` for those.
 - **Colour drawing is slower than mono**, because each byte holds fewer pixels and the read-back fallback converts between bit planes and VERA pixels both ways. Icons and menus in ST low show it most.
 - **Programs that use Atari hardware directly** (sound chip, shifter registers, blitter) don't work. Sound through the XBIOS (`Dosound`, `Giaccess`) does; SNDH music files don't, because they write to the YM2149 directly.
-- **Programs that probe for hardware by catching a bus error** find it "present", because the Mini never raises a bus error. Their test write then lands in the ECB I/O space. An Atari address `$FFFFxx40` is the NS32202 (A8 and up select its register), and upsetting it makes the next timer tick arrive as vector 3. That shows as a bogus "Address Error" panic with misc=0000 and the user program's PC in the addr field. Pure C does this at startup to look for an SFP004 maths coprocessor (`move.w #3,$FFFFFA42`). The copies in `PURE_C/` are patched to skip the probe and report no coprocessor (`31fc 0003 fa42` replaced by `6000 0014 4e71`, a branch to the probe's own no-coprocessor exit), in all its tools and in `PCSTDLIB.LIB` and `PCSTART.PRG`, so programs built with it are fixed too. The unpatched files are in `PURE_C/ORIGINAL/`.
+- **Programs that probe for hardware by catching a bus error** find it "present", because the Mini never raises a bus error. Their test write then lands in the ECB I/O space. An Atari address `$FFFFxx40` is the NS32202 (A8 and up select its register), and upsetting it makes the next timer tick arrive as vector 3. That shows as a bogus "Address Error" panic with misc=0000 and the user program's PC in the addr field. Pure C does this at startup to look for an SFP004 maths coprocessor (`move.w #3,$FFFFFA42`). The copies in `apps/PURE_C/` are patched to skip the probe and report no coprocessor (`31fc 0003 fa42` replaced by `6000 0014 4e71`, a branch to the probe's own no-coprocessor exit), in all its tools and in `PCSTDLIB.LIB` and `PCSTART.PRG`, so programs built with it are fixed too. The unpatched files are in `apps/PURE_C/ORIGINAL/`.
 - **Floppy:** reads retry about 1 sector in 18, because of the timer interrupt, and each retry costs one disk revolution. Only one drive (`A:`) is supported.
 - **Dual-SD** transfers are slow, because the SPI is bit-banged.
 - **Serial:** flow control is recorded by `Rsconf` but not implemented. Baud rates without an Atari code, such as 38400, can be set in the BIOS Setup but not from EmuTOS.
@@ -302,12 +302,12 @@ Next steps:
 | Path | Contents |
 | --- | --- |
 | `emutos-src-1.4/` | EmuTOS 1.4 source, with the Mini-M68k port |
-| `mini68k-tests/` | Utilities and test programs for the board (Sozobon C) |
-| `PURE_C/` | The Pure C compiler, patched to run on the board (see [Known bugs](#known-bugs-and-limitations)); the unpatched files are in `PURE_C/ORIGINAL/` |
+| `apps/` | Atari software tested on the board, with the board's own utilities (`apps/UTILITIE/`, sources in `apps/mini68k-tests/`). Each package's author, licence and distribution status are listed in [`apps/README.md`](apps/README.md) |
+| `apps/PURE_C/` | The Pure C compiler, patched to run on the board (see [Known bugs](#known-bugs-and-limitations)); the unpatched files are in `apps/PURE_C/ORIGINAL/` |
 | `fvdi/` | fVDI source (from Rob Gowin's fork, `xosera` branch), with the Mini-M68k VERA driver in `fvdi/drivers/vera/`; see [fVDI](#fvdi-the-desktop-at-640400-in-16-colours) |
 | `EmuTOS on the Mini-68K port plan.md` | Port plan and status; the `.pdf` is an older export |
 | `X16 Reference - 09 - VERA Programmer's Reference.md` | The VERA programmer's reference, used for the video driver |
-| `pic2a.jpg` | Photo of the desktop running on the board |
+| `images/` | Photos of the desktop running on the board |
 | `bin/` | Official EmuTOS 1.4 binaries for other machines |
 | `README.txt` | EmuTOS 1.4 release notes |
 

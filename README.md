@@ -4,7 +4,7 @@ This repository is a port of [EmuTOS](https://emutos.sourceforge.io/) 1.4, the f
 
 EmuTOS boots on the board from a CF card and runs the GEM desktop on a VERA video card, with a PS/2 mouse and keyboard. The desktop runs in all three Atari ST resolutions, or at 640×400 in 16 colours with [fVDI](#fvdi-the-desktop-at-640400-in-16-colours). Without the desktop it runs the EmuCON command shell over the serial console. It reads and writes FAT disks on the CF, SD and floppy boards listed below. TOS programs that use GEM or the console run, including the Sozobon C compiler, which builds programs on the board itself.
 
-![EmuDesk in ST medium (640×200, 4 colours) on the VERA card, with a window open on C:\UTILITIE](images\pic2a.jpg)
+![EmuDesk in ST medium (640×200, 4 colours) on the VERA card, with a window open on C:\UTILITIE](images/pic2a.jpg)
 
 *The EmuTOS desktop in ST medium resolution on the Mini-M68k's VERA card.*
 

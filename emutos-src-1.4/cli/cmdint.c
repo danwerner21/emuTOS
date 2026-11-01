@@ -31,6 +31,7 @@ PRIVATE char *extract_path(char *dest,const char *src);
 PRIVATE void fixup_filespec(char *filespec);
 PRIVATE char getyn(void);
 PRIVATE void help_display(const COMMAND *p);
+PRIVATE WORD is_device(const char *name);
 PRIVATE WORD help_lines(const COMMAND *p);
 PRIVATE WORD help_pause(void);
 PRIVATE WORD help_wanted(const COMMAND *p,char *cmd);
@@ -799,15 +800,21 @@ LONG bufsize, n, rc;
         n++;
 
     /*
-     * determine if target is a valid directory
+     * determine if target is a valid directory; a character device
+     * (CON:, AUX: or PRN:) is passed to GEMDOS as it is, in upper case
      */
-    rc = make_absolute(fullname,outname);   /* convert to absolute path */
-    if (rc == 0L)
-        rc = check_path_component(fullname);
-    if (rc == 0L)                           /* it's an existing directory */
-        output_is_dir = 1;
-    else if ((rc == NOT_DIRECTORY) || (rc == EFILNF))   /* it's a file or non-existent */
+    if (is_device(argv[2])) {
+        strupper(strcpy(fullname,argv[2]));
         rc = 0L;
+    } else {
+        rc = make_absolute(fullname,outname);   /* convert to absolute path */
+        if (rc == 0L)
+            rc = check_path_component(fullname);
+        if (rc == 0L)                           /* it's an existing directory */
+            output_is_dir = 1;
+        else if ((rc == NOT_DIRECTORY) || (rc == EFILNF))   /* it's a file or non-existent */
+            rc = 0L;
+    }
 
     /*
      * if error detected OR (multiple input files and output isn't a directory),
@@ -961,6 +968,16 @@ char *q, *sep = dest;
     *q = '\0';
 
     return sep;
+}
+
+/*
+ *  check for the name of a GEMDOS character device
+ *
+ *  returns 1 iff it is one
+ */
+PRIVATE WORD is_device(const char *name)
+{
+    return strequal(name,"CON:") || strequal(name,"AUX:") || strequal(name,"PRN:");
 }
 
 PRIVATE void help_display(const COMMAND *p)

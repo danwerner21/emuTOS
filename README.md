@@ -22,7 +22,7 @@ EmuTOS boots on the board from a CF card and runs the GEM desktop on a VERA vide
 | Dual-SD | bit-banged SPI | set in BIOS Setup (e.g. `0x08`) | Working: both sockets |
 | VERA card: video | VERA (FPGA) | `0x80`–`0x9F` | Working: ST high (640×400, 2 colours), ST medium (640×200, 4 colours), ST low (320×200, 16 colours); mouse pointer as a VERA sprite. See [VERA card read bug](#vera-card-read-bug) |
 | VERA card: keyboard and mouse | VT82C42 (8042 compatible), polled | `0xA0`–`0xA1` | Working: keyboard and mouse |
-| VERA card: parallel port | PC-style printer port | `0xA4`–`0xA6` | Not supported yet |
+| VERA card: parallel port | PC-style printer port | `0xA4`–`0xA6` | Driver written (`bios/parport.c`); the card needs the strobe wire (see below) |
 | Dual DMA IDE | — | — | Not supported |
 
 The MF/PIC board is required, at base port `0x40`. The VERA card is needed for the desktop.
@@ -82,6 +82,8 @@ On the current VERA card, **reads of the VERA data ports don't auto-increment th
 - **Testing:** VERATEST test 7 (VRAM access diagnostic) and test 2 (VRAM test) show whether reads auto-increment. EmuTOS needs no change to test the card; once the fix works, the driver will switch to plain sequential reads.
 
 Earlier faults on the card, all fixed in V1.1: VERA header address lines A3 and A4 were undriven, the printer port's 74LS138 decoders had a select input grounded, and U1 needed open-collector inverters (74LS06) for the PS/2 lines.
+
+Printer strobe (found 2026-10-31): on V1.1 the strobe driver net (U11 O0 → U8C → R9, with C28) had no `STROBE` label, so it never reached P5 pin 1 (DB-25 pin 1); the pin only saw the RR2 pull-up and the printer never got a strobe. Fixed in the schematic by labelling that net `STROBE`; on V1.1 boards, a wire from the R9/C28 end to P5 pin 1. With it, VERATEST test 8 shows the printer answering every byte with PC polarity. Control bit 5 enables the data outputs (U10 /OE), as on a PC, so software must keep it 0.
 
 ## What was added to EmuTOS
 
@@ -145,6 +147,9 @@ The detailed plan, with checklists and experiments, is in [EmuTOS on the Mini-68
 | 2. GEM on VERA | GEM desktop on the VERA card | Done: shadow copy of changed rows at the VERA VSYNC |
 | 3. Keyboard and mouse | Input through the VT82C42 on the VERA card | Done: keyboard and mouse working |
 | 4. Colour and direct drawing | ST low and medium colour; drawing straight into the VERA | Done: direct mode is the default, in all three resolutions; shadow copy kept as an option |
+| 5. fVDI | fVDI with a VERA driver: 640×240 at 16 colours, then 640×400 | 640×240 and 640×400 working on the board (16 colours, no crashes) |
+
+**fVDI (phase 5).** [fVDI](https://github.com/freemint/fvdi), the replacement VDI used on Rob Gowin's BITSY MK I (a 68000 board with a Xosera video card; his distribution is in `bitsy/`), now has a VERA driver in `fvdi/fvdi/drivers/vera/`. fVDI is loaded from the `AUTO` folder and replaces EmuTOS's VDI for GEM. The driver sets the VERA to 640×240 at 16 colours (or 640×400 with the `640x400` option), and draws everything with the CPU through the VERA ports: fills, lines, text and mono icons, blits with all 16 logic operations, pixels, the palette, and the mouse pointer as a sprite. EmuTOS publishes a `VERA` cookie for it: the driver tells EmuTOS when it takes the VERA over, so that EmuTOS's VBL leaves the mode, palette and sprites alone and its text console switches to the new screen size, and they share a busy flag so they never use the VERA ports at the same time. This needs the default (direct) EmuTOS build.
 
 Next steps:
 1. **Card read fix:** finish the V1.1 CS-stretch rework, and the address latch if needed. Then switch the EmuTOS read loops to sequential reads, which halves the cost of every screen read.
@@ -158,6 +163,8 @@ Next steps:
 | --- | --- |
 | `emutos-src-1.4/` | EmuTOS 1.4 source, with the Mini-M68k port |
 | `mini68k-tests/` | Utilities and test programs for the board (Sozobon C) |
+| `fvdi/` | fVDI source (Rob Gowin's fork, `xosera` branch), with the Mini-M68k VERA driver in `fvdi/drivers/vera/` |
+| `bitsy/` | Rob Gowin's BITSY MK I software distribution, for reference |
 | `EmuTOS on the Mini-68K port plan.md` | Port plan and status; the `.pdf` is an older export |
 | `X16 Reference - 09 - VERA Programmer's Reference.md` | The VERA programmer's reference, used for the video driver |
 | `pic2a.jpg` | Photo of the desktop running on the board |

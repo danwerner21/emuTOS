@@ -131,12 +131,43 @@ void mini68k_cursor_hide(void);
 void mini68k_cursor_form(void);     /* the VDI's mouse form changed */
 extern volatile UBYTE mini68k_vera_busy;    /* direct drawing in progress */
 
+/*
+ * The 'VERA' cookie points to this, for an fVDI driver that takes over
+ * the VERA (fvdi/fvdi/drivers/vera, which has its own copy of this
+ * structure: keep them the same).
+ *
+ * The driver increments *busy while it uses the VERA ports, and the
+ * console and the VBL leave the VERA alone while it is non-zero. It
+ * calls take_over() once it has set its screen mode: from then on,
+ * EmuTOS no longer sets the VERA's mode, palette or sprites, and its
+ * console uses the new screen size (width x height, 'planes' bits per
+ * pixel, packed). When EmuTOS's own drawing ends and the VERA becomes
+ * free, it calls release_hook() if the driver has set it.
+ *
+ * Functions use 32-bit arguments, whatever the compiler's int size.
+ */
+#define COOKIE_VERA     0x56455241L     /* 'VERA' */
+#define VERA_COOKIE_VERSION 1
+
+struct mini68k_vera_cookie
+{
+    UWORD version;
+    UWORD reserved;
+    volatile UBYTE *busy;
+    void (*take_over)(LONG width, LONG height, LONG planes);
+    void (*release_hook)(void);         /* set by the driver */
+};
+
+extern struct mini68k_vera_cookie mini68k_vera_cookie;
+void mini68k_vera_take_over(LONG width, LONG height, LONG planes);
+
 #if CONF_WITH_VERA_DIRECT
-/* Direct drawing into the VERA (ST high), in vera_direct.c */
+/* Direct drawing into the VERA, in vera_direct.c. VRAM addresses have
+ * 17 bits. */
 void vd_begin(void);
 void vd_end(void);
-void vd_set_write(UWORD addr, UBYTE inc);   /* next DATA1 write */
-UBYTE vd_read_byte(UWORD addr);
+void vd_set_write(ULONG addr, UBYTE inc);   /* next DATA1 write */
+UBYTE vd_read_byte(ULONG addr);
 UBYTE vd_colour_byte(UWORD colour);         /* colour in every pixel */
 WORD vd_expand_byte(UBYTE g, UBYTE *masks); /* 8 pixels to VERA bytes */
 void vd_bounce_read(WORD x1, WORD y1, WORD x2, WORD y2);
@@ -149,8 +180,8 @@ void vd_move(const UBYTE *dst, const UBYTE *src, ULONG count);
 /* in vera_mini68k2.S */
 void vd_write(const UBYTE *src, UWORD count);   /* to DATA1 */
 void vd_fill(UWORD value, UWORD count);         /* to DATA1 */
-void vd_read(UBYTE *dst, UWORD vram, UWORD count);
-void vd_copy(UWORD src_vram, UWORD count);      /* VRAM to DATA1 */
+void vd_read(UBYTE *dst, ULONG vram, UWORD count);
+void vd_copy(ULONG src_vram, UWORD count);      /* VRAM to DATA1 */
 #endif
 
 /* PS/2 keyboard and mouse (VT82C42 on the VERA card), in kbd_mini68k.c */

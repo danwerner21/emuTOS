@@ -771,7 +771,17 @@ ULONG calc_vram_size(void)
     if (HAS_VIDEL)
         return FALCON_VRAM_SIZE + EXTRA_VRAM_SIZE;
 
+#if defined(MACHINE_MINI68K) && CONF_WITH_VERA_DIRECT
+    /*
+     * The screen is in the VERA, and the RAM screen is only a scratch
+     * area (and the screen address an fVDI driver reports). Make it big
+     * enough for the largest mode an fVDI driver may set, 640x400 at
+     * 16 colours, so that nothing drawn there can overrun it.
+     */
+    vram_size = 640UL * 400 / 2;
+#else
     vram_size = (ULONG)BYTES_LIN * V_REZ_VT;
+#endif
 
     /* TT TOS allocates 256 bytes more than actually needed. */
     if (HAS_TT_SHIFTER)

@@ -248,3 +248,16 @@ Most of these are small standalone programs that run under the existing monitor 
 | Shared VERA registers across interrupts | Intermittent screen corruption | One access discipline from the first line of code |
 | Native driver costs more than it returns in monochrome | Months of work for little visible gain | E11 gate; ship color as the reason for the driver |
 | VERA details unverified | Wrong register, port or interrupt assumption in Phase 2 | Check against the card and the VERA reference before coding (E6–E8) |
+
+## Phase 5: fVDI with a VERA driver
+
+**Decision (Oct 31, 2026).** After looking at Rob Gowin's BITSY MK I (a 68000 board with a Xosera video card, running fVDI under EmuTOS or FreeMiNT), the port moves to [fVDI](https://github.com/freemint/fvdi) for GEM, with a VERA driver. The fVDI driver owns the VERA. The first mode is 640×240 at 16 colours, as on BITSY, then 640×400 at 16 colours.
+
+- [x] fVDI source cloned into `fvdi/` (Rob Gowin's fork, `xosera` branch, with upstream fVDI as a second remote). His Xosera driver is the model: like the VERA, Xosera is not memory mapped, so the driver must draw everything itself.
+- [x] Driver `fvdi/fvdi/drivers/vera/`: VERA set-up (4 bpp bitmap, 640 wide, 240 lines doubled or 400), palette, mouse pointer as sprite 0 (applied after the current drawing call when it arrives in an interrupt), fills with patterns and the four writing modes, lines, expand (text, mono icons), blits with the 16 logic operations between the screen and device-format memory forms, pixels. Text and polygons are left to fVDI, which draws them with expand and fill. All drawing is done by the CPU through the ports; the VERA has no blitter.
+- [x] EmuTOS: the `VERA` cookie (busy flag, `take_over()`, release hook); after `take_over()` the VBL leaves the VERA alone and the console uses the driver's screen size (17-bit VRAM addresses, long fills and copies). The RAM screen is sized for 640×400 at 16 colours, so nothing drawn there can overrun it.
+- [x] Build fVDI and the driver for the 68000 (`make CPU=000`), and test on the board: 640×240 at 16 colours works (2026-10-31). Install: `FVDI_GNU.PRG` in `C:\AUTO\` (the only fVDI there, and before any MiNT loader), `VERA.SYS` in `C:\GEMSYS\`, `FVDI.SYS` in the root of C:. Building on Windows needs the fvdi checkout with `core.autocrlf=false`, the two symlinks `include/vdi.gnu` and `include/linea.gnu` as copies, and `engine/setup.c` in lower case.
+- [x] Test the 640×400 mode (`640x400` in `FVDI.SYS`): works (2026-10-31).
+- [x] XBIOS `Setcolor` and `Setpalette` with fVDI: the driver hooks trap #14 itself (`vera_xbios.c`), since EmuTOS no longer writes the palette after the take-over. The `VERA` cookie stays limited to the busy flag, `take_over()` and the release hook. Works on the board (2026-10-31).
+- [x] Speed, first pass (works on the board, 2026-10-31): the port runs (`v_read_run`, `v_write_run`, `v_fill_run`) in assembler, 16 bytes to a loop for writes; fills, text (expand) and blits build each row in a buffer 4 bytes at a time and write it with one run, reading the old row only where it shows through; blit logic operations on longs; vertical lines set the write address once, with the VERA stepping it 320 bytes a pixel.
+- [ ] Speed, later: sequential reads once the card read fix is in; diagonal lines; the pixel calls.

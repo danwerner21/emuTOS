@@ -41,13 +41,14 @@
 #include "lineavars.h"
 #include "tosvars.h"            /* v_bas_ad */
 #include "conout.h"
+#include "intmath.h"            /* divu() */
 #include "mini68k.h"
 #include "vera.h"
 
 #if CONF_WITH_VERA_DIRECT
 
-#define SCREEN_BYTES    32000U  /* all three resolutions */
 #define MAX_ROW_BYTES   160
+#define MAX_RUN         0x8000U /* longest run for vd_fill() and vd_copy() */
 
 static ULONG row_buf[MAX_ROW_BYTES / 4];    /* one row of VERA pixels */
 
@@ -55,29 +56,63 @@ void vd_begin(void)
 {
     mini68k_vera_busy++;
     VERA_REG(VERA_CTRL) = 0;            /* ADDRSEL = 0: ADDR0 */
-    VERA_REG(VERA_ADDR_H) = VERA_INC0;  /* reads: bank 0, no increment */
 }
 
+/*
+ * When the VERA is free again, an fVDI driver that owns it (see
+ * mini68k_vera_take_over()) may have work waiting, such as a mouse
+ * pointer move that arrived in an interrupt while we were drawing.
+ */
 void vd_end(void)
 {
-    mini68k_vera_busy--;
+    if (--mini68k_vera_busy == 0 && mini68k_vera_cookie.release_hook)
+        mini68k_vera_cookie.release_hook();
 }
 
-/* Set the address of the next DATA1 write, with an increment */
-void vd_set_write(UWORD addr, UBYTE inc)
+/*
+ * Set the address of the next DATA1 write, with an increment. VRAM
+ * addresses have 17 bits: a 640x240 or 640x400 16-colour screen (set by
+ * an fVDI driver) is larger than 64 KB.
+ */
+void vd_set_write(ULONG addr, UBYTE inc)
 {
     VERA_REG(VERA_CTRL) = 1;            /* ADDRSEL = 1: ADDR1 */
     VERA_REG(VERA_ADDR_L) = LOBYTE(addr);
     VERA_REG(VERA_ADDR_M) = HIBYTE(addr);
-    VERA_REG(VERA_ADDR_H) = inc;        /* bank 0 */
+    VERA_REG(VERA_ADDR_H) = inc | ((addr >> 16) & 1);
     VERA_REG(VERA_CTRL) = 0;
 }
 
-UBYTE vd_read_byte(UWORD addr)
+UBYTE vd_read_byte(ULONG addr)
 {
+    VERA_REG(VERA_ADDR_H) = (addr >> 16) & 1;   /* no increment */
     VERA_REG(VERA_ADDR_M) = HIBYTE(addr);
     VERA_REG(VERA_ADDR_L) = LOBYTE(addr);   /* the VERA fetches the byte */
     return VERA_REG(VERA_DATA0);
+}
+
+/* vd_fill() and vd_copy() for any length: DATA1 keeps incrementing */
+static void fill_long(UWORD value, ULONG count)
+{
+    while (count)
+    {
+        UWORD n = (count > MAX_RUN) ? MAX_RUN : (UWORD)count;
+
+        vd_fill(value, n);
+        count -= n;
+    }
+}
+
+static void copy_long(ULONG src, ULONG count)
+{
+    while (count)
+    {
+        UWORD n = (count > MAX_RUN) ? MAX_RUN : (UWORD)count;
+
+        vd_copy(src, n);
+        src += n;
+        count -= n;
+    }
 }
 
 /* A colour index repeated over the pixels of a VERA byte */
@@ -179,7 +214,7 @@ void vd_clear(void)
 {
     vd_begin();
     vd_set_write(0, VERA_INC1);
-    vd_fill(0x00, SCREEN_BYTES);
+    fill_long(0x00, (ULONG)v_lin_wr * V_REZ_VT);
     vd_end();
 }
 
@@ -221,18 +256,18 @@ WORD vd_expand_byte(UBYTE g, UBYTE *masks)
  * 16-pixel group is not where the VERA has it, so convert to a VERA
  * offset.
  */
-static UWORD cell_offset(const UBYTE *cell)
+static ULONG cell_offset(const UBYTE *cell)
 {
-    UWORD off = cell - v_bas_ad;
+    ULONG off = cell - v_bas_ad;
     UWORD row, col;
 
     if (v_planes == 1)
         return off;
 
-    row = off / v_lin_wr;
-    col = off % v_lin_wr;
+    row = divu(off, v_lin_wr);
+    col = off - (ULONG)row * v_lin_wr;
     col = (col / (v_planes * 2)) * 2 + (col & 1);   /* character column */
-    return row * v_lin_wr + col * v_planes;
+    return (ULONG)row * v_lin_wr + col * v_planes;
 }
 
 /* Draw a character from the font (src) into the cell at dst */
@@ -240,7 +275,7 @@ void vd_cell_xfer(const UBYTE *src, const UBYTE *dst)
 {
     UWORD fg, bg;
     UBYTE fgb, bgb, masks[4];
-    UWORD off = cell_offset(dst);
+    ULONG off = cell_offset(dst);
     WORD i, n, k;
 
     if (v_stat_0 & M_REVID)
@@ -288,7 +323,7 @@ void vd_cell_xfer(const UBYTE *src, const UBYTE *dst)
 /* Invert a cell (the text cursor) */
 void vd_neg_cell(const UBYTE *cell)
 {
-    UWORD off = cell_offset(cell);
+    ULONG off = cell_offset(cell);
     WORD i, k;
 
     vd_begin();
@@ -313,7 +348,7 @@ void vd_neg_cell(const UBYTE *cell)
 /* Fill cells topx-botx, topy-boty (inclusive) with the background colour */
 void vd_blank_out(int topx, int topy, int botx, int boty)
 {
-    UWORD off = topy * v_cel_wr + topx * v_planes;  /* v_planes bytes per cell */
+    ULONG off = (ULONG)topy * v_cel_wr + topx * v_planes;   /* v_planes bytes per cell */
     UWORD bytes = (botx - topx + 1) * v_planes;
     UWORD rows = (boty - topy + 1) * v_cel_ht;
     UWORD fill = vd_colour_byte(v_col_bg);
@@ -322,7 +357,7 @@ void vd_blank_out(int topx, int topy, int botx, int boty)
     if (bytes == v_lin_wr)              /* whole rows: one run */
     {
         vd_set_write(off, VERA_INC1);
-        vd_fill(fill, rows * v_lin_wr);
+        fill_long(fill, (ULONG)rows * v_lin_wr);
     }
     else
     {
@@ -344,20 +379,20 @@ void vd_blank_out(int topx, int topy, int botx, int boty)
  */
 void vd_move(const UBYTE *dst, const UBYTE *src, ULONG count)
 {
-    UWORD d = dst - v_bas_ad;
-    UWORD s = src - v_bas_ad;
+    ULONG d = dst - v_bas_ad;
+    ULONG s = src - v_bas_ad;
     UWORD n;
 
     vd_begin();
     if (d < s)
     {
         vd_set_write(d, VERA_INC1);
-        vd_copy(s, (UWORD)count);
+        copy_long(s, count);
     }
     else
     {
-        d += (UWORD)count;
-        s += (UWORD)count;
+        d += count;
+        s += count;
         while (count)
         {
             n = (count > v_lin_wr) ? v_lin_wr : (UWORD)count;

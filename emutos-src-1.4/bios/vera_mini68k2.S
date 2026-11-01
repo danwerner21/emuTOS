@@ -59,9 +59,9 @@ copy_next:
 /*
  * Direct drawing helpers (see vera_direct.c). Writes go through DATA1,
  * whose address (ADDR1) the caller has set with an increment. Reads go
- * through DATA0, with ADDR0_H already set to bank 0 and no increment:
+ * through DATA0, with ADDR0 at no increment (the caller has selected ADDR0):
  * on this card reads do not advance the address, so the low (and, every
- * 256 bytes, the middle) address byte is written before each read.
+ * 256 bytes, the middle and bank) address bytes are written before each read.
  */
 #define VERA_DATA1      0xffff8084
 
@@ -91,17 +91,23 @@ fill_next:
         dbra    d1,fill_loop
         rts
 
-/* void vd_read(UBYTE *dst, UWORD vram, UWORD count); */
+/* void vd_read(UBYTE *dst, ULONG vram, UWORD count);
+ * VRAM addresses have 17 bits: the bank (bit 16) is in ADDR_H, which
+ * also holds the (zero) increment */
         .globl  _vd_read
 _vd_read:
-        movem.l d2/a2,-(sp)
-        move.l  8+4(sp),a0              // destination in RAM
-        move.w  8+8(sp),d0              // VRAM address (bank 0)
-        move.w  8+10(sp),d1             // byte count
+        movem.l d2-d3/a2,-(sp)
+        move.l  12+4(sp),a0             // destination in RAM
+        move.l  12+8(sp),d0             // VRAM address
+        move.w  12+12(sp),d1            // byte count
         jeq     read_done
         subq.w  #1,d1
         lea     VERA_ADDR_L,a1
         lea     VERA_DATA0,a2
+        move.l  d0,d3
+        swap    d3
+        and.b   #1,d3                   // bank, no increment
+        move.b  d3,VERA_ADDR_H
         move.w  d0,d2
         lsr.w   #8,d2
         move.b  d2,VERA_ADDR_M
@@ -112,24 +118,31 @@ read_loop:
         jne     read_same_page
         addq.b  #1,d2                   // next 256-byte page
         move.b  d2,VERA_ADDR_M
+        jne     read_same_page
+        addq.b  #1,d3                   // next 64 KB bank
+        move.b  d3,VERA_ADDR_H
 read_same_page:
         dbra    d1,read_loop
 read_done:
-        movem.l (sp)+,d2/a2
+        movem.l (sp)+,d2-d3/a2
         rts
 
-/* void vd_copy(UWORD src_vram, UWORD count);
- * copy count bytes from VRAM address src_vram (bank 0) to DATA1 */
+/* void vd_copy(ULONG src_vram, UWORD count);
+ * copy count bytes from VRAM address src_vram to DATA1 */
         .globl  _vd_copy
 _vd_copy:
-        movem.l d2/a2,-(sp)
-        move.w  8+4(sp),d0              // source VRAM address
-        move.w  8+6(sp),d1              // byte count
+        movem.l d2-d3/a2,-(sp)
+        move.l  12+4(sp),d0             // source VRAM address
+        move.w  12+8(sp),d1             // byte count
         jeq     vcopy_done
         subq.w  #1,d1
         lea     VERA_ADDR_L,a0
         lea     VERA_DATA0,a1
         lea     VERA_DATA1,a2
+        move.l  d0,d3
+        swap    d3
+        and.b   #1,d3                   // bank, no increment
+        move.b  d3,VERA_ADDR_H
         move.w  d0,d2
         lsr.w   #8,d2
         move.b  d2,VERA_ADDR_M
@@ -140,10 +153,13 @@ vcopy_loop:
         jne     vcopy_same_page
         addq.b  #1,d2
         move.b  d2,VERA_ADDR_M
+        jne     vcopy_same_page
+        addq.b  #1,d3
+        move.b  d3,VERA_ADDR_H
 vcopy_same_page:
         dbra    d1,vcopy_loop
 vcopy_done:
-        movem.l (sp)+,d2/a2
+        movem.l (sp)+,d2-d3/a2
         rts
 
 #endif /* CONF_WITH_VERA_DIRECT */

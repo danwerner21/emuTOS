@@ -686,7 +686,7 @@ static void xbios_20(const UBYTE *ptr)
 
 
 
-#if CONF_WITH_PRINTER_PORT
+#if WITH_PRINTER
 
 /*
  * xbios_21 - (setprt) Set/get the desktop printer configuration word.
@@ -704,7 +704,7 @@ static WORD xbios_21(WORD config)
 }
 #endif
 
-#endif  /* CONF_WITH_PRINTER_PORT */
+#endif  /* WITH_PRINTER */
 
 
 
@@ -1329,7 +1329,7 @@ const PFLONG xbios_vecs[] = {
     xbios_unimpl,   /* 1f */
 #endif
     VEC(xbios_20, dosound),
-#if CONF_WITH_PRINTER_PORT
+#if WITH_PRINTER
     VEC(xbios_21, setprt),
 #else
     xbios_unimpl,   /* 21 */

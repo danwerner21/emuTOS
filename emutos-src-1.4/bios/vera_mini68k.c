@@ -49,6 +49,10 @@
 #include "asm.h"
 #include "biosdefs.h"           /* ST_LOW, ST_MEDIUM, ST_HIGH */
 #include "tosvars.h"            /* colorptr */
+#include "lineavars.h"          /* V_REZ_HZ, V_REZ_VT, v_planes */
+#include "cookie.h"
+#include "screen.h"             /* set_rez_hacked() */
+#include "vdiext.h"             /* update_rez_dependent() */
 #include "mini68k.h"
 #include "vera.h"
 #include "../vdi/vdi_defs.h"     /* GCURX, GCURY: mouse position */
@@ -149,6 +153,8 @@ static ULONG row_buf[MAX_ROW_BYTES / 4];    /* one converted row */
 #define SPRITE_Y_OFFSET 0           /* sprite lines above the bitmap */
 
 volatile UBYTE mini68k_vera_busy;   /* direct drawing in progress */
+struct mini68k_vera_cookie mini68k_vera_cookie; /* for an fVDI driver */
+static BOOL vera_external;          /* an fVDI driver owns the VERA */
 static volatile WORD sprite_x, sprite_y;
 static volatile BOOL sprite_shown;
 static volatile BOOL sprite_moved;  /* position or visibility to write */
@@ -418,11 +424,34 @@ BOOL mini68k_vera_init(void)
         sprite_shape_changed = TRUE;
 
         VERA_REG(VERA_DC0) = 0x51;  /* VGA output, layer 0 and sprites */
+
+        /* for an fVDI driver that takes over the VERA */
+        mini68k_vera_cookie.version = VERA_COOKIE_VERSION;
+        mini68k_vera_cookie.busy = &mini68k_vera_busy;
+        mini68k_vera_cookie.take_over = mini68k_vera_take_over;
+        cookie_add(COOKIE_VERA, (ULONG)&mini68k_vera_cookie);
     }
     else
         VERA_REG(VERA_DC0) = 0x11;  /* VGA output, layer 0 only */
 
     return TRUE;
+}
+
+/*
+ * Called (through the 'VERA' cookie) by an fVDI driver that has set its
+ * own screen mode: from now on the driver owns the VERA's mode, palette
+ * and sprites, and the console uses its screen size. Only in the direct
+ * mode, where the console draws into the VERA itself.
+ */
+void mini68k_vera_take_over(LONG width, LONG height, LONG planes)
+{
+    vera_external = TRUE;       /* the VBL leaves the VERA alone */
+
+    V_REZ_HZ = width;
+    V_REZ_VT = height;
+    v_planes = planes;
+    update_rez_dependent();     /* bytes per line, VDI tables */
+    set_rez_hacked();           /* console size and font; no Setscreen */
 }
 
 BOOL mini68k_vera_present(void)
@@ -761,8 +790,8 @@ void mini68k_vera_vbl(void)
 
     if (!vera_present || !vera_screen || mini68k_fdc_active)
         return;     /* the floppy needs the CPU more than the screen */
-    if (CONF_WITH_VERA_DIRECT && mini68k_vera_busy)
-        return;     /* direct drawing in progress: next VBL */
+    if (CONF_WITH_VERA_DIRECT && (mini68k_vera_busy || vera_external))
+        return;     /* drawing in progress, or an fVDI driver owns the VERA */
 
     if (rez_shown != rez_wanted)
     {

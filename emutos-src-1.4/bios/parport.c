@@ -12,7 +12,7 @@
 
 #include "emutos.h"
 #include "parport.h"
-#if CONF_WITH_PRINTER_PORT
+#if WITH_PRINTER
 #include "asm.h"
 #include "delay.h"
 #include "sound.h"
@@ -21,6 +21,9 @@
 #include "ikbd.h"
 #include "tosvars.h"
 #endif
+#ifdef MACHINE_MINI68K
+#include "mini68k.h"
+#endif
 
 /*
  * known differences with respect to the original TOS:
@@ -28,7 +31,26 @@
  * - no input
  */
 
-#if CONF_WITH_PRINTER_PORT
+#ifdef MACHINE_MINI68K
+/*
+ * The Mini-M68k's printer port is on the VERA card, at ECB ports
+ * 0xa4-0xa6, with the PC's layout: data, status (bit 7 the inverted
+ * BUSY line) and control (bit 0 STROBE, 1 = line active; bit 2 INIT,
+ * 0 = active; bit 3 SELECT IN).
+ */
+#define LPT_DATA        (*(volatile UBYTE *)0xffff80a4UL)
+#define LPT_STAT        (*(volatile UBYTE *)0xffff80a5UL)
+#define LPT_CTRL        (*(volatile UBYTE *)0xffff80a6UL)
+#define LPT_NOT_BUSY    0x80
+#define LPT_STROBE      0x01
+#define LPT_INIT        0x04
+#define LPT_SELECT      0x08
+#define LPT_IDLE        (LPT_SELECT | LPT_INIT)
+
+static BOOL lpt_present;    /* the VERA card is fitted */
+#endif
+
+#if WITH_PRINTER
 /* timing stuff */
 #define DELAY_1US       delay_loop(delay1us)
 static ULONG delay1us;
@@ -42,7 +64,7 @@ static WORD printer_config;
 static ULONG last_timeout;
 #endif
 
-#if CONF_WITH_PRINTER_PORT
+#if WITH_PRINTER
 /*
  * implements xbios_21 - Set/get the desktop printer configuration word
  */
@@ -59,6 +81,23 @@ WORD setprt(WORD config)
 /*
  * do parallel port output
  */
+#ifdef MACHINE_MINI68K
+static LONG prnout(WORD c)
+{
+    WORD old_sr;
+
+    old_sr = set_sr(0x2700);    /* keep the strobe pulse short */
+
+    LPT_DATA = c;
+    DELAY_1US;                  /* data valid for 500 ns before the strobe */
+    LPT_CTRL = LPT_IDLE | LPT_STROBE;
+    DELAY_1US;                  /* and a strobe of at least 500 ns */
+    LPT_CTRL = LPT_IDLE;
+
+    set_sr(old_sr);
+    return 1L;
+}
+#else
 static LONG prnout(WORD c)
 {
     WORD old_sr;
@@ -104,15 +143,30 @@ static LONG prnout(WORD c)
     return 1L;
 }
 #endif
+#endif
 
 void parport_init(void)
 {
-#if CONF_WITH_PRINTER_PORT
+#if WITH_PRINTER
+#ifdef MACHINE_MINI68K
+    lpt_present = mini68k_vera_present();
+#else
     /* set Strobe high */
     ongibit(GI_STROBE);
+#endif
 
     /* initialize delay */
     delay1us = loopcount_1_msec / 1000;
+
+#ifdef MACHINE_MINI68K
+    if (lpt_present)
+    {
+        /* reset the printer, as a PC BIOS does: INIT low for 100 us */
+        LPT_CTRL = LPT_SELECT;
+        delay_loop(loopcount_1_msec / 10);
+        LPT_CTRL = LPT_IDLE;
+    }
+#endif
 
     /* initialize other printer variables */
     printer_config = 0;     /* Setprt() default: output via parallel port */
@@ -128,7 +182,11 @@ LONG bconin0(void)
 
 LONG bcostat0(void)
 {
-#if CONF_WITH_PRINTER_PORT
+#ifdef MACHINE_MINI68K
+    if (lpt_present && (LPT_STAT & LPT_NOT_BUSY))
+        return -1;
+    return 0;   /* busy, or no printer port */
+#elif CONF_WITH_PRINTER_PORT
     MFP *mfp=MFP_BASE;
 
     if(mfp->gpip & 1) {
@@ -143,8 +201,13 @@ LONG bcostat0(void)
 
 LONG bconout0(WORD dev, WORD c)
 {
-#if CONF_WITH_PRINTER_PORT
+#if WITH_PRINTER
     ULONG now = hz_200;
+
+#ifdef MACHINE_MINI68K
+    if (!lpt_present)
+        return 0L;
+#endif
 
     /*
      * if we didn't time out 'recently', we check if the port is available,

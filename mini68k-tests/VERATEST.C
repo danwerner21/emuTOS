@@ -546,6 +546,116 @@ static void test_lpt()
 }
 
 /*
+ * 8. Printer handshake: send a line with each STROBE polarity, and watch
+ *    the status after every byte for the printer's answer (BUSY going
+ *    active, or an ACK pulse). A printer that takes a byte shows one of
+ *    them; if neither ever shows, it never saw a strobe. The lines end
+ *    with a form feed, so a page printer prints them too.
+ */
+static int lpt_send(s, idle, pulse, answers)
+char *s;
+int idle, pulse;
+int *answers;
+{
+    int i, st, seen;
+    long end;
+
+    IO(LPT_CTRL) = idle;
+    wait_ticks(2L);
+    *answers = 0;
+    for ( ; *s; s++) {
+        end = ticks() + 400;            /* 2 s per character */
+        while (!(IO(LPT_STAT) & 0x80) && ticks() < end)
+            ;
+        if (!(IO(LPT_STAT) & 0x80))
+            return 0;                   /* stays busy */
+        IO(LPT_DATA) = *s;
+        IO(LPT_CTRL) = pulse;
+        IO(LPT_CTRL) = idle;
+        seen = 0;
+        for (i = 0; i < 2000; i++) {    /* some ms */
+            st = inb(LPT_STAT);
+            if ((st & 0xc0) != 0xc0)    /* BUSY or ACK active */
+                seen = 1;
+        }
+        *answers += seen;
+    }
+    return 1;
+}
+
+static void test_lpt_handshake()
+{
+    static char line_pc[] = "Strobe polarity A (PC)\r\n\f";
+    static char line_inv[] = "Strobe polarity B (inverted)\r\n\f";
+    int n, ok;
+
+    printf("\nPrinter handshake (the printer must be online)\n");
+    show_status();
+
+    ok = lpt_send(line_pc, CTRL_SELECT | CTRL_INIT, CTRL_SELECT | CTRL_INIT | CTRL_STROBE, &n);
+    printf("  A, PC polarity: %s, answered %d of %d bytes\n",
+           ok ? "sent" : "printer stays busy", n, (int)sizeof(line_pc) - 1);
+
+    ok = lpt_send(line_inv, CTRL_SELECT | CTRL_INIT | CTRL_STROBE, CTRL_SELECT | CTRL_INIT, &n);
+    printf("  B, inverted:    %s, answered %d of %d bytes\n",
+           ok ? "sent" : "printer stays busy", n, (int)sizeof(line_inv) - 1);
+
+    IO(LPT_CTRL) = CTRL_SELECT | CTRL_INIT;     /* back to the PC idle state */
+    show_status();
+}
+
+/*
+ * 9. Printer pins, for measuring on the DB-25 with nothing connected:
+ *    fixed states one key at a time (the status is ignored), then the
+ *    strobe pulsing continuously, for a scope.
+ */
+static void lpt_step(what, data, ctrl)
+char *what;
+int data, ctrl;
+{
+    IO(LPT_DATA) = data;
+    IO(LPT_CTRL) = ctrl;
+    printf("  %s\n    (data %02x, control %x; a key for the next step) ", what, data, ctrl);
+    get_key();
+    printf("\n");
+}
+
+static void test_lpt_pins()
+{
+    int c;
+
+    printf("\nPrinter pins (DB-25; 1 STROBE, 2-9 D0-D7, 14 AUTOFEED, 16 INIT, 17 SELECT IN)\n");
+    printf("  status %02x (with nothing connected the inputs may float)\n", inb(LPT_STAT));
+
+    lpt_step("1. idle (PC): pin 1 high, 14 high, 16 high, 17 low; data 2-9 low",
+             0x00, CTRL_SELECT | CTRL_INIT);
+    lpt_step("2. data 55: pins 2, 4, 6, 8 high (D0, D2, D4, D6), 3, 5, 7, 9 low",
+             0x55, CTRL_SELECT | CTRL_INIT);
+    lpt_step("3. data aa: pins 3, 5, 7, 9 high, 2, 4, 6, 8 low",
+             0xaa, CTRL_SELECT | CTRL_INIT);
+    lpt_step("4. STROBE active: pin 1 low (the rest as in step 1)",
+             0x00, CTRL_SELECT | CTRL_INIT | CTRL_STROBE);
+    lpt_step("5. AUTOFEED active: pin 14 low",
+             0x00, CTRL_SELECT | CTRL_INIT | CTRL_AUTOLF);
+    lpt_step("6. INIT active: pin 16 low",
+             0x00, CTRL_SELECT);
+    lpt_step("7. SELECT IN inactive: pin 17 high",
+             0x00, CTRL_INIT);
+
+    printf("  8. strobe pulsing on pin 1, data counting on 2-9 (a key to stop)\n");
+    for (c = 0; !key_waiting(); c++) {
+        IO(LPT_DATA) = c;
+        IO(LPT_CTRL) = CTRL_SELECT | CTRL_INIT | CTRL_STROBE;
+        IO(LPT_CTRL) = CTRL_SELECT | CTRL_INIT;
+    }
+    get_key();
+
+    IO(LPT_DATA) = 0;
+    IO(LPT_CTRL) = CTRL_SELECT | CTRL_INIT;     /* back to idle */
+    printf("  done\n");
+}
+
+/*
  * 7. VRAM access diagnostic: single addresses against auto-increment,
  *    to find out whether each data port access steps the address by one
  */
@@ -627,6 +737,8 @@ main()
         printf("  5  Keyboard and mouse (VT82C42)\n");
         printf("  6  Parallel port\n");
         printf("  7  VRAM access diagnostic (auto-increment)\n");
+        printf("  8  Printer handshake (strobe polarity)\n");
+        printf("  9  Printer pins (for measuring, nothing connected)\n");
         printf("  r  Reset VERA\n");
         printf("  q  Quit\n");
         printf("Choice: ");
@@ -641,6 +753,8 @@ main()
         case '5': test_keyboard(); break;
         case '6': test_lpt(); break;
         case '7': test_vram_diag(); break;
+        case '8': test_lpt_handshake(); break;
+        case '9': test_lpt_pins(); break;
         case 'r': case 'R': reset_vera(); break;
         case 'q': case 'Q':
             Super(ssp);

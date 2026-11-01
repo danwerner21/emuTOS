@@ -1,0 +1,53 @@
+
+				Announcing
+
+			  The Sozobon C Compiler
+
+
+A new freeware C compiler has been developed by Sozobon, Limited and is
+being distributed through bulletin board systems, networks of various
+kinds, and by direct mail. The package was written by Johann Ruegg, Tony
+Andrews, and Joe Treat and includes the following features:
+
+  * Full K&R compiler supporting: bit fields, structure assignment,
+    structure parameters and return values, enumerations, and floating
+    point.
+
+  * Full source code available at no additional cost.
+
+  * Compiler includes: front-end, optimizer, assembler, and linker.
+
+  * Code generation averages 5% to 15% better than Alcyon.
+
+  * Uses Dale Schumacher's dLibs runtime library (version 1.2) for
+    runtime support.
+
+  * Generates Alcyon-compatible object modules and libraries.
+
+  * A complete package, including utilities like: cc, ar, size, nm, and
+    an enhanced version of a PD make program.
+
+  * Includes a utility that removes local symbols from Alcyon libraries,
+    reducing their size by around 30%.
+
+The entire system is being distributed as freeware. If you receive this
+announcement, but are unable to find the compiler, you can order it from
+us directly by sending $10 (checks payable to Tony Andrews) to:
+
+		Tony Andrews
+		5902E Gunbarrel Ave.
+		Boulder, CO 80301
+
+You'll receive one double-sided or two single-sided disks containing the
+compiler (source code and executables), documentation, and version 1.2
+of dLibs (includes source). Be sure to specify single or double-sided
+disks and include your full return address. The $10 charge covers shipping
+and handling only. The product itself is free.  You're encouraged to make
+copies for friends, upload it to bulletin boards, or put it in the disk
+library of your local user's group. Help us get the compiler distributed,
+so fewer people have to pay $10 for it, and we don't spend the rest of our
+lives copying floppies.
+
+					Tony Andrews
+					10/22/88
+					Sozobon, Limited

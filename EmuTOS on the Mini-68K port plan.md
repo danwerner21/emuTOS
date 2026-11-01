@@ -15,7 +15,7 @@ Phases 2 to 4 were written before the VERA card arrived. Their checklists are ke
 | 2. Shadow framebuffer | Done: EmuDesk and EmuCON on the VERA, changed-row copying at the VERA VSYNC (Oct 24, 2026) |
 | 3. Input | Mouse working on the desktop (Oct 24, 2026); keyboard working in EmuTOS (Oct 25, 2026) |
 | 4. Colour and direct | Colour through the shadow copy working (Oct 24, 2026); direct mode working in all three resolutions and the default (Oct 25, 2026) |
-| 5. fVDI | 640×240 and 640×400 at 16 colours working, with the XBIOS palette hook and a first speed pass (Oct 31, 2026). Printer working (Oct 31, 2026). Open: card read fix, more speed work, VERATEST |
+| 5. fVDI | 640×240 and 640×400 at 16 colours working, with the XBIOS palette hook and a first speed pass (Oct 31, 2026). Printer working (Oct 31, 2026). Second speed pass and VERATEST alongside the drivers working (Nov 1, 2026). Open: card read fix, then sequential reads |
 
 ## Hardware
 
@@ -45,7 +45,7 @@ Each row is confirmed. The last column says how it shaped the port.
 - **Start:** `s emutos` at the BIOS prompt (supervisor mode is required). Alternatively, an `EMUTOS.CMD` file containing `s emutos.elf` lets `emutos` alone work, and `BOOT.CMD` can auto-boot it.
 - **Shell:** the default build has no GEM (`WITH_AES=0`) and boots into EmuCON. `make mini-68k WITH_AES=1` includes the desktop.
 - **Screen:** on the VERA card (Phases 2, 4 and 5). Without one, the 640×400 monochrome screen in RAM below `phystop` gives the console 80 columns, and a 50 Hz vertical blank is emulated from every 4th timer tick.
-- **Code:** the README's *What was added to EmuTOS* lists every new file and hook.
+- **Code:** the README's *What was added and changed* lists every new and modified file, in EmuTOS and in the fVDI tree.
 
 ## Phase 0: groundwork (done)
 
@@ -267,6 +267,16 @@ Most of these are small standalone programs that run under the existing monitor 
 - [x] Speed, first pass (works on the board, 2026-10-31): the port runs (`v_read_run`, `v_write_run`, `v_fill_run`) in assembler, 16 bytes to a loop for writes; fills, text (expand) and blits build each row in a buffer 4 bytes at a time and write it with one run, reading the old row only where it shows through; blit logic operations on longs; vertical lines set the write address once, with the VERA stepping it 320 bytes a pixel.
 - [x] EmuTOS's text cursor hidden on the desktop: fVDI's `v_exit_cur` and `v_enter_cur` (`engine/escape.c`) now send the console `ESC f` and `ESC e`, as EmuTOS's own VDI does (Nov 1, 2026). This is the one change to fVDI's engine; everything else is in the driver.
 - [x] Printer (EmuTOS, not fVDI): the parallel port on the VERA card, in `bios/parport.c` (`Bconout` device 0, `Bcostat`, `Setprt`). EmuCON's `copy` passes `PRN:`, `AUX:` and `CON:` through. Working on the board after the V1.1 strobe fix (Oct 31, 2026).
-- [ ] VERATEST alongside the EmuTOS drivers (written Nov 1, 2026, not yet tested). With the `VERA` cookie present, it holds the busy flag while it uses the VERA ports. It saves VRAM and the display registers before the VRAM test and the test card and restores them afterwards, printing its results only then. It counts EmuTOS's VBLs instead of taking the VSYNC flags. For the keyboard test it borrows the controller through the cookie's new `kbd_hold()` (version 2), and EmuTOS sets up the keyboard and mouse again afterwards. Its keyboard replies skip stale bytes.
-- [ ] Speed, second pass (written Nov 1, 2026, not yet tested). Lines of any slope are drawn a byte (two pixels) at a time. Each pixel's change to its byte is kept as an AND mask and an XOR value, so a byte is read only where part of it shows through. The write address is set again only when the next byte isn't where the VERA has stepped to: along the row for flat lines, a row down or up for steep ones (this replaces the separate vertical-line code). The read address's high bytes are only rewritten when the 256-byte page changes. The pixel calls use a 16×16 multiply for the row address instead of the 32-bit library multiply.
+- [x] VERATEST alongside the EmuTOS drivers (works on the board under fVDI, Nov 1, 2026). With the `VERA` cookie present, it holds the busy flag while it uses the VERA ports. It saves VRAM and the display registers before the VRAM test and the test card and restores them afterwards, printing its results only then. It counts EmuTOS's VBLs instead of taking the VSYNC flags. For the keyboard test it borrows the controller through the cookie's new `kbd_hold()` (version 2), and EmuTOS sets up the keyboard and mouse again afterwards. Its keyboard replies skip stale bytes.
+- [x] Speed, second pass (works on the board, Nov 1, 2026). Lines of any slope are drawn a byte (two pixels) at a time. Each pixel's change to its byte is kept as an AND mask and an XOR value, so a byte is read only where part of it shows through. The write address is set again only when the next byte isn't where the VERA has stepped to: along the row for flat lines, a row down or up for steep ones (this replaces the separate vertical-line code). The read address's high bytes are only rewritten when the 256-byte page changes. The pixel calls use a 16×16 multiply for the row address instead of the 32-bit library multiply.
+- [x] Text mode on a VERA tile layer (works on the board, Nov 1, 2026). Scrolling the console in fVDI's 4-bit bitmap copied about 120 KB through the ports, close to a second a line. Now fVDI's `v_enter_cur`/`v_exit_cur` call the cookie's new `text_mode()` (version 3). While in text mode, EmuTOS's console uses layer 1:
+  - 1 bpp tiles from its own font, at VRAM `0x1E000`;
+  - a 128×32 map used as a ring, at `0x1C000`;
+  - full-screen scrolls through the vertical scroll register.
+- [x] Mouse pointer drawn all black (fixed, works on the board, Nov 1, 2026). VERATEST test `p` showed the cause:
+  - The image and sprite settings were right, but palette entry 17 (outline) was black.
+  - The driver's copy of the 16 colours (`hw_palette`, the last 32 bytes of its BSS) read all zeros, while the VERA held the right colours. Pointer colours and `Setcolor` came from that copy.
+  - The driver now reads colours back from the VERA's palette, and the saved XBIOS vector has moved to the data section.
+- [ ] Find what zeroes the end of the fVDI driver's BSS after start-up. It's harmless now, since the last BSS variables are scratch row buffers, but something is writing where it shouldn't. Next step: a test driver that prints its BSS address at boot, so VERATEST can watch those bytes.
+- [x] Sound on the VERA PSG (works on the board, Nov 1, 2026). EmuTOS's YM2149 code (`CONF_WITH_YM2149`) runs on emulated registers (`bios/ym_mini68k.c`), played on the PSG from the 200 Hz timer. That gives the bell, the key click, `Dosound` and `Giaccess`, and saves and restores the VERA's address registers instead of waiting for the busy flag. For music, `ZSMPLAY.TTP` plays Commander X16 ZSM chiptunes straight on the PSG: all 16 voices, PSG parts only. Decided against (Nov 1, 2026): a YM2149 card for SNDH files, and VERA PCM behind the Falcon XBIOS sound calls.
 - [ ] Card read-timing fix (V1.1 CS stretch), then sequential reads in the driver: `v_read_run` sets the address once instead of per byte, which halves the cost of every read-modify-write.

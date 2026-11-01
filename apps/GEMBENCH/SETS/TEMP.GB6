@@ -1,0 +1,31 @@
+GEMBENCH 6 
+ 0
+ 0
+ 0
+ 0
+ 0
+ 0
+ 0
+ 0
+ 0
+ 0
+ 0
+ 0
+ 0
+ 0
+ 0
+ 0
+ 0
+ 0
+ 0
+TOS 2.06  AES 3.20
+BLiTTER Enabled
+FPU Not present
+PLANES 2
+COLOURS 4096
+RES 640*200*4
+NVDI not present
+STE 68000
+GEMDOS v0.20
+CACHE D=OFF  I=OFF
+Ran from ST-RAM

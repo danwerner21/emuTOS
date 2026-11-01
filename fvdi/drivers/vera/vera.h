@@ -74,6 +74,7 @@ struct vera_cookie
     void (*take_over)(long width, long height, long planes);
     void (*release_hook)(void);
     void (*kbd_hold)(long hold);    /* version 2, for VERATEST */
+    void (*text_mode)(long on);     /* version 3, called by engine/escape.c */
 };
 
 /* Screen geometry, set by initialize() */
@@ -128,7 +129,7 @@ void v_fill_run(uint32_t value, uint32_t count);        /* at ADDR1, low byte */
 extern const uint8_t tos_colours[16];
 uint8_t colour_byte(uint16_t hw_colour);    /* the colour in both pixels */
 void write_hw_colour(uint16_t entry, uint16_t rgb);  /* VERA palette, 0x0RGB */
-extern uint16_t hw_palette[16];             /* current colours, 0x0RGB */
+uint16_t read_hw_colour(uint16_t entry);    /* from the VERA, 0x0RGB; between v_begin() and v_end() */
 void set_hw_colour(uint16_t hw, uint16_t rgb);  /* not between v_begin() and v_end() */
 
 /* XBIOS Setcolor and Setpalette (vera_xbios.c) */

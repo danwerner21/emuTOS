@@ -1,0 +1,5 @@
+ID=qed color configuration
+GlobalBgColor=0
+GlobalFgColor=1
+GlobalBlockBgColor=1
+GlobalBlockFgColor=0

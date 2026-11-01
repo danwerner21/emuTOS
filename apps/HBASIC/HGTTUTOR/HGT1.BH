@@ -1,0 +1,23 @@
+
+CONST 	about%=     0
+
+CONST	ab_ok%=     1
+CONST	ab_text%=     2
+
+CONST 	quit%=     1
+
+CONST	qu_ok%=     1
+CONST	qu_cancel%=     2
+CONST	qu_text%=     3
+
+CONST 	menu1%=     2
+
+CONST	menu_about%=     7
+CONST	menu_quit%=    16
+CONST	menu_load%=    17
+
+CONST 	load%=     3
+
+CONST	load_text%=     1
+CONST	load_ok%=     2
+CONST	load_cancel%=     3

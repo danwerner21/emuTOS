@@ -34,6 +34,40 @@ static void tos_console(const char *s)
             Bconout(2, *s++);
 }
 
+/*
+ * EmuTOS on the Mini-M68k (its 'VERA' cookie, version 3 on) can put the
+ * console on a VERA text layer while GEM is in text mode, which is far
+ * faster than drawing text into the bitmap. Called in supervisor mode,
+ * as VDI calls are.
+ */
+struct vera_cookie
+{
+    short version;
+    short reserved;
+    void *busy;
+    void *take_over;
+    void *release_hook;
+    void *kbd_hold;
+    void (*text_mode)(long on);
+};
+
+static void vera_text_mode(long on)
+{
+    long *jar = *(long **)0x5a0;        /* _p_cookies */
+
+    if (bconout || !jar)
+        return;
+    for ( ; jar[0]; jar += 2)
+        if (jar[0] == 0x56455241L)      /* 'VERA' */
+        {
+            struct vera_cookie *cookie = (struct vera_cookie *)jar[1];
+
+            if (cookie->version >= 3 && cookie->text_mode)
+                cookie->text_mode(on);
+            return;
+        }
+}
+
 
 static Fgbg get_colour(Virtual *vwk, int reversed)
 {
@@ -146,6 +180,7 @@ void CDECL v_exit_cur(Virtual *vwk)
     v_eeos(vwk);
     vwk->console.cursor = 0;
     tos_console("\033H\033f");      /* home, hide the cursor */
+    vera_text_mode(0);
 }
 
 
@@ -154,6 +189,7 @@ void CDECL v_enter_cur(Virtual *vwk)
     v_curhome(vwk);
     v_eeos(vwk);
     vwk->console.cursor = 1;
+    vera_text_mode(1);
     tos_console("\033H\033e\r");    /* home, show the cursor */
 }
 

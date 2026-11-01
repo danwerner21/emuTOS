@@ -1,0 +1,1662 @@
+
+;********************************************************
+[ERROR.DAT for Pure C]
+;********************************************************
+Active = TRUE
+
+<Warnings>
+(Color2)
+Attribs = BOLD
+Color = -1
+Selcolor = -1
+(Color16)
+Attribs = BOLD
+Color = 11
+Selcolor = 3
+(Color256)
+Attribs = BOLD
+Color = 11
+Selcolor = 3
+
+<Errors>
+(Color2)
+Attribs = BOLD
+Color = -1
+Selcolor = -1
+(Color16)
+Attribs = BOLD
+Color = 2
+Selcolor = 2
+(Color256)
+Attribs = BOLD
+Color = 2
+Selcolor = 2
+
+<Line numbers>
+(Color2)
+Attribs = NONE
+Color = -1
+Selcolor = -1
+(Color16)
+Attribs = NONE
+Color = 4
+Selcolor = 5
+(Color256)
+Attribs = NONE
+Color = 4
+Selcolor = 5
+
+;********************************************************
+[GFA Basic LST file]
+;********************************************************
+Active = TRUE
+
+<Kommentar>
+(Color2)
+Attribs = LIGHT
+Color = -1
+Selcolor = -1
+(Color16)
+Attribs = NONE
+Color = 11
+Selcolor = 3
+(Color256)
+Attribs = NONE
+Color = 11
+Selcolor = 3
+
+<Schlsselworte>
+(Color2)
+Attribs = BOLD
+Color = -1
+Selcolor = -1
+(Color16)
+Attribs = BOLD
+Color = -1
+Selcolor = -1
+(Color256)
+Attribs = BOLD
+Color = -1
+Selcolor = -1
+
+<Hex-Konstanten>
+(Color2)
+Attribs = NONE
+Color = -1
+Selcolor = -1
+(Color16)
+Attribs = NONE
+Color = 12
+Selcolor = 5
+(Color256)
+Attribs = NONE
+Color = 12
+Selcolor = 5
+
+;********************************************************
+[qed syntax definition]
+;********************************************************
+Active = TRUE
+
+<Comment>
+(Color2)
+Attribs = LIGHT
+Color = -1
+Selcolor = -1
+(Color16)
+Attribs = NONE
+Color = 11
+Selcolor = 3
+(Color256)
+Attribs = NONE
+Color = 11
+Selcolor = 3
+
+<String>
+(Color2)
+Attribs = NONE
+Color = -1
+Selcolor = -1
+(Color16)
+Attribs = NONE
+Color = 9
+Selcolor = 9
+(Color256)
+Attribs = NONE
+Color = 9
+Selcolor = 9
+
+<Keywords>
+(Color2)
+Attribs = BOLD
+Color = -1
+Selcolor = -1
+(Color16)
+Attribs = BOLD
+Color = -1
+Selcolor = -1
+(Color256)
+Attribs = BOLD
+Color = -1
+Selcolor = -1
+
+<Text definition>
+(Color2)
+Attribs = BOLD
+Color = -1
+Selcolor = -1
+(Color16)
+Attribs = BOLD
+Color = 2
+Selcolor = 2
+(Color256)
+Attribs = BOLD
+Color = 2
+Selcolor = 2
+
+<rule definition>
+(Color2)
+Attribs = BOLD
+Color = -1
+Selcolor = -1
+(Color16)
+Attribs = BOLD
+Color = 10
+Selcolor = 10
+(Color256)
+Attribs = BOLD
+Color = 10
+Selcolor = 10
+
+<color resolution>
+(Color2)
+Attribs = BOLD, ITALIC
+Color = -1
+Selcolor = -1
+(Color16)
+Attribs = BOLD, ITALIC
+Color = -1
+Selcolor = -1
+(Color256)
+Attribs = BOLD, ITALIC
+Color = -1
+Selcolor = -1
+
+<Decimal constants>
+(Color2)
+Attribs = NONE
+Color = -1
+Selcolor = -1
+(Color16)
+Attribs = NONE
+Color = 12
+Selcolor = 5
+(Color256)
+Attribs = NONE
+Color = 12
+Selcolor = 5
+
+;********************************************************
+[C Source]
+;********************************************************
+Active = TRUE
+
+<Comment>
+(Color2)
+Attribs = LIGHT
+Color = -1
+Selcolor = -1
+(Color16)
+Attribs = NONE
+Color = 11
+Selcolor = 3
+(Color256)
+Attribs = NONE
+Color = 11
+Selcolor = 3
+
+<String>
+(Color2)
+Attribs = NONE
+Color = -1
+Selcolor = -1
+(Color16)
+Attribs = NONE
+Color = 9
+Selcolor = 9
+(Color256)
+Attribs = NONE
+Color = 9
+Selcolor = 9
+
+<Array>
+(Color2)
+Attribs = BOLD
+Color = -1
+Selcolor = -1
+(Color16)
+Attribs = BOLD
+Color = -1
+Selcolor = -1
+(Color256)
+Attribs = BOLD
+Color = -1
+Selcolor = -1
+
+<Char>
+(Color2)
+Attribs = NONE
+Color = -1
+Selcolor = -1
+(Color16)
+Attribs = NONE
+Color = 9
+Selcolor = 9
+(Color256)
+Attribs = NONE
+Color = 9
+Selcolor = 9
+
+<Line concat. in Macros>
+(Color2)
+Attribs = NONE
+Color = -1
+Selcolor = -1
+(Color16)
+Attribs = NONE
+Color = 15
+Selcolor = 15
+(Color256)
+Attribs = NONE
+Color = 15
+Selcolor = 15
+
+<Keywords>
+(Color2)
+Attribs = BOLD
+Color = -1
+Selcolor = -1
+(Color16)
+Attribs = BOLD
+Color = -1
+Selcolor = -1
+(Color256)
+Attribs = BOLD
+Color = -1
+Selcolor = -1
+
+<Variable types>
+(Color2)
+Attribs = BOLD
+Color = -1
+Selcolor = -1
+(Color16)
+Attribs = BOLD
+Color = -1
+Selcolor = -1
+(Color256)
+Attribs = BOLD
+Color = -1
+Selcolor = -1
+
+<User defined types>
+(Color2)
+Attribs = BOLD
+Color = -1
+Selcolor = -1
+(Color16)
+Attribs = BOLD
+Color = -1
+Selcolor = -1
+(Color256)
+Attribs = BOLD
+Color = -1
+Selcolor = -1
+
+<Preprocessor>
+(Color2)
+Attribs = BOLD
+Color = -1
+Selcolor = -1
+(Color16)
+Attribs = NONE
+Color = 15
+Selcolor = 15
+(Color256)
+Attribs = NONE
+Color = 15
+Selcolor = 15
+
+<Hex constants>
+(Color2)
+Attribs = NONE
+Color = -1
+Selcolor = -1
+(Color16)
+Attribs = NONE
+Color = 12
+Selcolor = 5
+(Color256)
+Attribs = NONE
+Color = 12
+Selcolor = 5
+
+<Decimal constants>
+(Color2)
+Attribs = NONE
+Color = -1
+Selcolor = -1
+(Color16)
+Attribs = NONE
+Color = 12
+Selcolor = 5
+(Color256)
+Attribs = NONE
+Color = 12
+Selcolor = 5
+
+<Octal Constants>
+(Color2)
+Attribs = NONE
+Color = -1
+Selcolor = -1
+(Color16)
+Attribs = NONE
+Color = 12
+Selcolor = 5
+(Color256)
+Attribs = NONE
+Color = 12
+Selcolor = 5
+
+;********************************************************
+[HTML]
+;********************************************************
+Active = TRUE
+
+<Comment>
+(Color2)
+Attribs = LIGHT
+Color = -1
+Selcolor = -1
+(Color16)
+Attribs = NONE
+Color = 11
+Selcolor = 3
+(Color256)
+Attribs = NONE
+Color = 11
+Selcolor = 3
+
+<String>
+(Color2)
+Attribs = NONE
+Color = -1
+Selcolor = -1
+(Color16)
+Attribs = NONE
+Color = 9
+Selcolor = 9
+(Color256)
+Attribs = NONE
+Color = 9
+Selcolor = 9
+
+<Tag>
+(Color2)
+Attribs = BOLD
+Color = -1
+Selcolor = -1
+(Color16)
+Attribs = NONE
+Color = 13
+Selcolor = 13
+(Color256)
+Attribs = NONE
+Color = 13
+Selcolor = 13
+
+<Attributes>
+(Color2)
+Attribs = BOLD
+Color = -1
+Selcolor = -1
+(Color16)
+Attribs = NONE
+Color = 13
+Selcolor = 13
+(Color256)
+Attribs = NONE
+Color = 10
+Selcolor = 13
+
+<Entities>
+(Color2)
+Attribs = BOLD
+Color = -1
+Selcolor = -1
+(Color16)
+Attribs = NONE
+Color = 13
+Selcolor = 13
+(Color256)
+Attribs = NONE
+Color = 12
+Selcolor = 13
+
+;********************************************************
+[Scripter-Script]
+;********************************************************
+Active = TRUE
+
+<Comment>
+(Color2)
+Attribs = LIGHT
+Color = -1
+Selcolor = -1
+(Color16)
+Attribs = NONE
+Color = 11
+Selcolor = 3
+(Color256)
+Attribs = NONE
+Color = 11
+Selcolor = 3
+
+<String>
+(Color2)
+Attribs = NONE
+Color = -1
+Selcolor = -1
+(Color16)
+Attribs = NONE
+Color = 9
+Selcolor = 9
+(Color256)
+Attribs = NONE
+Color = 9
+Selcolor = 9
+
+<Array>
+(Color2)
+Attribs = BOLD
+Color = -1
+Selcolor = -1
+(Color16)
+Attribs = BOLD
+Color = -1
+Selcolor = -1
+(Color256)
+Attribs = BOLD
+Color = -1
+Selcolor = -1
+
+<Char>
+(Color2)
+Attribs = NONE
+Color = -1
+Selcolor = -1
+(Color16)
+Attribs = NONE
+Color = 9
+Selcolor = 9
+(Color256)
+Attribs = NONE
+Color = 9
+Selcolor = 9
+
+<Keywords>
+(Color2)
+Attribs = BOLD
+Color = -1
+Selcolor = -1
+(Color16)
+Attribs = BOLD
+Color = -1
+Selcolor = -1
+(Color256)
+Attribs = BOLD
+Color = -1
+Selcolor = -1
+
+<Hex constants>
+(Color2)
+Attribs = NONE
+Color = -1
+Selcolor = -1
+(Color16)
+Attribs = NONE
+Color = 12
+Selcolor = 5
+(Color256)
+Attribs = NONE
+Color = 12
+Selcolor = 5
+
+<Decimal constants>
+(Color2)
+Attribs = NONE
+Color = -1
+Selcolor = -1
+(Color16)
+Attribs = NONE
+Color = 12
+Selcolor = 5
+(Color256)
+Attribs = NONE
+Color = 12
+Selcolor = 5
+
+;********************************************************
+[Pascal source]
+;********************************************************
+Active = TRUE
+
+<Comment>
+(Color2)
+Attribs = LIGHT
+Color = -1
+Selcolor = -1
+(Color16)
+Attribs = NONE
+Color = 11
+Selcolor = 3
+(Color256)
+Attribs = NONE
+Color = 11
+Selcolor = 3
+
+<String>
+(Color2)
+Attribs = NONE
+Color = -1
+Selcolor = -1
+(Color16)
+Attribs = NONE
+Color = 9
+Selcolor = 9
+(Color256)
+Attribs = NONE
+Color = 9
+Selcolor = 9
+
+<Array>
+(Color2)
+Attribs = BOLD
+Color = -1
+Selcolor = -1
+(Color16)
+Attribs = BOLD
+Color = -1
+Selcolor = -1
+(Color256)
+Attribs = BOLD
+Color = -1
+Selcolor = -1
+
+<Keywords>
+(Color2)
+Attribs = BOLD
+Color = -1
+Selcolor = -1
+(Color16)
+Attribs = BOLD
+Color = -1
+Selcolor = -1
+(Color256)
+Attribs = BOLD
+Color = -1
+Selcolor = -1
+
+<Variable types>
+(Color2)
+Attribs = BOLD
+Color = -1
+Selcolor = -1
+(Color16)
+Attribs = BOLD
+Color = -1
+Selcolor = -1
+(Color256)
+Attribs = BOLD
+Color = -1
+Selcolor = -1
+
+<Hex constants>
+(Color2)
+Attribs = NONE
+Color = -1
+Selcolor = -1
+(Color16)
+Attribs = NONE
+Color = 12
+Selcolor = 5
+(Color256)
+Attribs = NONE
+Color = 12
+Selcolor = 5
+
+<Decimal constants>
+(Color2)
+Attribs = NONE
+Color = -1
+Selcolor = -1
+(Color16)
+Attribs = NONE
+Color = 12
+Selcolor = 5
+(Color256)
+Attribs = NONE
+Color = 12
+Selcolor = 5
+
+;********************************************************
+[bash/Mupfel script]
+;********************************************************
+Active = TRUE
+
+<Comment>
+(Color2)
+Attribs = LIGHT
+Color = -1
+Selcolor = -1
+(Color16)
+Attribs = NONE
+Color = 11
+Selcolor = 3
+(Color256)
+Attribs = NONE
+Color = 11
+Selcolor = 3
+
+<Keywords>
+(Color2)
+Attribs = BOLD
+Color = -1
+Selcolor = -1
+(Color16)
+Attribs = BOLD
+Color = -1
+Selcolor = -1
+(Color256)
+Attribs = BOLD
+Color = -1
+Selcolor = -1
+
+;********************************************************
+[ABC+ music notation]
+;********************************************************
+Active = TRUE
+
+<Textblock>
+(Color2)
+Attribs = NONE
+Color = -1
+Selcolor = -1
+(Color16)
+Attribs = NONE
+Color = 14
+Selcolor = 6
+(Color256)
+Attribs = NONE
+Color = 14
+Selcolor = 6
+
+<Meta comment>
+(Color2)
+Attribs = ITALIC
+Color = -1
+Selcolor = -1
+(Color16)
+Attribs = NONE
+Color = 4
+Selcolor = 13
+(Color256)
+Attribs = NONE
+Color = 4
+Selcolor = 13
+
+<Comment>
+(Color2)
+Attribs = ITALIC
+Color = -1
+Selcolor = -1
+(Color16)
+Attribs = NONE
+Color = 11
+Selcolor = 3
+(Color256)
+Attribs = NONE
+Color = 11
+Selcolor = 3
+
+<Information Field>
+(Color2)
+Attribs = BOLD
+Color = -1
+Selcolor = -1
+(Color16)
+Attribs = NONE
+Color = 2
+Selcolor = 7
+(Color256)
+Attribs = NONE
+Color = 2
+Selcolor = 7
+
+<Bar lines>
+(Color2)
+Attribs = BOLD
+Color = -1
+Selcolor = -1
+(Color16)
+Attribs = BOLD
+Color = -1
+Selcolor = -1
+(Color256)
+Attribs = BOLD
+Color = -1
+Selcolor = -1
+
+<Lyrics>
+(Color2)
+Attribs = ITALIC
+Color = -1
+Selcolor = -1
+(Color16)
+Attribs = ITALIC
+Color = -1
+Selcolor = -1
+(Color256)
+Attribs = ITALIC
+Color = -1
+Selcolor = -1
+
+<Chordsymbols>
+(Color2)
+Attribs = BOLD
+Color = -1
+Selcolor = -1
+(Color16)
+Attribs = NONE
+Color = 13
+Selcolor = 5
+(Color256)
+Attribs = NONE
+Color = 13
+Selcolor = 5
+
+<Gracenotes>
+(Color2)
+Attribs = NONE
+Color = -1
+Selcolor = -1
+(Color16)
+Attribs = NONE
+Color = 15
+Selcolor = 7
+(Color256)
+Attribs = NONE
+Color = 15
+Selcolor = 7
+
+<Symbols>
+(Color2)
+Attribs = ITALIC
+Color = -1
+Selcolor = -1
+(Color16)
+Attribs = NONE
+Color = 12
+Selcolor = 4
+(Color256)
+Attribs = NONE
+Color = 12
+Selcolor = 4
+
+<Miscelaneous>
+(Color2)
+Attribs = BOLD
+Color = -1
+Selcolor = -1
+(Color16)
+Attribs = NONE
+Color = 10
+Selcolor = 2
+(Color256)
+Attribs = NONE
+Color = 10
+Selcolor = 2
+
+;********************************************************
+[UDO-Quelltext]
+;********************************************************
+Active = TRUE
+
+<Kommentar>
+(Color2)
+Attribs = LIGHT
+Color = -1
+Selcolor = -1
+(Color16)
+Attribs = NONE
+Color = 11
+Selcolor = 3
+(Color256)
+Attribs = NONE
+Color = 11
+Selcolor = 3
+
+<Abfragebefehle>
+(Color2)
+Attribs = NONE
+Color = -1
+Selcolor = -1
+(Color16)
+Attribs = NONE
+Color = 3
+Selcolor = 3
+(Color256)
+Attribs = NONE
+Color = 3
+Selcolor = 3
+
+<AlteKennwort>
+(Color2)
+Attribs = BOLD
+Color = -1
+Selcolor = -1
+(Color16)
+Attribs = BOLD
+Color = 2
+Selcolor = 2
+(Color256)
+Attribs = BOLD
+Color = 2
+Selcolor = 2
+
+<Kennwort>
+(Color2)
+Attribs = BOLD
+Color = -1
+Selcolor = -1
+(Color16)
+Attribs = BOLD
+Color = -1
+Selcolor = -1
+(Color256)
+Attribs = BOLD
+Color = -1
+Selcolor = -1
+
+<Format-Information>
+(Color2)
+Attribs = NONE
+Color = -1
+Selcolor = -1
+(Color16)
+Attribs = BOLD
+Color = 12
+Selcolor = 5
+(Color256)
+Attribs = BOLD
+Color = 12
+Selcolor = 5
+
+;********************************************************
+[HTML/PHP-Quelltext]
+;********************************************************
+Active = TRUE
+
+<Comment>
+(Color2)
+Attribs = LIGHT
+Color = -1
+Selcolor = -1
+(Color16)
+Attribs = NONE
+Color = 11
+Selcolor = 3
+(Color256)
+Attribs = NONE
+Color = 11
+Selcolor = 3
+
+<String>
+(Color2)
+Attribs = NONE
+Color = -1
+Selcolor = -1
+(Color16)
+Attribs = NONE
+Color = 9
+Selcolor = 9
+(Color256)
+Attribs = NONE
+Color = 9
+Selcolor = 9
+
+<PHP delimiter>
+(Color2)
+Attribs = BOLD
+Color = -1
+Selcolor = -1
+(Color16)
+Attribs = BOLD
+Color = -1
+Selcolor = -1
+(Color256)
+Attribs = BOLD
+Color = 2
+Selcolor = -1
+
+<Array>
+(Color2)
+Attribs = BOLD
+Color = -1
+Selcolor = -1
+(Color16)
+Attribs = BOLD
+Color = -1
+Selcolor = -1
+(Color256)
+Attribs = BOLD
+Color = 2
+Selcolor = -1
+
+<Char>
+(Color2)
+Attribs = NONE
+Color = -1
+Selcolor = -1
+(Color16)
+Attribs = NONE
+Color = 9
+Selcolor = 9
+(Color256)
+Attribs = NONE
+Color = 9
+Selcolor = 9
+
+<Line concat. in Macros>
+(Color2)
+Attribs = NONE
+Color = -1
+Selcolor = -1
+(Color16)
+Attribs = NONE
+Color = 15
+Selcolor = 15
+(Color256)
+Attribs = NONE
+Color = 15
+Selcolor = 15
+
+<Keywords>
+(Color2)
+Attribs = BOLD
+Color = -1
+Selcolor = -1
+(Color16)
+Attribs = BOLD
+Color = -1
+Selcolor = -1
+(Color256)
+Attribs = BOLD
+Color = -1
+Selcolor = -1
+
+<Functions>
+(Color2)
+Attribs = BOLD
+Color = -1
+Selcolor = -1
+(Color16)
+Attribs = BOLD
+Color = -1
+Selcolor = -1
+(Color256)
+Attribs = BOLD
+Color = -1
+Selcolor = -1
+
+<Hex constants>
+(Color2)
+Attribs = NONE
+Color = -1
+Selcolor = -1
+(Color16)
+Attribs = NONE
+Color = 12
+Selcolor = 5
+(Color256)
+Attribs = NONE
+Color = 12
+Selcolor = 5
+
+<Variables>
+(Color2)
+Attribs = NONE
+Color = -1
+Selcolor = -1
+(Color16)
+Attribs = NONE
+Color = 12
+Selcolor = 5
+(Color256)
+Attribs = NONE
+Color = 12
+Selcolor = 5
+
+<Decimal constants>
+(Color2)
+Attribs = NONE
+Color = -1
+Selcolor = -1
+(Color16)
+Attribs = NONE
+Color = 12
+Selcolor = 5
+(Color256)
+Attribs = NONE
+Color = 12
+Selcolor = 5
+
+<Octal Constants>
+(Color2)
+Attribs = NONE
+Color = -1
+Selcolor = -1
+(Color16)
+Attribs = NONE
+Color = 12
+Selcolor = 5
+(Color256)
+Attribs = NONE
+Color = 12
+Selcolor = 5
+
+<Tag>
+(Color2)
+Attribs = BOLD
+Color = -1
+Selcolor = -1
+(Color16)
+Attribs = NONE
+Color = 13
+Selcolor = 13
+(Color256)
+Attribs = NONE
+Color = 13
+Selcolor = 13
+
+<Attributes>
+(Color2)
+Attribs = BOLD
+Color = -1
+Selcolor = -1
+(Color16)
+Attribs = NONE
+Color = 13
+Selcolor = 13
+(Color256)
+Attribs = NONE
+Color = 10
+Selcolor = 13
+
+<Entities>
+(Color2)
+Attribs = BOLD
+Color = -1
+Selcolor = -1
+(Color16)
+Attribs = NONE
+Color = 13
+Selcolor = 13
+(Color256)
+Attribs = NONE
+Color = 12
+Selcolor = 13
+
+;********************************************************
+[MUP music publisher]
+;********************************************************
+Active = TRUE
+
+<String>
+(Color2)
+Attribs = NONE
+Color = -1
+Selcolor = -1
+(Color16)
+Attribs = NONE
+Color = 9
+Selcolor = 9
+(Color256)
+Attribs = NONE
+Color = 9
+Selcolor = 9
+
+<Statement>
+(Color2)
+Attribs = ITALIC
+Color = -1
+Selcolor = -1
+(Color16)
+Attribs = NONE
+Color = 3
+Selcolor = 11
+(Color256)
+Attribs = NONE
+Color = 3
+Selcolor = 11
+
+<Type>
+(Color2)
+Attribs = BOLD
+Color = -1
+Selcolor = -1
+(Color16)
+Attribs = NONE
+Color = 2
+Selcolor = 7
+(Color256)
+Attribs = NONE
+Color = 2
+Selcolor = 7
+
+<Function>
+(Color2)
+Attribs = ITALIC
+Color = -1
+Selcolor = -1
+(Color16)
+Attribs = NONE
+Color = 4
+Selcolor = 13
+(Color256)
+Attribs = NONE
+Color = 4
+Selcolor = 13
+
+<Identifier>
+(Color2)
+Attribs = ITALIC
+Color = -1
+Selcolor = -1
+(Color16)
+Attribs = NONE
+Color = 13
+Selcolor = 5
+(Color256)
+Attribs = NONE
+Color = 13
+Selcolor = 5
+
+<Include>
+(Color2)
+Attribs = BOLD
+Color = -1
+Selcolor = -1
+(Color16)
+Attribs = NONE
+Color = 12
+Selcolor = 4
+(Color256)
+Attribs = NONE
+Color = 12
+Selcolor = 4
+
+<Delimiter>
+(Color2)
+Attribs = BOLD
+Color = -1
+Selcolor = -1
+(Color16)
+Attribs = NONE
+Color = 10
+Selcolor = 2
+(Color256)
+Attribs = NONE
+Color = 10
+Selcolor = 2
+
+<Define>
+(Color2)
+Attribs = BOLD
+Color = -1
+Selcolor = -1
+(Color16)
+Attribs = NONE
+Color = 15
+Selcolor = 7
+(Color256)
+Attribs = NONE
+Color = 15
+Selcolor = 7
+
+<MACRO>
+(Color2)
+Attribs = BOLD
+Color = -1
+Selcolor = -1
+(Color16)
+Attribs = NONE
+Color = 15
+Selcolor = 7
+(Color256)
+Attribs = NONE
+Color = 15
+Selcolor = 7
+
+<Comment>
+(Color2)
+Attribs = LIGHT
+Color = -1
+Selcolor = -1
+(Color16)
+Attribs = NONE
+Color = 11
+Selcolor = 3
+(Color256)
+Attribs = NONE
+Color = 11
+Selcolor = 3
+
+;********************************************************
+[Manitor-Logfile]
+;********************************************************
+Active = TRUE
+
+<Sent>
+(Color2)
+Attribs = BOLD
+Color = -1
+Selcolor = -1
+(Color16)
+Attribs = BOLD
+Color = 10
+Selcolor = 10
+(Color256)
+Attribs = BOLD
+Color = 10
+Selcolor = 10
+
+<Received>
+(Color2)
+Attribs = BOLD
+Color = -1
+Selcolor = -1
+(Color16)
+Attribs = BOLD
+Color = 11
+Selcolor = 11
+(Color256)
+Attribs = BOLD
+Color = 11
+Selcolor = 11
+
+<AV-Protocol>
+(Color2)
+Attribs = BOLD
+Color = -1
+Selcolor = -1
+(Color16)
+Attribs = BOLD
+Color = 12
+Selcolor = 12
+(Color256)
+Attribs = BOLD
+Color = 12
+Selcolor = 12
+
+<GEMScript>
+(Color2)
+Attribs = BOLD
+Color = -1
+Selcolor = -1
+(Color16)
+Attribs = BOLD
+Color = 14
+Selcolor = 14
+(Color256)
+Attribs = BOLD
+Color = 14
+Selcolor = 14
+
+;********************************************************
+[C++ Source]
+;********************************************************
+Active = TRUE
+
+<Comment>
+(Color2)
+Attribs = LIGHT
+Color = -1
+Selcolor = -1
+(Color16)
+Attribs = NONE
+Color = 11
+Selcolor = 3
+(Color256)
+Attribs = NONE
+Color = 11
+Selcolor = 3
+
+<String>
+(Color2)
+Attribs = NONE
+Color = -1
+Selcolor = -1
+(Color16)
+Attribs = NONE
+Color = 9
+Selcolor = 9
+(Color256)
+Attribs = NONE
+Color = 9
+Selcolor = 9
+
+<Array>
+(Color2)
+Attribs = BOLD
+Color = -1
+Selcolor = -1
+(Color16)
+Attribs = BOLD
+Color = -1
+Selcolor = -1
+(Color256)
+Attribs = BOLD
+Color = -1
+Selcolor = -1
+
+<Char>
+(Color2)
+Attribs = NONE
+Color = -1
+Selcolor = -1
+(Color16)
+Attribs = NONE
+Color = 9
+Selcolor = 9
+(Color256)
+Attribs = NONE
+Color = 9
+Selcolor = 9
+
+<Line concat. in Macros>
+(Color2)
+Attribs = NONE
+Color = -1
+Selcolor = -1
+(Color16)
+Attribs = NONE
+Color = 15
+Selcolor = 15
+(Color256)
+Attribs = NONE
+Color = 15
+Selcolor = 15
+
+<Keywords>
+(Color2)
+Attribs = BOLD
+Color = -1
+Selcolor = -1
+(Color16)
+Attribs = BOLD
+Color = -1
+Selcolor = -1
+(Color256)
+Attribs = BOLD
+Color = -1
+Selcolor = -1
+
+<Variable types>
+(Color2)
+Attribs = BOLD
+Color = -1
+Selcolor = -1
+(Color16)
+Attribs = BOLD
+Color = -1
+Selcolor = -1
+(Color256)
+Attribs = BOLD
+Color = -1
+Selcolor = -1
+
+<User defined types>
+(Color2)
+Attribs = BOLD
+Color = -1
+Selcolor = -1
+(Color16)
+Attribs = BOLD
+Color = -1
+Selcolor = -1
+(Color256)
+Attribs = BOLD
+Color = -1
+Selcolor = -1
+
+<Preprocessor>
+(Color2)
+Attribs = NONE
+Color = -1
+Selcolor = -1
+(Color16)
+Attribs = NONE
+Color = 15
+Selcolor = 15
+(Color256)
+Attribs = NONE
+Color = 15
+Selcolor = 15
+
+<Hex constants>
+(Color2)
+Attribs = NONE
+Color = -1
+Selcolor = -1
+(Color16)
+Attribs = NONE
+Color = 12
+Selcolor = 5
+(Color256)
+Attribs = NONE
+Color = 12
+Selcolor = 5
+
+<Decimal constants>
+(Color2)
+Attribs = NONE
+Color = -1
+Selcolor = -1
+(Color16)
+Attribs = NONE
+Color = 12
+Selcolor = 5
+(Color256)
+Attribs = NONE
+Color = 12
+Selcolor = 5
+
+<Octal Constants>
+(Color2)
+Attribs = NONE
+Color = -1
+Selcolor = -1
+(Color16)
+Attribs = NONE
+Color = 12
+Selcolor = 5
+(Color256)
+Attribs = NONE
+Color = 12
+Selcolor = 5
+
+;********************************************************
+[ST-Guide source]
+;********************************************************
+Active = TRUE
+
+<Comment>
+(Color2)
+Attribs = LIGHT
+Color = -1
+Selcolor = -1
+(Color16)
+Attribs = NONE
+Color = 11
+Selcolor = 3
+(Color256)
+Attribs = NONE
+Color = 11
+Selcolor = 3
+
+<Keywords>
+(Color2)
+Attribs = BOLD
+Color = -1
+Selcolor = -1
+(Color16)
+Attribs = BOLD
+Color = -1
+Selcolor = -1
+(Color256)
+Attribs = BOLD
+Color = -1
+Selcolor = -1
+
+<Format information>
+(Color2)
+Attribs = BOLD
+Color = -1
+Selcolor = -1
+(Color16)
+Attribs = BOLD
+Color = -1
+Selcolor = -1
+(Color256)
+Attribs = BOLD
+Color = -1
+Selcolor = -1
+
+;********************************************************
+[Pure M68K-Assembler-Quelltext]
+;********************************************************
+Active = TRUE
+
+<Kommentar>
+(Color2)
+Attribs = LIGHT
+Color = -1
+Selcolor = -1
+(Color16)
+Attribs = NONE
+Color = 11
+Selcolor = 3
+(Color256)
+Attribs = NONE
+Color = 11
+Selcolor = 3
+
+<Opcodes (MC 68030)>
+(Color2)
+Attribs = BOLD
+Color = -1
+Selcolor = -1
+(Color16)
+Attribs = BOLD
+Color = -1
+Selcolor = -1
+(Color256)
+Attribs = BOLD
+Color = -1
+Selcolor = -1
+
+<Direktiven>
+(Color2)
+Attribs = ITALIC
+Color = -1
+Selcolor = -1
+(Color16)
+Attribs = BOLD
+Color = 10
+Selcolor = 10
+(Color256)
+Attribs = BOLD
+Color = 10
+Selcolor = 10
+
+<Register>
+(Color2)
+Attribs = BOLD
+Color = -1
+Selcolor = -1
+(Color16)
+Attribs = BOLD
+Color = -1
+Selcolor = -1
+(Color256)
+Attribs = BOLD
+Color = -1
+Selcolor = -1
+
+<Byte>
+(Color2)
+Attribs = BOLD
+Color = -1
+Selcolor = -1
+(Color16)
+Attribs = BOLD
+Color = -1
+Selcolor = -1
+(Color256)
+Attribs = BOLD
+Color = -1
+Selcolor = -1
+
+<Wort>
+(Color2)
+Attribs = BOLD
+Color = -1
+Selcolor = -1
+(Color16)
+Attribs = BOLD
+Color = -1
+Selcolor = -1
+(Color256)
+Attribs = BOLD
+Color = -1
+Selcolor = -1
+
+<Long>
+(Color2)
+Attribs = BOLD
+Color = -1
+Selcolor = -1
+(Color16)
+Attribs = BOLD
+Color = -1
+Selcolor = -1
+(Color256)
+Attribs = BOLD
+Color = -1
+Selcolor = -1
+
+<Konstante>
+(Color2)
+Attribs = NONE
+Color = -1
+Selcolor = -1
+(Color16)
+Attribs = NONE
+Color = 12
+Selcolor = 5
+(Color256)
+Attribs = NONE
+Color = 12
+Selcolor = 5

@@ -17,6 +17,7 @@
         .extern _mini68k_fdc_motor_tick
         .extern _mini68k_vera_vbl
         .extern _mini68k_kbd_poll
+        .extern _mini68k_ym_tick
         .extern _mini68k_vbl_due
 
 /* NS32202 End-Of-Interrupt: read "register 32" = 0xffff8040 + 32 * 0x100 */
@@ -27,7 +28,8 @@
 /******************************************************************************/
 
 // NS32202 counter interrupt (IR3, level 2): the 200 Hz system timer.
-// It also polls the console UART and the PS/2 controller, and provides
+// It also plays the emulated YM2149 on the VERA's PSG, polls the console
+// UART and the PS/2 controller, and provides
 // the VBL interrupt: at each VERA VSYNC (60 Hz), or at 50 Hz without VERA.
         .globl  _mini68k_int_timer
 _mini68k_int_timer:
@@ -41,6 +43,7 @@ _mini68k_int_timer:
         jmp     (a0)                    // Call the 200 Hz system timer
 timer_5ms_ret:
 
+        jbsr    _mini68k_ym_tick        // Sound: emulated YM2149 to the VERA PSG
         jbsr    _mini68k_rs232_poll     // Drain the UART receive FIFO
         jbsr    _mini68k_kbd_poll       // PS/2 keyboard and mouse
 

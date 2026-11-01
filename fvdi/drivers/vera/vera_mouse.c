@@ -32,11 +32,14 @@ static uint16_t pointer_mask[16], pointer_data[16];
 /* Copy the pointer colours into palette entries 17 and 18 */
 void mouse_update_colours(void)
 {
+    const uint16_t bg = read_hw_colour(pointer_bg);
+    const uint16_t fg = read_hw_colour(pointer_fg);
+
     v_set_write(VRAM_PALETTE + 2 * 17);
-    V_PUT(hw_palette[pointer_bg] & 0xff);
-    V_PUT((hw_palette[pointer_bg] >> 8) & 0x0f);
-    V_PUT(hw_palette[pointer_fg] & 0xff);
-    V_PUT((hw_palette[pointer_fg] >> 8) & 0x0f);
+    V_PUT(bg & 0xff);
+    V_PUT((bg >> 8) & 0x0f);
+    V_PUT(fg & 0xff);
+    V_PUT((fg >> 8) & 0x0f);
 }
 
 static void write_shape(void)

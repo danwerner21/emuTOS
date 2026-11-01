@@ -20,9 +20,14 @@
 
 #include "vera.h"
 
-void (*vera_old_trap14)(void);
 long vera_xbios(int16_t *args);
 void vera_trap14(void);
+
+/* Kept out of the BSS, whose last bytes were found zeroed after start-up
+ * (cause not yet known): a zeroed pointer here would break every XBIOS
+ * call. A non-zero initial value puts it in the data section; xbios_init()
+ * replaces it before the hook goes in. */
+void (*vera_old_trap14)(void) = vera_trap14;
 
 /*
  * The arguments are on the user stack, or after the exception frame when
@@ -80,8 +85,12 @@ long vera_xbios(int16_t *args)
     if (args[0] == 7)                   /* Setcolor(num, colour) */
     {
         uint16_t num = args[1] & 0x0f;
-        uint16_t old = hw_palette[num];
-        uint16_t old_ste = (to_ste(old >> 8) << 8) | (to_ste(old >> 4) << 4) | to_ste(old);
+        uint16_t old, old_ste;
+
+        v_begin();
+        old = read_hw_colour(num);
+        v_end();
+        old_ste = (to_ste(old >> 8) << 8) | (to_ste(old >> 4) << 4) | to_ste(old);
 
         if (args[2] >= 0)
             set_hw_colour(num, ste_to_rgb(args[2]));

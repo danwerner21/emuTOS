@@ -148,10 +148,14 @@ extern volatile UBYTE mini68k_vera_busy;    /* direct drawing in progress */
  * VT82C42, so a test program can drive it; kbd_hold(0) sets up the
  * keyboard and mouse again and resumes polling.
  *
+ * Version 3 adds text_mode(): fVDI calls text_mode(1) when GEM enters
+ * text mode, after clearing the screen, and text_mode(0) before it goes
+ * back to graphics. Meanwhile the console uses a VERA tile layer.
+ *
  * Functions use 32-bit arguments, whatever the compiler's int size.
  */
 #define COOKIE_VERA     0x56455241L     /* 'VERA' */
-#define VERA_COOKIE_VERSION 2
+#define VERA_COOKIE_VERSION 3
 
 struct mini68k_vera_cookie
 {
@@ -161,6 +165,7 @@ struct mini68k_vera_cookie
     void (*take_over)(LONG width, LONG height, LONG planes);
     void (*release_hook)(void);         /* set by the driver */
     void (*kbd_hold)(LONG hold);        /* version 2 */
+    void (*text_mode)(LONG on);         /* version 3 */
 };
 
 extern struct mini68k_vera_cookie mini68k_vera_cookie;
@@ -182,6 +187,7 @@ void vd_cell_xfer(const UBYTE *src, const UBYTE *dst);
 void vd_neg_cell(const UBYTE *cell);
 void vd_blank_out(int topx, int topy, int botx, int boty);
 void vd_move(const UBYTE *dst, const UBYTE *src, ULONG count);
+void mini68k_vera_text_mode(LONG on);   /* the console on a tile layer */
 /* in vera_mini68k2.S */
 void vd_write(const UBYTE *src, UWORD count);   /* to DATA1 */
 void vd_fill(UWORD value, UWORD count);         /* to DATA1 */
@@ -193,6 +199,12 @@ void vd_copy(ULONG src_vram, UWORD count);      /* VRAM to DATA1 */
 void mini68k_kbd_init(void);
 void mini68k_kbd_hold(LONG hold);   /* for VERATEST, via the 'VERA' cookie */
 void mini68k_kbd_poll(void);        /* called from the 200 Hz timer interrupt */
+
+/* YM2149 registers emulated on the VERA's PSG, in ym_mini68k.c */
+void mini68k_ym_init(void);
+void mini68k_ym_write(UBYTE reg, UBYTE value);
+UBYTE mini68k_ym_read(UBYTE reg);
+void mini68k_ym_tick(void);         /* called from the 200 Hz timer interrupt */
 
 /* Console UART */
 BOOL mini68k_uart_can_write(void);

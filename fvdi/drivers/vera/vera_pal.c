@@ -20,7 +20,19 @@
  * hardware 0, VDI 1 (black) is hardware 15 */
 const uint8_t tos_colours[16] = {0, 15, 1, 2, 4, 6, 3, 5, 7, 8, 9, 10, 12, 14, 11, 13};
 
-uint16_t hw_palette[16];        /* the colours set, 0x0RGB */
+/*
+ * The current colours are read back from the VERA's palette when needed
+ * (the pointer's colours, Setcolor), rather than kept in a copy here: a
+ * copy in the driver's memory was found zeroed after start-up, which
+ * left the pointer black.
+ */
+uint16_t read_hw_colour(uint16_t entry)
+{
+    const uint32_t addr = VRAM_PALETTE + 2 * entry;
+    uint16_t gb = v_read(addr);
+
+    return ((uint16_t)(v_read(addr + 1) & 0x0f) << 8) | gb;
+}
 
 uint8_t colour_byte(uint16_t hw_colour)
 {
@@ -56,8 +68,6 @@ long CDECL c_get_colour(Virtual *UNUSED(vwk), long colour)
 /* Set hardware colour 'hw' to 0x0RGB, and the pointer colours with it */
 void set_hw_colour(uint16_t hw, uint16_t rgb)
 {
-    hw_palette[hw & 0x0f] = rgb & 0x0fff;
-
     v_begin();
     write_hw_colour(hw & 0x0f, rgb & 0x0fff);
     mouse_update_colours();

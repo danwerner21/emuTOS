@@ -1,0 +1,28 @@
+
+CONST 	menu1%=     0
+
+CONST	me%=     0
+CONST	medesk%=     3
+CONST	mefile%=     4
+CONST	merun%=     5
+CONST	meaboutshell%=     8
+CONST	me1%=    10
+CONST	me2%=    11
+CONST	me3%=    12
+CONST	me4%=    13
+CONST	me5%=    14
+CONST	me6%=    15
+CONST	mequit%=    17
+CONST	meshowimagef%=    18
+CONST	meshowtextfi%=    19
+CONST	merunprogram%=    22
+CONST	mesetcommandl%=    23
+
+CONST 	cline%=     1
+
+CONST	clcommandline%=     1
+CONST	clok%=     2
+CONST	clcancel%=     3
+
+CONST 	aboutalert%=     0
+

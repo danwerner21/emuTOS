@@ -270,14 +270,157 @@ static ULONG cell_offset(const UBYTE *cell)
     return (ULONG)row * v_lin_wr + col * v_planes;
 }
 
+/*
+ * Text mode. While GEM is in text mode (fVDI's v_enter_cur, through the
+ * 'VERA' cookie), the console uses a VERA tile layer instead of drawing
+ * into fVDI's bitmap: a character is 2 bytes in the tile map, and a
+ * scroll of the whole screen moves the layer's vertical scroll, where in
+ * the 4-bit bitmap it copied 120 KB through the ports.
+ *
+ * Layer 1 shows a 128 x 32 map of 1 bpp tiles, 8 pixels wide and as tall
+ * as the console font; each entry is a tile number (the font's byte
+ * offset for the character) and an attribute byte (background colour in
+ * the high nibble, foreground in the low one). The 32 map rows are a
+ * ring: screen row y is map row (text_top + y) & 31. The map and the
+ * tiles go in the bitmap's VRAM, which fVDI clears when it enters and
+ * when it leaves text mode; the bitmap layer and the sprites are off
+ * meanwhile. fVDI's register settings come back when text mode ends.
+ */
+#define TEXT_MAP        0x1c000L    /* 128 x 32 entries of 2 bytes */
+#define TEXT_TILES      0x1e000L    /* 256 tiles of up to 16 bytes */
+#define TEXT_MAP_COLS   128
+#define TEXT_MAP_ROWS   32
+#define TEXT_SPACE      0x20        /* the space's tile */
+
+static BOOL text_tiles;             /* the console is on the tile layer */
+static UWORD text_top;              /* map row of screen row 0 */
+static UBYTE saved_dc0, saved_l1[7];    /* fVDI's settings */
+
+#define VERA_L1_CONFIG  0x14        /* 0x14-0x1a: layer 1 registers */
+#define VERA_L1_VSCROLL_L 0x19
+#define VERA_L1_VSCROLL_H 0x1a
+
+/* Map address of a cell: screen row y, column x */
+static ULONG text_cell(UWORD x, UWORD y)
+{
+    return TEXT_MAP + ((ULONG)(((text_top + y) & (TEXT_MAP_ROWS - 1)) * TEXT_MAP_COLS + x) << 1);
+}
+
+/* The screen row and column of a cell address from conout.c */
+static void text_position(const UBYTE *cell, UWORD *x, UWORD *y)
+{
+    ULONG off = cell - v_bas_ad;
+    UWORD col;
+
+    *y = divu(off, v_cel_wr);
+    col = off - (ULONG)*y * v_cel_wr;
+    if (v_planes > 1)               /* planar layout: 16-pixel groups */
+        col = (col / (v_planes * 2)) * 2 + (col & 1);
+    *x = col;
+}
+
+static UBYTE text_attribute(void)
+{
+    if (v_stat_0 & M_REVID)
+        return (v_col_fg << 4) | (v_col_bg & 0x0f);
+    return (v_col_bg << 4) | (v_col_fg & 0x0f);
+}
+
+static void text_scroll_register(void)
+{
+    UWORD pixels = text_top * v_cel_ht;
+
+    VERA_REG(VERA_L1_VSCROLL_L) = LOBYTE(pixels);
+    VERA_REG(VERA_L1_VSCROLL_H) = HIBYTE(pixels) & 0x0f;
+}
+
+/* Copy map row s to map row d (screen rows), the visible columns */
+static void text_copy_row(UWORD d, UWORD s)
+{
+    ULONG src = text_cell(0, s);
+    UWORD n = (v_cel_mx + 1) * 2;
+
+    vd_set_write(text_cell(0, d), VERA_INC1);
+    while (n--)
+        VERA_REG(VERA_DATA1) = vd_read_byte(src++);
+}
+
+/*
+ * Called through the 'VERA' cookie by fVDI: on (1) after it has cleared
+ * the screen for text mode, off (0) before it goes back to graphics.
+ */
+void mini68k_vera_text_mode(LONG on)
+{
+    UWORD i, k, r;
+
+    if (!on == !text_tiles)
+        return;
+
+    vd_begin();
+    VERA_REG(VERA_CTRL) = 0;            /* DCSEL = 0 */
+    if (!on)
+    {
+        for (i = 0; i < 7; i++)
+            VERA_REG(VERA_L1_CONFIG + i) = saved_l1[i];
+        VERA_REG(VERA_DC0) = saved_dc0;
+        text_tiles = FALSE;
+        vd_end();
+        return;
+    }
+
+    saved_dc0 = VERA_REG(VERA_DC0);
+    for (i = 0; i < 7; i++)
+        saved_l1[i] = VERA_REG(VERA_L1_CONFIG + i);
+
+    /* the font: tile k is the glyph at byte offset k of the font form */
+    vd_set_write(TEXT_TILES, VERA_INC1);
+    for (k = 0; k < 256; k++)
+        for (r = 0; r < v_cel_ht; r++)
+            VERA_REG(VERA_DATA1) = (k < v_fnt_wr) ? ((const UBYTE *)v_fnt_ad)[k + r * v_fnt_wr] : 0;
+
+    /* an empty map */
+    vd_set_write(TEXT_MAP, VERA_INC1);
+    k = (v_col_bg << 4) | (v_col_fg & 0x0f);
+    for (i = 0; i < TEXT_MAP_COLS * TEXT_MAP_ROWS; i++)
+    {
+        VERA_REG(VERA_DATA1) = TEXT_SPACE;
+        VERA_REG(VERA_DATA1) = k;
+    }
+
+    text_top = 0;
+    VERA_REG(VERA_L1_CONFIG) = 0x20;    /* 32 x 128 map, 1 bpp tiles */
+    VERA_REG(VERA_L1_CONFIG + 1) = TEXT_MAP >> 9;
+    VERA_REG(VERA_L1_CONFIG + 2) = ((TEXT_TILES >> 11) << 2) | ((v_cel_ht > 8) ? 0x02 : 0x00);
+    VERA_REG(VERA_L1_CONFIG + 3) = 0;   /* no horizontal scroll */
+    VERA_REG(VERA_L1_CONFIG + 4) = 0;
+    text_scroll_register();
+    VERA_REG(VERA_DC0) = (saved_dc0 & 0x0f) | 0x20;    /* layer 1 only */
+    text_tiles = TRUE;
+    vd_end();
+}
+
 /* Draw a character from the font (src) into the cell at dst */
 void vd_cell_xfer(const UBYTE *src, const UBYTE *dst)
 {
     UWORD fg, bg;
     UBYTE fgb, bgb, masks[4];
-    ULONG off = cell_offset(dst);
+    ULONG off;
     WORD i, n, k;
 
+    if (text_tiles)
+    {
+        UWORD x, y;
+
+        text_position(dst, &x, &y);
+        vd_begin();
+        vd_set_write(text_cell(x, y), VERA_INC1);
+        VERA_REG(VERA_DATA1) = src - (const UBYTE *)v_fnt_ad;
+        VERA_REG(VERA_DATA1) = text_attribute();
+        vd_end();
+        return;
+    }
+
+    off = cell_offset(dst);
     if (v_stat_0 & M_REVID)
     {
         fg = v_col_bg;
@@ -323,9 +466,25 @@ void vd_cell_xfer(const UBYTE *src, const UBYTE *dst)
 /* Invert a cell (the text cursor) */
 void vd_neg_cell(const UBYTE *cell)
 {
-    ULONG off = cell_offset(cell);
+    ULONG off;
     WORD i, k;
 
+    if (text_tiles)                     /* swap the cell's colours */
+    {
+        UWORD x, y;
+        UBYTE a;
+
+        text_position(cell, &x, &y);
+        off = text_cell(x, y) + 1;
+        vd_begin();
+        a = vd_read_byte(off);
+        vd_set_write(off, VERA_INC1);
+        VERA_REG(VERA_DATA1) = (a << 4) | (a >> 4);
+        vd_end();
+        return;
+    }
+
+    off = cell_offset(cell);
     vd_begin();
     if (v_planes == 1)
     {
@@ -354,7 +513,22 @@ void vd_blank_out(int topx, int topy, int botx, int boty)
     UWORD fill = vd_colour_byte(v_col_bg);
 
     vd_begin();
-    if (bytes == v_lin_wr)              /* whole rows: one run */
+    if (text_tiles)
+    {
+        UBYTE a = (v_col_bg << 4) | (v_col_fg & 0x0f);  /* fg: for the cursor */
+        UWORD x, y;
+
+        for (y = topy; y <= (UWORD)boty; y++)
+        {
+            vd_set_write(text_cell(topx, y), VERA_INC1);
+            for (x = topx; x <= (UWORD)botx; x++)
+            {
+                VERA_REG(VERA_DATA1) = TEXT_SPACE;
+                VERA_REG(VERA_DATA1) = a;
+            }
+        }
+    }
+    else if (bytes == v_lin_wr)         /* whole rows: one run */
     {
         vd_set_write(off, VERA_INC1);
         fill_long(fill, (ULONG)rows * v_lin_wr);
@@ -384,7 +558,28 @@ void vd_move(const UBYTE *dst, const UBYTE *src, ULONG count)
     UWORD n;
 
     vd_begin();
-    if (d < s)
+    if (text_tiles)
+    {
+        UWORD dy = divu(d, v_cel_wr), sy = divu(s, v_cel_wr);
+        UWORD rows = divu(count, v_cel_wr), i;
+
+        if (rows == v_cel_my && dy + sy == 1)   /* the whole screen, a line */
+        {
+            text_top = (text_top + ((sy > dy) ? 1 : TEXT_MAP_ROWS - 1)) & (TEXT_MAP_ROWS - 1);
+            text_scroll_register();     /* conout.c blanks the new line */
+        }
+        else if (dy < sy)
+        {
+            for (i = 0; i < rows; i++)
+                text_copy_row(dy + i, sy + i);
+        }
+        else
+        {
+            for (i = rows; i > 0; i--)
+                text_copy_row(dy + i - 1, sy + i - 1);
+        }
+    }
+    else if (d < s)
     {
         vd_set_write(d, VERA_INC1);
         copy_long(s, count);

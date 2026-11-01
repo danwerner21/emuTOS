@@ -669,6 +669,10 @@
 # ifndef CONF_WITH_SDMMC
 #  define CONF_WITH_SDMMC 1
 # endif
+  /* No YM2149: sound.c's registers are emulated on the VERA's PSG */
+# ifndef CONF_WITH_YM2149
+#  define CONF_WITH_YM2149 1
+# endif
   /* Debug output goes directly to the MF/PIC 16550, not via the MFP */
 # ifndef RS232_DEBUG_PRINT
 #  define RS232_DEBUG_PRINT 0

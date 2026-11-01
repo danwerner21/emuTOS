@@ -1,0 +1,21 @@
+
+CONST	MODELS_FORM%=     0
+
+CONST	ST%=     1
+CONST	STE%=     2
+CONST	MEGASTE%=     3
+CONST	TT%=     4
+CONST	FALCON%=     5
+CONST	LYNX%=     7
+CONST	JAGUAR%=     8
+
+CONST	MENU1%=     1
+
+CONST	MABOUT%=     7
+CONST	MQUIT%=    16
+CONST	MPOP%=    17
+
+CONST	DIALOG%=     2
+
+CONST	POP_BUT%=     1
+CONST	OK_BUT%=     2

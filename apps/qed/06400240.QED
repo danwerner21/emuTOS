@@ -1,0 +1,4 @@
+ID=qed display configuration
+ReplaceBox=0 0
+WinFontID=1
+WinFontSize=9

@@ -18,6 +18,9 @@
 #include "vectors.h"
 #include "machine.h"
 #include "cookie.h"
+#ifdef MACHINE_MINI68K
+#include "mini68k.h"
+#endif
 
 /*
  * This is a straightforward implementation of PSG-related xbios routines.
@@ -36,6 +39,29 @@
  * necessary that no interrupt which could also use the PSG occur when
  * using the PSG.
  */
+
+/*
+ * Register access. The Mini-M68k has no YM2149: its registers are
+ * emulated and played on the VERA's PSG (ym_mini68k.c).
+ */
+#if CONF_WITH_YM2149
+#ifdef MACHINE_MINI68K
+# define psg_write(reg, value)  mini68k_ym_write(reg, value)
+# define psg_read(reg)          mini68k_ym_read(reg)
+#else
+static void psg_write(UBYTE reg, UBYTE value)
+{
+    PSG->control = reg;
+    PSG->data = value;
+}
+
+static UBYTE psg_read(UBYTE reg)
+{
+    PSG->control = reg;
+    return PSG->control;
+}
+#endif
+#endif
 
 /* internal routines */
 
@@ -74,13 +100,15 @@ void snd_init(void)
     if (HAS_LAN_PORT)
         porta_init |= 0x80;     /* select serial, not LAN */
 
+#ifdef MACHINE_MINI68K
+    mini68k_ym_init();
+#endif
+
     /* set ports A and B to output */
-    PSG->control = PSG_MULTI;
-    PSG->data = PSG_PORTB_OUTPUT | PSG_PORTA_OUTPUT;
+    psg_write(PSG_MULTI, PSG_PORTB_OUTPUT | PSG_PORTA_OUTPUT);
 
     /* initialise port A */
-    PSG->control = PSG_PORT_A;
-    PSG->data = porta_init;
+    psg_write(PSG_PORT_A, porta_init);
 
     /* dosound init */
     sndtable = NULL;
@@ -98,12 +126,11 @@ LONG giaccess(WORD data, WORD reg)
     LONG value = 0;
 
     old_sr = set_sr(0x2700);
-    PSG->control = reg & 0xF;
     if (reg & GIACCESS_WRITE)
     {
-        PSG->data = data;
+        psg_write(reg & 0xF, data);
     }
-    value = PSG->control;
+    value = psg_read(reg & 0xF);
     set_sr(old_sr);
 
     return value;
@@ -119,10 +146,9 @@ void ongibit(WORD data)
     WORD tmp;
 
     old_sr = set_sr(0x2700);
-    PSG->control = PSG_PORT_A;
-    tmp = PSG->control;
+    tmp = psg_read(PSG_PORT_A);
     tmp |= data;
-    PSG->data = tmp;
+    psg_write(PSG_PORT_A, tmp);
     set_sr(old_sr);
 #endif
 }
@@ -134,10 +160,9 @@ void offgibit(WORD data)
     WORD tmp;
 
     old_sr = set_sr(0x2700);
-    PSG->control = PSG_PORT_A;
-    tmp = PSG->control;
+    tmp = psg_read(PSG_PORT_A);
     tmp &= data;
-    PSG->data = tmp;
+    psg_write(PSG_PORT_A, tmp);
     set_sr(old_sr);
 #endif
 }
@@ -184,21 +209,20 @@ void sndirq(void)
             continue;
         }
         /* other values are assumed to be PSG register numbers (0-15) */
-        PSG->control = instr;
         if (instr == PSG_MULTI)
         {
-            UBYTE tmp = PSG->control;
-            PSG->data = (tmp & PSG_PORT_MASK) | (data & PSG_MIXER_MASK);
+            UBYTE tmp = psg_read(instr);
+            psg_write(instr, (tmp & PSG_PORT_MASK) | (data & PSG_MIXER_MASK));
         } else {
-            PSG->data = data;
+            psg_write(instr, data);
         }
     }
 
     if (instr == 0x81)
     {
-        PSG->control = *code++;     /* register number */
+        UBYTE reg = *code++;        /* register number */
         sndtmp += *code++;          /* increment register value */
-        PSG->data = sndtmp;         /*  & send to register      */
+        psg_write(reg, sndtmp);     /*  & send to register      */
         if (sndtmp != *code++)      /* if current value != ending value, */
             code -= 4;              /*  rewind to run again next time    */
     }

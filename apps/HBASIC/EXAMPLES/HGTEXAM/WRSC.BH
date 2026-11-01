@@ -1,0 +1,24 @@
+
+CONST	Menu1%=     0
+
+CONST	MAbout%=     8
+CONST	MQuit%=    17
+CONST	MCheckme%=    19
+CONST	MDialog%=    21
+CONST	MInstall%=    22
+
+CONST	TestDialog%=     1
+
+CONST	DOK%=     2
+CONST	DCancel%=     3
+CONST	DEditable%=     4
+CONST	DParent%=     5
+CONST	DRadio1%=     6
+CONST	DRadio2%=     7
+CONST	DRadio3%=     8
+
+CONST	NewDesktop%=     2
+
+
+CONST	AAlert%=     0
+

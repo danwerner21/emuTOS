@@ -1,0 +1,14 @@
+REM $include toolbox.bas
+REM $include window.bas
+REM $include image.bas
+REM $include textwind.bas
+REM $include filesel.bas
+REM $include exec.bas
+REM $include menu.bas
+REM $include objwind.bas
+REM $include newdesk.bas
+REM $include imagwind.bas
+REM $include dialog.bas
+REM $include xformdo.bas
+REM $include objcext.bas
+REM $include formwind.bas

@@ -308,7 +308,7 @@ bios_src +=  memory.S processor.S vectors.S aciavecs.S bios.c xbios.c acsi.c \
              lisa.c lisa2.S \
              mini68k.c mini68k2.S ppide.c ppide2.S spi_mini68k.c \
              fdc_mini68k.c fdc_mini68k2.S vera_mini68k.c vera_mini68k2.S vera_direct.c \
-             kbd_mini68k.c \
+             kbd_mini68k.c ym_mini68k.c \
              delay.c delayasm.S sd.c memory2.c bootparams.c scsi.c nova.c \
              dsp.c dsp2.S \
              scsidriv.c

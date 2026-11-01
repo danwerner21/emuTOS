@@ -1,0 +1,155 @@
+           Odds and Ends
+
+          Using the Mouse
+
+WORD WRITER uses only the left-hand 
+mouse button.
+
+The mouse is used to select options 
+from menus and to adjust the sizes 
+and positions of the windows. The 
+Desktop buttons can also be selected 
+using the mouse: just point and 
+click.
+Using the Mouse (continued)
+
+In the ruler line at the top of the 
+window, you can use the mouse to 
+drag the margins or set and clear 
+tab locations.
+
+If you click the mouse in the left 
+border of the window, you can insert 
+a page break or delete an existing 
+page break. (When deleting a page 
+break, point the mouse just BELOW 
+the line.)
+Using the Mouse (continued)
+
+If you point at a page break and 
+hold down the mouse button, you can 
+drag that page break to another 
+position.
+
+
+
+
+
+
+
+Using the Mouse (continued)
+
+To join text so that it will not
+be separated during printout,
+hold down the mouse button in the 
+page border, away from any page 
+break. Then drag the mouse down 
+before releasing the button.
+
+You can adjust the length of the 
+shaded area by pointing at it with 
+the mouse and dragging.
+
+Using the Mouse (continued)
+
+If you click the mouse on a tick 
+in the green-shaded border on 
+the left, the commands that are 
+hidden there will be inserted back 
+into the text.
+ 
+
+
+
+
+
+Using the Mouse (continued)
+
+When you click the mouse in the 
+text, the cursor will move to that 
+position. If you drag the mouse, you 
+can mark some text as a block.
+
+
+
+
+
+
+
+        Personal Dictionary
+
+A personal dictionary is simply an 
+ASCII file created in WORD WRITER,
+that has a single word on each line. 
+It may contain words you use a lot 
+that are not found in the main 
+dictionary  (i.e. your name). To 
+start a personal dictionary, simply 
+place each of the words you wish to 
+add on its own line. Then "Save as 
+ASCII" using an extension of ".PER".
+
+Personal Dictionary (continued)
+
+Whenever the main dictionary is 
+opened, an ITEM SELECTOR box will 
+allow you to open a personal 
+dictionary. Once opened, words can 
+be added using the "Add to Personal 
+Words" option found on the "Words" 
+menu or by clicking on the "ADD" 
+button while viewing the dictionary.
+Words can be deleted by clicking on 
+the REMOVE button while viewing the 
+dictionary.
+Personal Dictionary (continued)
+
+When the main dictionary is closed 
+using the "Close Dictionary" option, 
+an ITEM SELECTOR box will appear 
+allowing you to save the changes 
+made to your personal dictionary.
+If you click on CANCEL, the words 
+you have added will not be saved.
+
+
+
+
+     Text Commands
+
+When you press F6, the line 
+containing the cursor becomes
+embedded in your document as a 
+command (and it disappears from the 
+screen).
+
+Only one command should be placed on 
+each line.
+
+
+
+Text Commands (continued)
+
+The following commands are 
+recognized when a file is printed by 
+Word Writer:
+
+hoff      Turn off header 
+
+hon       Turn on header 
+
+foff      Turn off footer
+
+fon       Turn on footer
+Text Commands (continued)
+
+Printer codes are entered on a blank 
+line using the F6 key. Just enter P/ 
+and enter the codes used by your 
+printer. Then press F6 to embed 
+those codes in your document.
+For example:   P/27,66,4
+might be used to print in Near 
+Letter Quality on a Star printer.
+See your printer manual for the 
+correct codes for your printer. 

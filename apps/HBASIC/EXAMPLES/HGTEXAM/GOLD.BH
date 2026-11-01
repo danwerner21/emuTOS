@@ -1,0 +1,33 @@
+
+CONST	menu1%=     0
+
+CONST	me%=     0
+CONST	medesk%=     3
+CONST	mefile%=     4
+CONST	meaboutgold%=     7
+CONST	me1%=     9
+CONST	me2%=    10
+CONST	me3%=    11
+CONST	me4%=    12
+CONST	me5%=    13
+CONST	me6%=    14
+CONST	mequit%=    16
+CONST	mesave%=    17
+CONST	meload%=    18
+
+CONST	form2%=     1
+
+CONST	fmcancel%=     3
+CONST	fmok%=     4
+
+CONST	form3%=     2
+
+CONST	d2%=     0
+CONST	d2somemoretext%=     1
+CONST	d2todisplayin%=     2
+CONST	d2whatapowerfu%=     3
+CONST	d2cancel%=     4
+CONST	d2ok%=     5
+
+CONST	aboutalert%=     0
+

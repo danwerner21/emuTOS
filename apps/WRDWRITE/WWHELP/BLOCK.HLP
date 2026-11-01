@@ -1,0 +1,89 @@
+The BLOCK Menu
+
+The BLOCK menu options require that 
+you highlight, or "mark" a block of 
+text. To mark text, use the mouse to 
+drag an outline around the text you 
+want to mark, or use the F9 key, 
+which is explained in your manual, 
+for marking a block. The marked 
+block will be highlighted on your 
+display.
+
+
+BLOCK Menu: Move  ALT M
+            Copy  ALT C
+
+The "Move" option moves a marked 
+block to a new location that you 
+specify.
+
+"Copy" duplicates a marked block in 
+a new location, leaving the original 
+block untouched.
+
+Use Cut & Paste to move or copy from 
+one file to another.
+BLOCK Menu: Set Top     F9
+            Set Bottom  F9
+
+These commands, like the F9 key, 
+are used to mark the first and last
+position of the block. 
+
+
+
+
+
+
+
+BLOCK Menu: Cut    F8
+            Paste  F8
+            Delete ALT D
+
+"Cut" copies a marked block into a 
+temporary location in the computer's 
+memory. "Paste" copies the block 
+from that memory into any locations 
+in your text that you specify. You 
+can cut text from one window and 
+paste it into another. "Delete" 
+erases a marked block from your 
+text. 
+BLOCK Menu: Goto Top
+            Goto Bottom
+            Unset Block  UNDO
+
+"Goto Top" and "Goto Bottom" move 
+the cursor to the start or end of a 
+marked block.
+
+"Unset Block" removes highlighting 
+from a block.
+
+
+
+On-Screen Special Text
+
+The On-Screen Special Text feature 
+allows you to enter text in six 
+different type faces: boldface, 
+italics, underlining, light type, 
+superscript, and subscript. You can 
+also use a combination of these. 
+Your text will appear on your screen 
+and be printed using the type 
+face(s) you selected.
+
+Click on NEXT for more information.
+On-Screen Special Text
+
+The Special Text keys are:
+
+ALT B    Bold
+ALT U    Underline
+ALT I    Italic
+ALT L    Light
+ALT -    Subscript
+ALT +    Superscript
+ESC      Return to Normal

@@ -1,0 +1,141 @@
+PRINT Menu: Print Current Document
+            Print from Disc  
+
+"Print Current Document" (ALT P) 
+prints your document on your printer 
+(it saves it in a temporary file on 
+disc and prints that file).
+
+"Print from Disc" (CTRL P) prints a 
+document from your data disc.
+
+
+
+PRINT Menu: Form Letter
+
+Close all documents before selecting
+this option. A form letter is just
+like a regular WORD WRITER document 
+except that numbers printed in the 
+light typeface are used to pull in 
+lines of data from a data file (see 
+LETTER.DOC). See ADR.ASC for an 
+example of how to set up a data 
+file. These data files must be saved
+in ASCII format.
+
+PRINT Menu: Form Letter (continued)
+
+When you select the form letter
+option, an ITEM SELECTOR box will
+appear to select the form letter you
+wish to print. After this is done, a 
+dialog box titled FORM LETTER 
+PRINTING will appear. This is the 
+same box that appears when you print
+a normal document except that the 
+first line says: 
+
+     "Datafile: lines/record." 
+PRINT Menu: Form Letter (continued)
+
+Enter the number of data variables
+required for your form letter.  For 
+example, if you enter the number 8, 
+the first 8 lines of data will be 
+used in the first form letter, the 
+second set of 8 lines will be used 
+in the second letter, and so on. For 
+this reason, each data record must 
+have the same number of lines 
+including blanks.  Otherwise, the 
+letters will print incorrectly.
+PRINT Menu: Form Letter (continued)
+
+Once the number of lines per record 
+is answered, another ITEM SELECTOR
+box will appear asking you for the 
+name of the data file to be merged
+with your form letter. Select your 
+data file to begin printing.  
+
+To pause or cancel Form Letter 
+printing press and hold one of the 
+mouse buttons.
+
+PRINT Menu: Page Layout
+            Header Content
+            Footer Content
+
+"Page Layout" allows you to specify 
+the page length and the position  
+of headers and footers on your 
+printed page.
+
+"Header Content" and "Footer 
+Content" allow you to edit the 
+header and footer lines for your 
+document.
+PRINT Menu: Select Printer
+
+Your program disc contains files 
+used to set up printers with WORD 
+WRITER. "Select Printer" allows you 
+to choose a file for your printer. 
+You must use this option before 
+printing a document. If you used the 
+"WWINSTALL" program to create a 
+PRINTER.CFG file, the file will be 
+loaded automatically when you load 
+the program, and you will not need 
+to use "Select Printer".
+Printout Specifications
+
+Upon printing a file, a dialogue box 
+is displayed allowing you to select 
+various options before printing the 
+file.
+
+You can select the number of copies 
+to be printed and whether to output 
+to the printer or to the disc (for 
+later use with a telecommunications 
+program).
+
+Printout Specifications (continued)
+
+The "From page" and "To page" fields 
+allow you to print out just part of 
+the file.
+
+The "First Page Numbered" field 
+allows you to select the first page 
+number to be used when numbering the 
+document.
+
+
+
+Printout Specifications (continued)
+
+You can turn page numbering on or 
+off, and you can specify whether it 
+should be at the top or bottom of 
+the page, and at the left, centre, 
+or right of the line.
+
+The "Text for Page Number" field 
+controls the style of the page 
+number. The ^ character in this 
+field is replaced by the page number 
+when it is printed.
+Printout Specifications (continued)
+
+The "Book Printout" option prints
+headers and footers as you would see 
+them in a book, on opposite sides of 
+alternate pages.
+
+The "Left Margin Position" allows 
+you to add extra space at the left 
+margin when printing the file.
+

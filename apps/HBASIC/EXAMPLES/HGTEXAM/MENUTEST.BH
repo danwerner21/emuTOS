@@ -1,0 +1,5 @@
+
+CONST	menu1%=     0
+
+CONST	quit%=    16
+CONST	playtune%=    17

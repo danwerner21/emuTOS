@@ -1,0 +1,207 @@
+#========================================================================
+#   **** Please edit this ST-Guide INF file to your requirements ****
+#========================================================================
+#
+# This file is configured with hard drive users in mind but floppy based
+# users can easily set up a RAM disk as drive C: and run ST-Guide from
+# there.
+#
+# To edit this file load it into any ASCII text editor (for example 
+# Everest, Tempus etc) and edit the paths as desired.
+#
+# By default ST-Guide looks for a 'GUIDES' folder on 'C', which contains
+# all your 'HYP and 'REF' files, and a 'STGUIDE' folder also on 'C' which 
+# contains the utilities.
+#
+# Lines beginning with the '#' symbol (like this line) are comments and 
+# are ignored by ST-Guide.
+#
+# Default search path, where ST-Guide looks for 'HYP' hypertexts:
+#
+PATHS=C:\GUIDES\;C:\BIN,;C:\
+#
+# Default directory ST-Guide opens when calling the File Selector.
+# HCP also compiles to this path:
+#
+HYPFOLD=C:\GUIDES\
+#
+# An external viewer, which must be memory resident can be used to 
+# display unknown file types:
+#
+#EXTVIEW=NOTICE
+#
+# A list of file extenders and paths to external viewers may follow:
+#
+IMG=C:\BIN\1STVIEW.PRG
+#
+# The hypertext file to be loaded via the ST-Guide 'Catalog' option or 
+# when ST-Guide is started without parameters:
+#
+HYPTOP=C:\GUIDES\CATALOG.HYP
+#
+# The file used to find references:
+#
+REF=C:\GUIDES\ALL.REF
+#
+# ST-Guide can use GDOS screen fonts if loaded, the code determines the
+# font used. Refer to main documentation for syntax details:
+#
+FONT=1,9
+XFONT=1,9
+#
+# The following three variables are only relevant in colour resolutions 
+# and ignored in monochrome resolutions.
+# TXTCOLOR displays text in the specified colour.
+# REFCOLOR displays references in the specified colour using the 
+# normal typestyle (NOT bold and underlined).
+# BCKCOLOR Background colour for ST-Guide windows.
+# Default colours (Note! Your system may change these values!):
+#  0=White        1=Black        2=Red           3=Green
+#  4=Blue         5=Cyan         6=Yellow        7=Magenta
+#  8=Grey         9=Dark grey   10=Dark red     11=Dark green
+# 12=Dark blue   13=Dark cyan   14=Dark yellow  15=Dark magenta
+#
+TXTCOLOR=1
+REFCOLOR=4
+#BCKCOLOR=8
+#
+# If no dialog is to appear during a REF-search, then remove the '#' below:
+#
+#NOREFBOX=1
+#
+# If this option is active (the value is irrelevant) a right mouse key 
+# click is interpreted as 'Retrace' or 'Back'.
+#
+RIGHTBACK=1
+#
+# Set this variable if the window is to remain usable in the background
+#
+BACKWIND=1
+#
+# Distance of first text line from the icon line
+#
+#TXTOFFSET=5
+#
+# This is the file to which St-Guide writes set markers
+#
+#MARKFILE=C:\GUIDES\MARKER.DAT
+#
+# If this variable is active, clicking on 'normal' text does not cause
+# ST-Guide to search for references.
+#
+#REFONLY=1
+#
+# HCP is used to compile STG files into HYP files. STool uses this entry 
+# to find HCP and compile:
+#
+HCP=C:\STGUIDE\HCP.TTP
+#
+# The number of spaces a tab will be expanded to is set here:
+#
+TABSIZE=4
+#
+# This variable is provided to install ARROWPATCH. This patch corrects a 
+# bug in the AES which prevents the scroll bars in windowed accessories
+# from working correctly with certain TOS versions.
+# If you exerience this behaviour activate this patch ON (by removing
+# the preceding #).
+# This patch is not needed if you are running WINX, MagiC, MTOS or 
+# already have the ARROWPATCH installed globally.
+#
+#ARROWPATCH=1
+#
+# The first two values set the top left corner of the window. The
+# next two values set the bottom right corner for the ST-Guide window:
+#
+WINSIZE=100,100,400,200
+#
+# This file will be loaded automatically if ST-Guide is started without 
+# parameters:
+#
+#DEFHYP=hcp.hyp
+#
+# These options are used automatically when the original HCP is called:
+#HCP_OPT=
+#
+# Hypfind is called by ST-Guide to search for search masks in all pages
+# in the current hypertext.
+#
+HYPFIND=C:\STGUIDE\HYPFIND.TTP
+#
+# Whenever 'Print' is selected output is sent to the Clipboard and
+# re-directed to this listed application for output:
+#
+PRINTER=
+#
+# To call STool from an ST-Guide hypertext:
+$STOOL=D:\STGUIDE\STOOL.TOS
+#
+# Added at Holger Weets' suggestion to stop Beta version compilations
+# from crashing:
+NOPASSWD=1
+#
+# RefCheck options:
+# -----------------
+# Path to RefLink for REFCHECK:
+#
+REFLINK=C:\STGUIDE\REFLINK.TTP
+#
+# Default REFCHECK options used if no command line is passed:
+#
+REFCHECK-OPT=ads
+#
+#
+# KATMAKER options:
+# -----------------
+# Output filenames in the hypertext without extenders
+KM_SHORT
+#
+# Display filenames in the hypertext in lower case characters
+KM_SMALL
+#
+#
+# Path for Remarker:
+# Without '!' preceding the path Remarker is automatically started on
+# opening ST-Guide.
+# With '!' preceding the path Remarker is started using [Alternate]+R
+#
+REMARKER=!D:\STGUIDE\REMARKER\REMARKER.PRG
+#
+# These options pass parameters from ST-Guide to HypTree:
+#
+#HYPTREE_OPT=
+#
+# HypTree options:
+# ----------------
+# Here the default size of the HypTree window can be set. 
+# If this variable is defined, the size and position of the last 
+# window will be used for each subsequent opening.
+#
+HT_WINSIZE=20,20,100,300
+#
+# Using this switch you can decide whether all pages are visible 
+# when a hypertext is first opened (0 = No, 1 = Yes) 
+#
+HT_OPENALL=0
+#
+# This variable sets the position of the triangle in the window 
+# 0 = With the text, 1 = On the left hand margin of the window. 
+#
+HT_MACLIKE=0
+#
+# The following command line is sent by HypTree to ST-Guide (via 
+# VA_START) after a double click by the user on the name of any 
+# hypertext page. The following strings are replaced with the 
+# actual values when called: 
+# %p  by the pathname of the hypertext file 
+# %n  by the name of the hypertext file (without path) 
+# %s  by the internal name of the hypertext page 
+#
+HT_CALLSTG=-s1 %p %s
+#
+# The following command line is sent to ST-Guide from HypTree as 
+# soon as the current hypertext is closed: 
+#
+HT_STOPSTG=-s0
+#
+# That's it!

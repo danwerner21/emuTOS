@@ -1,0 +1,77 @@
+FILE Menu: Open
+
+Use the "Open" option to create a 
+new document or to load an existing 
+file from your disc. The File 
+Management box will appear, and you 
+can select an existing file or enter 
+a name for a new file. The open file 
+will appear in a window on your 
+display. You may have as many as 
+four windows on your display at one 
+time.
+
+FILE Menu: Save
+           Save and Abandon
+
+The "Save" option writes your 
+current document onto your data 
+disc. You should save a document
+every 30 minutes or so as you type 
+or edit to guard against data loss.
+
+"Save and Abandon" writes the file 
+to disc and closes the window, 
+erasing the document from the 
+computer's memory.
+FILE Menu: Save as
+           Save as ASCII
+
+"Save as" allows you to enter a new 
+file name when you save a file on 
+disc.
+
+Use "Save as ASCII" to convert your 
+file to pure ASCII characters. This
+option saves your document without 
+its special characteristics, such as 
+page breaks or headers and footers.
+
+FILE Menu: Merge, Erase, Status
+
+"Merge" allows you to insert the 
+contents of a file into the document
+that is currently in the computer.
+ 
+"Erase" allows you to delete a file 
+from your data disc.
+
+The "Status" option tells you the 
+size of the current document in 
+terms of the number of words, lines, 
+pages, and bytes that it contains.
+FILE Menu: Set Path
+
+This option allows you to specify 
+where the computer should look for 
+the dictionary, thesaurus, help,  
+and data files. You may place these
+files in whatever drive and/or
+folder you find most convenient. 
+Your personal dictionary will follow
+the dictionary's path.
+
+
+
+FILE Menu: Abandon, Quit
+
+Use "Abandon" to close, or remove,
+the current window without saving 
+the text in that window. (The Close 
+Box in the top left corner of the 
+window serves the same purpose.)
+
+"Quit" allows you to exit the 
+program and return to the GEM 
+Desktop. Any open windows will be 
+abandoned when you use "Quit".

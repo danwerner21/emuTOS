@@ -1,0 +1,21 @@
+06601030301800
+6L.....T.....T......T.............................................R
+€Addthefollowingtopage16ofyourmanual:
+
+TheCODESmenuincludesanoptionforthePoundSign.Ifyour
+printerissetintheBritishcharacterset,enterthedecimal
+codefortheœsign(asobtainedfromyourprintermanual).If
+yourprinterissetfortheU.S.characterset,thenenterthe
+decimalcodestoputtheprinterintheBritishcharacterset,the
+poundsigncode,andthedecimalcodetoreturntheprintertothe
+U.S.characterset.FortheEPSONprinter,thiscodewouldbe
+27,82,3,35,27,82,0.
+
+Ifyousaveyourprinterconfigurationunderthefilename
+PRINTER.CFG,itwillbeloadedwithWORDWRITERautomatically.
+
+-----------------------------------------------------------------
+Note:BesuretoconfigureyourDATAMANAGERSTandSWIFTCALCST
+withthesamePoundSignCodesthatyousetinWORDWRITERST.
+-----------------------------------------------------------------
+

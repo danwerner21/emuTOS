@@ -1,0 +1,64 @@
+OUTLINER Menu: Open Outline Form
+
+Use the "Open Outline Form" option 
+to create a new outline, or to edit 
+an existing outline. When you open a 
+file in this way, the other Outliner 
+options become available.
+
+
+
+
+
+
+OUTLINER Menu: Index
+
+Use the "Index" option to insert a 
+new index number into an outline.
+
+When inserting a new item, first tab 
+across to the required indent level. 
+Then select "Index" (or press CTRL 
+O) to display the next item number 
+for that outline level.
+
+
+
+OUTLINER Menu: Reformat
+
+If you have rearranged an outline 
+(by deleting lines or using Cut & 
+Paste) use the "Reformat" option to 
+renumber all the entries in the 
+outline.
+
+
+
+
+
+
+OUTLINER Menu: Down Level
+               Up Level
+
+These options move the line 
+containing the cursor (and all lines 
+immediately below it) either up or 
+down, depending on which option you 
+select. Use these options if you 
+delete a section or add a section to 
+your outline.
+
+
+
+OUTLINER Menu: Remove **
+
+When an outline is reformatted, text 
+lines which are not numbered or have 
+some other error may be marked with 
+two asterisks at the start of the 
+line.
+
+The "Remove **" option will remove 
+any asterisks inserted by the 
+Outliner.
+

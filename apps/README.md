@@ -29,7 +29,6 @@ Some packages are commercial software from the 1980s and 1990s whose publishers 
 | `WRDWRITE/` | Word Writer ST 2.0 (UK) | Timeworks | Commercial | Abandonware; removed on request |
 | `ALYCON/` | Atari ST developer kit: Alcyon C, linker, assembler, RCS, GEM bindings, samples | Atari Corp.; tools by Alcyon Corp. and Digital Research | Commercial | Abandonware; removed on request |
 | `UTILITIE/lines.app`, `clock.app` | Multitasking demo programs | Atari Corp. (from the MultiTOS distribution) | Commercial | Abandonware; removed on request |
-| `UTILITIE/miniwin.app`, `miniwin.rsc` | Small windowed shell for MiNT | Author not identified (MiNT era, built with MiNTlib patchlevel 25) | None found | Abandonware; removed on request |
 
 ## Free and open packages
 
@@ -98,6 +97,5 @@ These packages are commercial products, included without permission as abandonwa
   - GEM bindings and headers, sample programs (`DOODLE`, the skeleton applications), Kermit (Columbia University), and Atari's technical notes.
 - **Owners:** Atari Corp. (the kit and its documentation), Alcyon Corp. (the compiler), and Digital Research (tools), whose rights later passed to Caldera and Lineo.
 
-### lines, clock, miniwin (`UTILITIE/`)
+### lines, clock (`UTILITIE/`)
 - **`lines.app` and `clock.app`** are multitasking demos from Atari's original MultiTOS distribution (per Rob Gowin's notes).
-- **`miniwin.app`** (with `miniwin.rsc`) is a small windowed shell for MiNT. It was built with MiNTlib patchlevel 25, which dates it to the early 1990s MiNT and MultiTOS era. No author or licence text was found, so it is listed here until its origin is known.
